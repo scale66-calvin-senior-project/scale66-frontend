@@ -6,7 +6,7 @@ import styles from "./Navbar.module.css";
 export default function Navbar() {
   return (
     <nav className={styles.navbar} aria-label="Primary">
-      <div className={styles.brand}>Vibe Marketing</div>
+      <div className={styles.brand}>Scale66</div>
       <ul className={styles.links} role="menubar" aria-label="Navigation">
         <li className={styles.hasMenu} role="none">
           <a role="menuitem" href="#">Product</a>
