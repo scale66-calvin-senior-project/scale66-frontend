@@ -1,0 +1,51 @@
+{
+	"brand_name": "Hiver",
+	"logo": {
+		"path": "logo.jpg",
+		"description": "A minimalist logo featuring stylized yellow horizontal bars resembling honey drips against an orange background, in the shape of a hexagonal beehive with subtle pink shadows. It visually evokes honey, warmth, and connection"
+	},
+	"content_kit": {
+		"repeating_post_list": {
+			"repeating_post_1": {
+				"repeating_schedule": "",
+				"social_media_platforms": {
+					"instagram": {
+						"reference_images": [],
+						"things_to_change": [],
+						"needs_user_input": []
+					},
+					"LinkedIn": {
+						"reference_images": [],
+						"things_to_change": [],
+						"needs_user_input": []
+					},
+					"TikTok": {
+						"reference_images": [],
+						"things_to_change": [],
+						"needs_user_input": []
+					},
+					"X": {
+						"reference_images": [],
+						"things_to_change": [],
+						"needs_user_input": []
+					}
+				}
+			},
+			"repeating_post_2": {
+				"repeating_schedule": "",
+				"social_media_platforms": {
+					"instagram": {
+						"reference_images": [],
+						"things_to_change": [],
+						"needs_user_input": []
+					},
+					"LinkedIn": {
+						"reference_images": [],
+						"things_to_change": [],
+						"needs_user_input": []
+					}
+				}
+			}
+		}
+	}
+}
