@@ -6,7 +6,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* keep text dark since background is light blue/white */
-    --background: #0a0a0a; /* unused due to page gradient */
+    --background: #ffffff; /* unused due to page gradient */
     --foreground: #5f5f5f;
   }
 }

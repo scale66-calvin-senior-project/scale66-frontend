@@ -1,10 +1,10 @@
-# Vibe Marketing AI
+# Scale66
 
 **The AI-powered marketing platform for software startups** — designed to help you turn attention into paying customers through organic, authentic, and data-driven content.
 
 ## Overview
 
-Vibe Marketing helps small software founders:
+Scale66 helps small software founders:
 
 * Build an online brand that actually converts
 * Automate social content distribution across platforms
@@ -13,7 +13,8 @@ Vibe Marketing helps small software founders:
 ## Tech Stack
 
 * **Framework:** Next.js (React + TypeScript)
-* **Deployment:** Vercel
+* **Deployment:** Firebase + Custome domain
+* **Backend:** Firebase DB
 * **CI/CD:** GitHub Actions (with dev → prod branch workflow)
 
 ---
