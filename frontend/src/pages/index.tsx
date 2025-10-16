@@ -7,6 +7,7 @@ export default function Home() {
     <>
       <Head>
         <title>Scale66</title>
+        <link rel="icon" href="/logo.png" />
       </Head>
       <LandingPage />
     </>

@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import styles from "./Hero.module.css";
 
 export default function Hero() {
@@ -10,13 +11,13 @@ export default function Hero() {
         without the hassle
       </h1>
       <p className={styles.subtitle}>
-        Vibe Marketing lets you distribute your idea and 10x your
+        Scale66 lets you distribute your idea and 10x your
         engagement. No marketing experience necessary.
       </p>
 
       <div className={styles.inputRow}>
         <textarea className={styles.input} placeholder="Describe your product..." rows={5} />
-        <button className={styles.play} aria-label="Send">
+        <Link href="/waitlist" className={styles.play} aria-label="Get Started">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
             <defs>
               <linearGradient id="sendGrad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
@@ -27,7 +28,7 @@ export default function Hero() {
             <path d="M2.4 3.2l18 7.3c.9.4.9 1.7 0 2.1l-18 7.3c-1 .4-1.9-.6-1.5-1.5l3.1-6.7c.1-.3.1-.7 0-1L.9 4.7c-.4-.9.6-1.9 1.5-1.5z" fill="url(#sendGrad)" stroke="#5a79ff" strokeOpacity="0.45" strokeWidth="1"/>
             <path d="M9.8 12.5l9.1-2.9" stroke="#5a79ff" strokeOpacity="0.5" strokeWidth="1.2" strokeLinecap="round"/>
           </svg>
-        </button>
+        </Link>
       </div>
 
       <div className={styles.chips}>
