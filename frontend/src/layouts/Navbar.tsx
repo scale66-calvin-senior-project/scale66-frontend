@@ -16,7 +16,6 @@ export default function Navbar() {
           <div className={styles.dropdown} role="menu" aria-label="Product">
             <Link role="menuitem" href="/#features">Features</Link>
             <Link role="menuitem" href="/#results">Results</Link>
-            <Link role="menuitem" href="/#pricing">Pricing</Link>
           </div>
         </li>
         <li role="none"><Link role="menuitem" href="/#pricing">Pricing</Link></li>
@@ -24,8 +23,8 @@ export default function Navbar() {
           <Link role="menuitem" href="/#faq">Resources</Link>
           <div className={styles.dropdown} role="menu" aria-label="Learn">
             <Link role="menuitem" href="/#faq">FAQs</Link>
-            <a role="menuitem" href="#support">Support</a>
-            <a role="menuitem" href="#blog">Blog</a>
+            <Link role="menuitem" href="/support">Support</Link>
+            <Link role="menuitem" href="/blog">Blog</Link>
           </div>
         </li>
       </ul>

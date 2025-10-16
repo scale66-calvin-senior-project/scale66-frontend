@@ -1,0 +1,154 @@
+.main {
+  padding-top: 80px;
+  min-height: 100vh;
+  background: white;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 60px 24px;
+  text-align: center;
+}
+
+.comingSoonCard {
+  background: rgba(67, 112, 255, 0.1);
+  border-radius: 24px;
+  padding: 80px 40px;
+  border: 1px solid rgba(67, 112, 255, 0.2);
+}
+
+.icon {
+  font-size: 64px;
+  color: #4370ff;
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 48px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 24px;
+}
+
+.description {
+  font-size: 20px;
+  color: #666;
+  margin-bottom: 40px;
+  line-height: 1.6;
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.featureCard {
+  background: rgba(255, 255, 255, 0.8);
+  padding: 32px 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+}
+
+.featureIcon {
+  font-size: 32px;
+  color: #4370ff;
+  margin-bottom: 16px;
+}
+
+.featureTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.featureText {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.ctaText {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 32px;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.primaryButton {
+  display: inline-block;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  text-decoration: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #4370ff, #c992ff);
+  border: 1px solid rgba(67, 112, 255, 0.5);
+  box-shadow: 0 8px 24px rgba(67, 112, 255, 0.2);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.primaryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(67, 112, 255, 0.25);
+}
+
+.secondaryButton {
+  display: inline-block;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+  text-decoration: none;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
+  border: 1px solid rgba(255,255,255,0.9);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.secondaryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 36px;
+  }
+  
+  .description {
+    font-size: 18px;
+  }
+  
+  .comingSoonCard {
+    padding: 60px 24px;
+  }
+  
+  .featureGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .buttonGroup {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .primaryButton,
+  .secondaryButton {
+    width: 100%;
+    max-width: 300px;
+  }
+}

@@ -57,8 +57,8 @@ export default function Pricing() {
     <section className={styles.pricing}>
       <div className={styles.container}>
         <div className={styles.header}>
-          <span className={styles.label}>Pricing Plans</span>
-          <h2 className={styles.title}>Simple, Transparent Pricing</h2>
+          <span className={styles.label}>Pricing</span>
+          <h2 className={styles.title}>Pricing Plans Built For You</h2>
           <p className={styles.subtitle}>
             Choose the plan that fits your business needs. No hidden fees, cancel anytime.
           </p>

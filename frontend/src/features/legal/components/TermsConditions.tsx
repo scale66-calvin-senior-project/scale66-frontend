@@ -1,0 +1,175 @@
+import React from "react";
+import styles from "./TermsConditions.module.css";
+
+export default function TermsConditions() {
+  return (
+    <main className={styles.main}>
+      <div className={styles.container}>
+        <h1 className={styles.title}>
+          Terms &amp; Conditions
+        </h1>
+        
+        <p className={styles.lastUpdated}>
+          Last updated: October 16, 2025
+        </p>
+
+        <div className={styles.content}>
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>1. Acceptance of Terms</h2>
+            <p className={styles.paragraph}>
+              By accessing or using Scale66&rsquo;s AI-powered marketing platform (&ldquo;Service&rdquo;), you agree to be bound by these Terms &amp; Conditions (&ldquo;Terms&rdquo;). If you do not agree to these Terms, you may not use our Service.
+            </p>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>2. Description of Service</h2>
+            <p className={styles.paragraph}>
+              Scale66 provides an AI-powered marketing platform that helps businesses create, schedule, and manage social media content. Our services include:
+            </p>
+            <ul className={styles.list}>
+              <li>AI-generated social media content creation</li>
+              <li>Multi-platform content scheduling and posting</li>
+              <li>Brand voice training and customization</li>
+              <li>Trend analysis and content optimization</li>
+              <li>Analytics and performance reporting</li>
+              <li>Content approval workflows</li>
+            </ul>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>3. User Accounts and Registration</h2>
+            <p className={styles.paragraph}>
+              To use our Service, you must create an account and provide accurate, complete information. You are responsible for:
+            </p>
+            <ul className={styles.list}>
+              <li>Maintaining the confidentiality of your account credentials</li>
+              <li>All activities that occur under your account</li>
+              <li>Notifying us immediately of any unauthorized use</li>
+              <li>Ensuring you have the authority to bind your organization to these Terms</li>
+            </ul>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>4. Subscription Plans and Payment</h2>
+            <h3 className={styles.subTitle}>Pricing Plans</h3>
+            <ul className={styles.list}>
+              <li><strong>Starter Plan:</strong> $49/month - 50 posts, 2 platforms, basic features</li>
+              <li><strong>Growth Plan:</strong> $199/month - 200 posts, 5 platforms, advanced features</li>
+              <li><strong>Agency Plan:</strong> $499/month - Unlimited posts, all platforms, enterprise features</li>
+            </ul>
+            
+            <h3 className={styles.subTitle}>Payment Terms</h3>
+            <ul className={styles.list}>
+              <li>Subscription fees are billed monthly in advance</li>
+              <li>All fees are non-refundable except as specified in our refund policy</li>
+              <li>We offer a 30-day money-back guarantee for new subscribers</li>
+              <li>Prices may change with 30 days&rsquo; notice to existing subscribers</li>
+            </ul>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>5. Acceptable Use Policy</h2>
+            <p className={styles.paragraph}>You agree not to use our Service to:</p>
+            <ul className={styles.list}>
+              <li>Create content that is illegal, harmful, or violates third-party rights</li>
+              <li>Generate spam, misleading, or deceptive content</li>
+              <li>Promote hate speech, discrimination, or violence</li>
+              <li>Infringe on intellectual property rights</li>
+              <li>Attempt to reverse engineer or interfere with our AI systems</li>
+              <li>Use our Service for competitive intelligence gathering</li>
+              <li>Resell or redistribute our Service without authorization</li>
+            </ul>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>6. Content and Intellectual Property</h2>
+            <h3 className={styles.subTitle}>Your Content</h3>
+            <p className={styles.paragraph}>
+              You retain ownership of all content you provide to our Service. By using our Service, you grant us a license to use your content solely to provide our services to you.
+            </p>
+            
+            <h3 className={styles.subTitle}>AI-Generated Content</h3>
+            <p className={styles.paragraph}>
+              You own the content generated by our AI based on your inputs and brand training. However, you are responsible for ensuring all published content complies with applicable laws and platform policies.
+            </p>
+            
+            <h3 className={styles.subTitle}>Our Intellectual Property</h3>
+            <p className={styles.paragraph}>
+              Scale66&rsquo;s technology, software, AI models, and platform remain our exclusive property. You may not copy, modify, or reverse engineer our systems.
+            </p>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>7. Service Availability and Performance</h2>
+            <p className={styles.paragraph}>
+              While we strive for 99.9% uptime, we do not guarantee uninterrupted service. We may suspend service for maintenance, updates, or to address technical issues. We are not liable for:
+            </p>
+            <ul className={styles.list}>
+              <li>Temporary service interruptions</li>
+              <li>Third-party platform changes that affect posting capabilities</li>
+              <li>Content that fails to post due to platform restrictions</li>
+              <li>AI-generated content that doesn&rsquo;t meet your expectations</li>
+            </ul>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>8. Cancellation and Termination</h2>
+            <h3 className={styles.subTitle}>Your Right to Cancel</h3>
+            <p className={styles.paragraph}>
+              You may cancel your subscription at any time. Cancellation takes effect at the end of your current billing period. No refunds are provided for partial months.
+            </p>
+            
+            <h3 className={styles.subTitle}>Our Right to Terminate</h3>
+            <p className={styles.paragraph}>
+              We may suspend or terminate your account immediately if you violate these Terms, engage in prohibited activities, or if your account remains delinquent for more than 30 days.
+            </p>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>9. Disclaimers and Limitation of Liability</h2>
+            <p className={styles.paragraph}>
+              <strong>THE SERVICE IS PROVIDED &ldquo;AS IS&rdquo; WITHOUT WARRANTIES OF ANY KIND.</strong> We disclaim all warranties, express or implied, including merchantability, fitness for a particular purpose, and non-infringement.
+            </p>
+            <p className={styles.paragraph}>
+              Our liability is limited to the amount you paid for the Service in the 12 months preceding the claim. We are not liable for indirect, incidental, or consequential damages.
+            </p>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>10. Indemnification</h2>
+            <p className={styles.paragraph}>
+              You agree to indemnify and hold Scale66 harmless from any claims, damages, or expenses arising from your use of the Service, violation of these Terms, or infringement of third-party rights.
+            </p>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>11. Governing Law and Disputes</h2>
+            <p className={styles.paragraph}>
+              These Terms are governed by the laws of California, USA. Any disputes will be resolved through binding arbitration in San Francisco, California, except for claims of intellectual property infringement.
+            </p>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>12. Changes to Terms</h2>
+            <p className={styles.paragraph}>
+              We may modify these Terms at any time. Material changes will be communicated via email or platform notification at least 30 days before taking effect. Continued use constitutes acceptance of modified Terms.
+            </p>
+          </section>
+
+          {/* <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>13. Contact Information</h2>
+            <p className={styles.paragraph}>
+              For questions about these Terms, please contact us:
+            </p>
+            <ul className={styles.contactList}>
+              <li><strong>Email:</strong> legal@scale66.com</li>
+              <li><strong>Address:</strong> Scale66, Inc.</li>
+              <li className={styles.addressIndent}>Legal Department</li>
+              <li className={styles.addressIndent}>San Francisco, CA</li>
+            </ul>
+          </section> */}
+        </div>
+      </div>
+    </main>
+  );
+}

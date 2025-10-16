@@ -23,36 +23,25 @@ export default function Footer() {
               <h4 className={styles.linkTitle}>Product</h4>
               <ul className={styles.linkList}>
                 <li><Link href="/#features">Features</Link></li>
+                <li><Link href="/#results">Results</Link></li>
                 <li><Link href="/#pricing">Pricing</Link></li>
-                <li><Link href="/#faq">FAQ</Link></li>
               </ul>
             </div>
 
             <div className={styles.linkGroup}>
-              <h4 className={styles.linkTitle}>Company</h4>
+              <h4 className={styles.linkTitle}>Resources</h4>
               <ul className={styles.linkList}>
-                {/* <li><a href="#about">About Us</a></li> */}
-                <li><a href="#blog">Blog</a></li>
-                {/* <li><a href="#careers">Careers</a></li> */}
-                <li><a href="#contact">Contact</a></li>
+                <li><Link href="/blog">Blog</Link></li>
+                <li><Link href="/support">Support</Link></li>
+                <li><Link href="/#faq">FAQ</Link></li>
               </ul>
             </div>
 
             <div className={styles.linkGroup}>
               <h4 className={styles.linkTitle}>Legal</h4>
               <ul className={styles.linkList}>
-                <li><a href="/privacy-policy">Privacy Policy</a></li>
-                <li><a href="/terms-conditions">Terms & Conditions</a></li>
-              </ul>
-            </div>
-
-            <div className={styles.linkGroup}>
-              <h4 className={styles.linkTitle}>Support</h4>
-              <ul className={styles.linkList}>
-                <li><a href="#help">Help Center</a></li>
-                {/* <li><a href="#docs">Documentation</a></li>
-                <li><a href="#api">API Reference</a></li>
-                <li><a href="#status">System Status</a></li> */}
+                <li><Link href="/privacy-policy">Privacy Policy</Link></li>
+                <li><Link href="/terms-conditions">Terms & Conditions</Link></li>
               </ul>
             </div>
           </div>
