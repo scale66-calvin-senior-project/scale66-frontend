@@ -1,7 +1,7 @@
 .footer {
   padding: 80px 0 40px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,250,255,0.98));
-  border-top: 1px solid rgba(255, 255, 255, 0.8);
+  background: linear-gradient(180deg, rgba(18,18,18,0.95), rgba(18,18,18,0.98));
+  border-top: 1px solid rgba(60, 60, 60, 0.8);
 }
 
 .container {
@@ -35,14 +35,14 @@
 .brandName {
   font-size: 28px;
   font-weight: 700;
-  color: #111;
+  color: #FFFFFF;
   margin: 0;
 }
 
 .brandDescription {
   font-size: 16px;
   line-height: 1.6;
-  color: #666;
+  color: #EBEBEB;
   margin: 0;
 }
 
@@ -60,7 +60,7 @@
 .linkTitle {
   font-size: 16px;
   font-weight: 600;
-  color: #111;
+  color: #FFFFFF;
   margin-bottom: 16px;
 }
 
@@ -74,14 +74,14 @@
 }
 
 .linkList a {
-  color: #666;
+  color: #EBEBEB;
   text-decoration: none;
   font-size: 15px;
   transition: color 0.2s ease;
 }
 
 .linkList a:hover {
-  color: #4a90e2;
+  color: #66C587;
 }
 
 .bottom {
@@ -89,13 +89,13 @@
   justify-content: space-between;
   align-items: center;
   padding-top: 32px;
-  border-top: 1px solid rgba(255, 255, 255, 0.7);
+  border-top: 1px solid rgba(60, 60, 60, 0.7);
 }
 
 .copyright p {
   margin: 0;
   font-size: 14px;
-  color: #888;
+  color: #EBEBEB;
 }
 
 .social {
@@ -110,9 +110,9 @@
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  color: #666;
+  background: rgba(30, 30, 30, 0.7);
+  border: 1px solid rgba(60, 60, 60, 0.8);
+  color: #EBEBEB;
   text-decoration: none;
   transition: all 0.2s ease;
   box-shadow:
@@ -124,13 +124,13 @@
 }
 
 .socialLink:hover {
-  color: #4a90e2;
+  color: #66C587;
   transform: translateY(-2px);
   box-shadow:
     0 1px 0 rgba(255,255,255,1) inset,
     0 -1px 0 rgba(255,255,255,0.7) inset,
     0 8px 20px rgba(0,0,0,0.04),
-    0 12px 32px rgba(74, 144, 226, 0.08);
+    0 12px 32px rgba(102, 197, 135, 0.08);
 }
 
 @media (max-width: 768px) {

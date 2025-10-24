@@ -1,14 +1,9 @@
 :root {
-  --background: #ffffff;
-  --foreground: #333333; /* use dark text for readability */
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* keep text dark since background is light blue/white */
-    --background: #ffffff; /* unused due to page gradient */
-    --foreground: #5f5f5f;
-  }
+  --background: #121212;
+  --foreground: #F8F8F8;
+  --text-primary: #FFFFFF;
+  --text-secondary: #EBEBEB;
+  --text-muted: #F8F8F8;
 }
 
 html {
@@ -40,8 +35,29 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+html {
+  color-scheme: dark;
+}
+
+/* Common responsive container improvements */
+@media (max-width: 1240px) {
+  .container {
+    max-width: calc(100% - 48px);
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    max-width: calc(100% - 32px);
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    max-width: calc(100% - 24px);
+    padding: 0 12px;
   }
 }

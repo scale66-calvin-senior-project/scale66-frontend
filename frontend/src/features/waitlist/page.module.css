@@ -1,9 +1,21 @@
 .page {
   min-height: 100vh;
-  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,250,255,0.98));
+  background: linear-gradient(180deg, rgba(18,18,18,0.95), rgba(18,18,18,0.98));
 }
 
 .main {
   padding: 120px 24px 80px;
   max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding: 80px 16px 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 60px 12px 40px;
+  }
 }

@@ -1,8 +1,6 @@
 export interface WaitlistFormData {
   email: string;
   contentType: string;
-  audienceFaqs: string;
-  businessDescription: string;
 }
 
 export class WaitlistService {
@@ -15,8 +13,6 @@ export class WaitlistService {
       const googleFormData = new FormData();
       googleFormData.append('entry.EMAIL_FIELD_ID', formData.email);
       googleFormData.append('entry.CONTENT_FIELD_ID', formData.contentType);
-      googleFormData.append('entry.FAQ_FIELD_ID', formData.audienceFaqs);
-      googleFormData.append('entry.BUSINESS_FIELD_ID', formData.businessDescription);
 
       // Submit to Google Form
       await fetch(WaitlistService.FORM_URL, {

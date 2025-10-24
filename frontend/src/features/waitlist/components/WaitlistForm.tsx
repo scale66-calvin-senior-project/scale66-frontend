@@ -5,9 +5,7 @@ import styles from "./WaitlistForm.module.css";
 export default function WaitlistForm() {
   const [formData, setFormData] = useState({
     email: '',
-    contentType: '',
-    audienceFaqs: '',
-    businessDescription: ''
+    contentType: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -50,9 +48,7 @@ export default function WaitlistForm() {
             setSubmitted(false);
             setFormData({
               email: '',
-              contentType: '',
-              audienceFaqs: '',
-              businessDescription: ''
+              contentType: ''
             });
           }}
         >
@@ -104,37 +100,6 @@ export default function WaitlistForm() {
           />
         </div>
 
-        <div className={styles.field}>
-          <label htmlFor="audienceFaqs" className={styles.label}>
-            What are your audience&rsquo;s main FAQs/Pain points? *
-          </label>
-          <textarea
-            id="audienceFaqs"
-            name="audienceFaqs"
-            value={formData.audienceFaqs}
-            onChange={handleChange}
-            required
-            className={styles.textarea}
-            placeholder="Describe the main questions your customers ask and the problems they&rsquo;re trying to solve&hellip;"
-            rows={4}
-          />
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor="businessDescription" className={styles.label}>
-            Quick description of your business area/niche *
-          </label>
-          <textarea
-            id="businessDescription"
-            name="businessDescription"
-            value={formData.businessDescription}
-            onChange={handleChange}
-            required
-            className={styles.textarea}
-            placeholder="Tell us about your business, industry, target market, and what makes you unique&hellip;"
-            rows={4}
-          />
-        </div>
 
         <button 
           type="submit" 

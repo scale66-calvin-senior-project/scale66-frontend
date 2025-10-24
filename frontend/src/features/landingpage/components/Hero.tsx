@@ -1,8 +1,18 @@
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import styles from "./Hero.module.css";
 
 export default function Hero() {
+  const router = useRouter();
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      router.push('/waitlist');
+    }
+  };
+
   return (
     <section className={styles.hero}>
       <h1 className={styles.title}>
@@ -16,7 +26,12 @@ export default function Hero() {
       </p>
 
       <div className={styles.inputRow}>
-        <textarea className={styles.input} placeholder="Describe your product..." rows={5} />
+        <textarea 
+          className={styles.input} 
+          placeholder="Describe your product..." 
+          rows={5}
+          onKeyDown={handleKeyDown}
+        />
         <Link href="/waitlist" className={styles.play} aria-label="Get Started">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
             <defs>

@@ -1,7 +1,7 @@
 .main {
   padding-top: 80px;
   min-height: 100vh;
-  background: white;
+  background: #121212;
 }
 
 .container {
@@ -12,28 +12,28 @@
 }
 
 .comingSoonCard {
-  background: rgba(67, 112, 255, 0.1);
+  background: rgba(102, 197, 135, 0.1);
   border-radius: 24px;
   padding: 80px 40px;
-  border: 1px solid rgba(67, 112, 255, 0.2);
+  border: 1px solid rgba(102, 197, 135, 0.2);
 }
 
 .icon {
   font-size: 64px;
-  color: #4370ff;
+  color: #66C587;
   margin-bottom: 32px;
 }
 
 .title {
   font-size: 48px;
   font-weight: 700;
-  color: #333;
+  color: #FFFFFF;
   margin-bottom: 24px;
 }
 
 .description {
   font-size: 20px;
-  color: #666;
+  color: #EBEBEB;
   margin-bottom: 40px;
   line-height: 1.6;
 }
@@ -46,35 +46,35 @@
 }
 
 .featureCard {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(30, 30, 30, 0.8);
   padding: 32px 24px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(60, 60, 60, 0.9);
   box-shadow: 0 8px 24px rgba(0,0,0,0.04);
 }
 
 .featureIcon {
   font-size: 32px;
-  color: #4370ff;
+  color: #66C587;
   margin-bottom: 16px;
 }
 
 .featureTitle {
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: #FFFFFF;
   margin-bottom: 8px;
 }
 
 .featureText {
   font-size: 14px;
-  color: #666;
+  color: #EBEBEB;
   margin: 0;
 }
 
 .ctaText {
   font-size: 16px;
-  color: #666;
+  color: #EBEBEB;
   margin-bottom: 32px;
 }
 
@@ -87,40 +87,71 @@
 
 .primaryButton {
   display: inline-block;
-  padding: 16px 32px;
-  font-size: 16px;
-  font-weight: 600;
+  padding: 18px 40px;
+  font-size: 18px;
+  font-weight: 700;
   color: white;
   text-decoration: none;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #4370ff, #c992ff);
-  border: 1px solid rgba(67, 112, 255, 0.5);
-  box-shadow: 0 8px 24px rgba(67, 112, 255, 0.2);
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #66C587, #5FDBDB);
+  border: 1px solid rgba(102, 197, 135, 0.8);
+  box-shadow: 
+    0 1px 0 rgba(255,255,255,0.2) inset,
+    0 -1px 0 rgba(0,0,0,0.1) inset,
+    0 12px 32px rgba(102, 197, 135, 0.3),
+    0 20px 60px rgba(95, 219, 219, 0.2);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .primaryButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(67, 112, 255, 0.25);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 
+    0 1px 0 rgba(255,255,255,0.3) inset,
+    0 -1px 0 rgba(0,0,0,0.15) inset,
+    0 16px 40px rgba(102, 197, 135, 0.4),
+    0 28px 80px rgba(95, 219, 219, 0.3);
+  background: linear-gradient(135deg, #5FDBDB, #66C587);
+}
+
+.primaryButton:active {
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 
+    0 1px 0 rgba(255,255,255,0.2) inset,
+    0 -1px 0 rgba(0,0,0,0.1) inset,
+    0 8px 20px rgba(102, 197, 135, 0.3),
+    0 16px 40px rgba(95, 219, 219, 0.2);
 }
 
 .secondaryButton {
   display: inline-block;
-  padding: 16px 32px;
-  font-size: 16px;
+  padding: 18px 40px;
+  font-size: 18px;
   font-weight: 600;
-  color: #111;
+  color: #FFFFFF;
   text-decoration: none;
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
-  border: 1px solid rgba(255,255,255,0.9);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(50,50,50,0.95), rgba(40,40,40,0.85));
+  border: 1px solid rgba(80,80,80,0.9);
+  box-shadow: 
+    0 1px 0 rgba(255,255,255,0.1) inset,
+    0 -1px 0 rgba(0,0,0,0.2) inset,
+    0 8px 24px rgba(0,0,0,0.3);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  transition: all 0.2s ease;
 }
 
 .secondaryButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 
+    0 1px 0 rgba(255,255,255,0.15) inset,
+    0 -1px 0 rgba(0,0,0,0.25) inset,
+    0 12px 32px rgba(0,0,0,0.4);
+  background: linear-gradient(180deg, rgba(60,60,60,0.95), rgba(50,50,50,0.85));
 }
 
 @media (max-width: 768px) {
