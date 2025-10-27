@@ -70,7 +70,7 @@ export default function WaitlistForm() {
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.field}>
           <label htmlFor="email" className={styles.label}>
-            Email Address *
+            Email Address
           </label>
           <input
             type="email"
@@ -86,7 +86,7 @@ export default function WaitlistForm() {
 
         <div className={styles.field}>
           <label htmlFor="contentType" className={styles.label}>
-            What type of content do you want for your business? *
+            What outcome do you want from this content?
           </label>
           <input
             type="text"
@@ -96,7 +96,7 @@ export default function WaitlistForm() {
             onChange={handleChange}
             required
             className={styles.input}
-            placeholder="e.g., Social media posts, blog articles, product descriptions&hellip;"
+            placeholder="Engagement, brand awareness, lead conversion, etc.&hellip;"
           />
         </div>
 

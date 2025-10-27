@@ -1,28 +1,31 @@
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../../../lib/firebase';
+
 export interface WaitlistFormData {
   email: string;
   contentType: string;
 }
 
 export class WaitlistService {
-  private static readonly FORM_ID = '1uZRa0Tc1rTMN05Wi8ayPOgPqmStLalPnNof9QOizWG8';
-  private static readonly FORM_URL = `https://docs.google.com/forms/d/e/${WaitlistService.FORM_ID}/formResponse`;
-
   static async submitToWaitlist(formData: WaitlistFormData): Promise<void> {
     try {
-      // Create form data for Google Form submission
-      const googleFormData = new FormData();
-      googleFormData.append('entry.EMAIL_FIELD_ID', formData.email);
-      googleFormData.append('entry.CONTENT_FIELD_ID', formData.contentType);
-
-      // Submit to Google Form
-      await fetch(WaitlistService.FORM_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        body: googleFormData
+      // Add to Firestore mail collection
+      await addDoc(collection(db, 'mail'), {
+        to: [formData.email],
+        from: 'Scale66 <hello@scale66.com>',
+        message: {
+          subject: 'Welcome to Scale66 Waitlist',
+          html: `
+            <h2>Thank you for joining our waitlist!</h2>
+            <p>We're excited to have you on board.</p>
+            <p>We'll keep you updated on our progress.</p>
+          `
+        },
+        contentType: formData.contentType,
+        createdAt: serverTimestamp()
       });
     } catch (error) {
       console.error('Error submitting waitlist form:', error);
-      // Re-throw the error so the component can handle it
       throw new Error('Failed to submit waitlist form');
     }
   }
