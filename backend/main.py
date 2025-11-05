@@ -1,33 +1,47 @@
-"""
-═══════════════════════════════════════════════════════════════════════════
-                                  MAIN.PY
-       FASTAPI APPLICATION ENTRY POINT - CONFIGURES CORS, ROUTERS, 
-            AND STATIC FILE SERVING FOR THE MARKETING PIPELINE API
-═══════════════════════════════════════════════════════════════════════════
-"""
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
+import os
+import logging
 
-from fastapi import FastAPI  # type: ignore
-from fastapi.middleware.cors import CORSMiddleware  # type: ignore
-from fastapi.staticfiles import StaticFiles  # type: ignore
-from routers import image, brands
-from pathlib import Path
-import uvicorn  # type: ignore
+from app.api.routes import router
 
-app = FastAPI()
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
+# Create FastAPI app
+app = FastAPI(
+    title="Story Pipeline API",
+    description="Agentic pipeline for automated story and slide generation",
+    version="1.0.0"
+)
+
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Configure appropriately for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(image.router)
-app.include_router(brands.router)
+# Include API routes
+app.include_router(router, prefix="/api/v1")
 
-BRANDS_DIR = Path(__file__).parent / "data" / "clients"
-app.mount("/brand-assets", StaticFiles(directory=str(BRANDS_DIR)), name="brand-assets")
+@app.get("/")
+async def root():
+    return {
+        "message": "Story Pipeline API",
+        "docs": "/docs",
+        "health": "/api/v1/health"
+    }
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=port,
+        reload=True
+    )

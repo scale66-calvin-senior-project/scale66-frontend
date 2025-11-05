@@ -4,15 +4,31 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
-venv/
-ENV/
 build/
+develop-eggs/
 dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
 *.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
 
 # Environment variables
 .env
+.env.local
 
 # IDE
 .vscode/
@@ -20,5 +36,22 @@ dist/
 *.swp
 *.swo
 
-# Generated images
-generated_images/
+# OS
+.DS_Store
+Thumbs.db
+
+# Output directory
+output/
+*.log
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# FastAPI
+*.db
+*.sqlite3
