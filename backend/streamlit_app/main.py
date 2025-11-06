@@ -22,13 +22,18 @@ def check_backend_health() -> bool:
     except:
         return False
 
-def create_story(story_idea: str, num_slides: int) -> Optional[str]:
+def create_story(niche: str, target_audience: str, pain_point: str, cta_goal: str, num_slides: Optional[int] = None) -> Optional[str]:
     """Create a new story pipeline"""
     try:
         payload = {
-            "story_idea": story_idea,
-            "num_slides": num_slides
+            "niche": niche,
+            "target_audience": target_audience,
+            "pain_point": pain_point,
+            "cta_goal": cta_goal
         }
+        if num_slides:
+            payload["num_slides"] = num_slides
+            
         response = requests.post(f"{API_BASE_URL}/story/create", json=payload)
         if response.status_code == 200:
             return response.json()["pipeline_id"]
@@ -90,30 +95,55 @@ def main():
 
 def create_story_page():
     st.header("🎬 Create New Story")
+    st.markdown("Enter your business context to generate a targeted story and carousel:")
     
     with st.form("story_form"):
-        story_idea = st.text_area(
-            "Story Idea",
-            placeholder="Enter your story concept here...",
-            height=100
+        st.subheader("📊 Business Context")
+        
+        niche = st.text_input(
+            "Niche",
+            placeholder="e.g., Fitness coaching, SaaS for restaurants, Real estate...",
+            help="What industry or market are you in?"
         )
         
+        target_audience = st.text_input(
+            "Target Audience", 
+            placeholder="e.g., Busy professionals aged 25-40, Small restaurant owners...",
+            help="Who is your ideal customer?"
+        )
+        
+        pain_point = st.text_area(
+            "Pain Point",
+            placeholder="e.g., Struggling to find time for exercise, Managing inventory is complex...",
+            height=80,
+            help="What problem does your audience face?"
+        )
+        
+        cta_goal = st.text_input(
+            "Goal (Call-to-Action)",
+            placeholder="e.g., Book a free consultation, Sign up for 7-day trial...",
+            help="What action do you want them to take?"
+        )
+        
+        st.subheader("⚙️ Optional Settings")
         num_slides = st.slider(
             "Number of Slides",
-            min_value=1,
-            max_value=20,
-            value=5
+            min_value=3,
+            max_value=10,
+            value=5,
+            help="Leave as default for AI to decide optimal length"
         )
         
-        submitted = st.form_submit_button("Generate Story")
+        submitted = st.form_submit_button("Generate Story & Carousel")
         
         if submitted:
-            if not story_idea.strip():
-                st.error("Please enter a story idea")
+            # Validate required fields
+            if not all([niche.strip(), target_audience.strip(), pain_point.strip(), cta_goal.strip()]):
+                st.error("Please fill in all business context fields")
                 return
                 
             with st.spinner("Creating story pipeline..."):
-                pipeline_id = create_story(story_idea, num_slides)
+                pipeline_id = create_story(niche, target_audience, pain_point, cta_goal, num_slides)
                 
             if pipeline_id:
                 st.success(f"✅ Pipeline created! ID: `{pipeline_id}`")
@@ -174,9 +204,14 @@ def view_results_page():
             
             # Show story request
             if "story_request" in status:
-                st.subheader("📝 Story Request")
-                st.write(f"**Idea:** {status['story_request']['story_idea']}")
-                st.write(f"**Slides:** {status['story_request']['num_slides']}")
+                st.subheader("📝 Business Context")
+                request = status['story_request']
+                st.write(f"**Niche:** {request.get('niche', 'N/A')}")
+                st.write(f"**Target Audience:** {request.get('target_audience', 'N/A')}")
+                st.write(f"**Pain Point:** {request.get('pain_point', 'N/A')}")
+                st.write(f"**Goal:** {request.get('cta_goal', 'N/A')}")
+                if request.get('num_slides'):
+                    st.write(f"**Slides:** {request['num_slides']}")
             
             # Show complete story
             if status.get("complete_story"):
@@ -237,8 +272,12 @@ def all_pipelines_page():
                             st.write(f"**Created:** {created[:10] if created else 'unknown'}")
                         
                         if pipeline_data.get('story_request'):
-                            idea = pipeline_data['story_request'].get('story_idea', '')
-                            st.write(f"**Idea:** {idea[:100]}{'...' if len(idea) > 100 else ''}")
+                            request = pipeline_data['story_request']
+                            niche = request.get('niche', '')
+                            st.write(f"**Niche:** {niche[:50]}{'...' if len(niche) > 50 else ''}")
+                            target = request.get('target_audience', '')
+                            if target:
+                                st.write(f"**Target:** {target[:50]}{'...' if len(target) > 50 else ''}")
                         
                         if st.button(f"View Details", key=f"view_{pipeline_id}"):
                             st.session_state.current_pipeline_id = pipeline_id

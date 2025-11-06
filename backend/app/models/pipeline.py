@@ -38,20 +38,6 @@ class StyleGuide(BaseModel):
     mood: str
     
 
-class PipelineResult(BaseModel):
-    id: str
-    status: PipelineStatus
-    story_request: StoryRequest
-    complete_story: Optional[str] = None
-    style_guide: Optional[StyleGuide] = None
-    scenes: List[StoryScene] = []
-    carousel_result: Optional[CarouselResult] = None
-    output_folder: Optional[str] = None
-    created_at: str
-    updated_at: str
-    error_message: Optional[str] = None
-
-
 class SlideContent(BaseModel):
     scene_number: int
     text: str
@@ -86,3 +72,17 @@ class CarouselResult(BaseModel):
     strategy: CarouselStrategy
     why_this_works: List[str]
     slides: List[CarouselSlide]
+
+
+class PipelineResult(BaseModel):
+    id: str
+    status: PipelineStatus
+    story_request: StoryRequest
+    complete_story: Optional[str] = None
+    style_guide: Optional[StyleGuide] = None
+    scenes: List[StoryScene] = []
+    carousel_result: Optional[CarouselResult] = None
+    output_folder: Optional[str] = None
+    created_at: str
+    updated_at: str
+    error_message: Optional[str] = None
