@@ -58,6 +58,9 @@ export class WaitlistService {
       });
     } catch (error) {
       console.error('Error submitting waitlist form:', error);
+      if (error instanceof Error) {
+        throw new Error(`Failed to submit waitlist form: ${error.message}`);
+      }
       throw new Error('Failed to submit waitlist form');
     }
   }
