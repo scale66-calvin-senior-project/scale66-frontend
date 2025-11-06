@@ -9,7 +9,8 @@ from ..agents.story_generator import StoryGeneratorAgent
 from ..agents.style_generator import StyleGeneratorAgent
 from ..agents.text_generator import TextGeneratorAgent
 from ..agents.image_generator import ImageGeneratorAgent
-from ..models.pipeline import StoryRequest, PipelineResult, PipelineStatus
+from ..agents.carousel_generator import CarouselGeneratorAgent
+from ..models.pipeline import StoryRequest, PipelineResult, PipelineStatus, CarouselResult
 
 
 class StoryPipeline:
@@ -23,6 +24,7 @@ class StoryPipeline:
         self.style_generator = StyleGeneratorAgent(config)
         self.text_generator = TextGeneratorAgent(config)
         self.image_generator = ImageGeneratorAgent(config)
+        self.carousel_generator = CarouselGeneratorAgent(config)
         
         # In-memory storage for demo (replace with database in production)
         self.pipeline_storage: Dict[str, PipelineResult] = {}
@@ -49,49 +51,33 @@ class StoryPipeline:
         try:
             result = self.pipeline_storage[pipeline_id]
             
-            # Step 2: Story Generation
+            # Step 2: Carousel Generation (replaces story generation)
             result.status = PipelineStatus.STORY_GENERATION
             result.updated_at = datetime.utcnow().isoformat()
             
-            story_data = await self.story_generator.process(result.story_request)
-            result.complete_story = story_data["complete_story"]
-            result.scenes = story_data["scenes"]
+            # Generate carousel content from business information
+            carousel_result = await self.carousel_generator.process(result.story_request)
+            result.carousel_result = carousel_result
             
-            # Step 3: Style Generation
-            result.status = PipelineStatus.STYLE_GENERATION
-            result.updated_at = datetime.utcnow().isoformat()
-            
-            style_input = {
-                "complete_story": result.complete_story,
-                "story_request": result.story_request
-            }
-            result.style_guide = await self.style_generator.process(style_input)
-            
-            # Step 4: Content Generation Loop
+            # Step 3: Image Generation for each carousel slide
             result.status = PipelineStatus.CONTENT_GENERATION
             result.updated_at = datetime.utcnow().isoformat()
             
-            # Generate text for each slide
-            text_input = {
-                "scenes": result.scenes,
-                "style_guide": result.style_guide
-            }
-            slide_contents = await self.text_generator.process(text_input)
+            # Generate images for each carousel slide
+            for slide in carousel_result.slides:
+                try:
+                    image_input = {
+                        "prompt": slide.image_generation_prompt,
+                        "pipeline_id": pipeline_id,
+                        "slide_number": slide.slide_number
+                    }
+                    image_path = await self.image_generator.generate_single_image(image_input)
+                    slide.image_path = image_path
+                except Exception as e:
+                    print(f"Failed to generate image for slide {slide.slide_number}: {str(e)}")
+                    slide.image_path = None
             
-            # Generate images for each slide
-            image_input = {
-                "slide_contents": slide_contents,
-                "pipeline_id": pipeline_id
-            }
-            final_slide_contents = await self.image_generator.process(image_input)
-            
-            # Update scenes with generated content
-            for i, slide_content in enumerate(final_slide_contents):
-                if i < len(result.scenes):
-                    result.scenes[i].slide_text = slide_content.text
-                    result.scenes[i].image_path = slide_content.image_path
-            
-            # Step 5: Final Assembly
+            # Step 4: Final Assembly
             result.status = PipelineStatus.FINAL_ASSEMBLY
             result.updated_at = datetime.utcnow().isoformat()
             
@@ -120,6 +106,7 @@ class StoryPipeline:
             "complete_story": result.complete_story,
             "style_guide": result.style_guide.dict() if result.style_guide else None,
             "scenes": [scene.dict() for scene in result.scenes],
+            "carousel_result": result.carousel_result.dict() if result.carousel_result else None,
             "created_at": result.created_at,
             "completed_at": result.updated_at
         }

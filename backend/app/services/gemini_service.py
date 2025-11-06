@@ -36,29 +36,3 @@ class GeminiService:
             logger.error(f"Gemini image generation error: {str(e)}")
             raise
             
-    async def enhance_image_prompt(self, basic_prompt: str) -> str:
-        """Use Gemini to enhance image prompts"""
-        try:
-            model = genai.GenerativeModel(self.model_name)
-            
-            enhance_prompt = f"""
-            Enhance this image generation prompt to be more detailed and visually specific:
-            
-            {basic_prompt}
-            
-            Add details about:
-            - Specific visual elements and composition
-            - Lighting and atmosphere
-            - Art style and quality descriptors
-            - Camera angle and perspective
-            
-            Return only the enhanced prompt, nothing else:
-            """
-            
-            response = await model.generate_content_async(enhance_prompt)
-            return response.text.strip()
-            
-        except Exception as e:
-            logger.error(f"Gemini prompt enhancement error: {str(e)}")
-            # Return original prompt if enhancement fails
-            return basic_prompt

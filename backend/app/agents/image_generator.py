@@ -43,11 +43,8 @@ class ImageGeneratorAgent(BaseAgent):
         image_path = os.path.join(output_dir, image_filename)
         
         if self.gemini_service:
-            # Enhance the prompt using Gemini before generation
-            enhanced_prompt = await self.gemini_service.enhance_image_prompt(slide_content.image_prompt)
-            
-            # Generate image using Gemini nanobanana
-            generated_path = await self.gemini_service.generate_image(enhanced_prompt, image_path)
+            # Generate image using Gemini (prompt already enhanced by OpenAI)
+            generated_path = await self.gemini_service.generate_image(slide_content.image_prompt, image_path)
             slide_content.image_path = generated_path
         else:
             self.log_info("Using placeholder image generation (no Gemini API key)")
@@ -57,10 +54,35 @@ class ImageGeneratorAgent(BaseAgent):
         
         return slide_content
         
+    async def generate_single_image(self, input_data: Dict[str, Any]) -> str:
+        """Generate a single image for carousel slides"""
+        prompt = input_data.get("prompt", "")
+        pipeline_id = input_data.get("pipeline_id", "default")
+        slide_number = input_data.get("slide_number", 1)
+        
+        self.log_info(f"Generating single image for slide {slide_number}")
+        
+        # Create output directory for this pipeline
+        pipeline_output_dir = os.path.join(self.output_dir, pipeline_id)
+        os.makedirs(pipeline_output_dir, exist_ok=True)
+        
+        image_filename = f"carousel_slide_{slide_number}.png"
+        image_path = os.path.join(pipeline_output_dir, image_filename)
+        
+        if self.gemini_service:
+            # Generate image using Gemini (prompt already enhanced by OpenAI)
+            generated_path = await self.gemini_service.generate_image(prompt, image_path)
+            return generated_path
+        else:
+            self.log_info("Using placeholder image generation (no Gemini API key)")
+            # Create placeholder file
+            await self._create_placeholder_image(image_path, prompt)
+            return image_path
+
     async def _create_placeholder_image(self, image_path: str, prompt: str):
         # Placeholder implementation for when Gemini API is not available
         with open(image_path, 'w') as f:
-            f.write(f"Placeholder image for prompt: {prompt}\n\nTo use Gemini nanobanana image generation, add your Gemini API key to the .env file.")
+            f.write(f"Placeholder image for prompt: {prompt}\n\nTo use Gemini image generation, add your Gemini API key to the .env file.")
             
     def _validate_image_prompt(self, prompt: str) -> bool:
         return len(prompt.strip()) > 0

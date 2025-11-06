@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import Dict, List
-from ..models.pipeline import StoryRequest, PipelineResult
+from ..models.pipeline import StoryRequest, PipelineResult, CarouselResult
 from ..core.pipeline import StoryPipeline
 
 router = APIRouter()
@@ -9,9 +9,23 @@ router = APIRouter()
 pipeline = StoryPipeline()
 
 
+@router.post("/carousel/create", response_model=dict)
+async def create_carousel(story_request: StoryRequest):
+    """Start a new carousel generation pipeline using business information"""
+    try:
+        pipeline_id = await pipeline.start_pipeline(story_request)
+        return {
+            "pipeline_id": pipeline_id,
+            "status": "started",
+            "message": "Carousel generation pipeline started successfully"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/story/create", response_model=dict)
 async def create_story(story_request: StoryRequest):
-    """Start a new story generation pipeline"""
+    """Start a new story generation pipeline (legacy endpoint)"""
     try:
         pipeline_id = await pipeline.start_pipeline(story_request)
         return {
@@ -23,9 +37,20 @@ async def create_story(story_request: StoryRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/carousel/{pipeline_id}", response_model=PipelineResult)
+async def get_carousel_status(pipeline_id: str):
+    """Get the status and results of a carousel generation pipeline"""
+    result = pipeline.get_pipeline_status(pipeline_id)
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="Pipeline not found")
+    
+    return result
+
+
 @router.get("/story/{pipeline_id}", response_model=PipelineResult)
 async def get_story_status(pipeline_id: str):
-    """Get the status and results of a story generation pipeline"""
+    """Get the status and results of a story generation pipeline (legacy endpoint)"""
     result = pipeline.get_pipeline_status(pipeline_id)
     
     if not result:

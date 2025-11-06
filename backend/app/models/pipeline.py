@@ -15,8 +15,11 @@ class PipelineStatus(str, Enum):
 
 
 class StoryRequest(BaseModel):
-    story_idea: str
-    num_slides: int
+    niche: str
+    target_audience: str
+    pain_point: str
+    cta_goal: str
+    num_slides: Optional[int] = None
     style_preferences: Optional[Dict[str, Any]] = None
     
     
@@ -42,6 +45,7 @@ class PipelineResult(BaseModel):
     complete_story: Optional[str] = None
     style_guide: Optional[StyleGuide] = None
     scenes: List[StoryScene] = []
+    carousel_result: Optional[CarouselResult] = None
     output_folder: Optional[str] = None
     created_at: str
     updated_at: str
@@ -53,3 +57,32 @@ class SlideContent(BaseModel):
     text: str
     image_prompt: str
     image_path: Optional[str] = None
+
+
+class CarouselSlide(BaseModel):
+    slide_number: int
+    slide_purpose: str
+    text_on_screen: str
+    image_generation_prompt: str
+    image_path: Optional[str] = None
+
+
+class CarouselFormat(BaseModel):
+    format_name: str
+    format_description: str
+    reasoning: str
+    target_slides: int
+
+
+class CarouselStrategy(BaseModel):
+    hook_strategy: str
+    content_flow: str
+    engagement_tactics: List[str]
+    cta_approach: str
+
+
+class CarouselResult(BaseModel):
+    format_type: str
+    strategy: CarouselStrategy
+    why_this_works: List[str]
+    slides: List[CarouselSlide]
