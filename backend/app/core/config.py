@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     output_dir: str = "./output"
     
     # Agent Configuration
-    max_slides: int = 20
-    min_slides: int = 1
+    max_slides: int = 3
+    min_slides: int = 3
     
     # External API Keys
     openai_api_key: Optional[str] = None
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     
     # Image Generation
     image_generation_provider: str = "gemini"  # gemini for nanobanana
-    gemini_model: str = "gemini-pro-vision"  # or specific nanobanana model
+    gemini_model: str = "gemini-2.5-flash-image"  # default multimodal generation model
     
     class Config:
         env_file = ".env"

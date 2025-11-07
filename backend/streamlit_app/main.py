@@ -1,8 +1,10 @@
-import streamlit as st
-import requests
 import json
+import os
 import time
 from typing import Optional, Dict, Any
+
+import streamlit as st
+import requests
 
 # Configure page
 st.set_page_config(
@@ -25,14 +27,19 @@ def check_backend_health() -> bool:
 def create_story(niche: str, target_audience: str, pain_point: str, cta_goal: str, num_slides: Optional[int] = None) -> Optional[str]:
     """Create a new story pipeline"""
     try:
+        story_idea = (
+            f"Create a story for the {niche} niche targeting {target_audience}. "
+            f"Highlight how it solves {pain_point} and encourage viewers to {cta_goal}."
+        )
+
         payload = {
+            "story_idea": story_idea,
             "niche": niche,
             "target_audience": target_audience,
             "pain_point": pain_point,
-            "cta_goal": cta_goal
+            "cta_goal": cta_goal,
+            "num_slides": num_slides,
         }
-        if num_slides:
-            payload["num_slides"] = num_slides
             
         response = requests.post(f"{API_BASE_URL}/story/create", json=payload)
         if response.status_code == 200:
@@ -102,18 +109,25 @@ def create_story_page():
         
         niche = st.text_input(
             "Niche",
+            value="Social media marketing",
             placeholder="e.g., Fitness coaching, SaaS for restaurants, Real estate...",
             help="What industry or market are you in?"
         )
         
         target_audience = st.text_input(
             "Target Audience", 
+            value="Solopreneurs and small business owners",
             placeholder="e.g., Busy professionals aged 25-40, Small restaurant owners...",
             help="Who is your ideal customer?"
         )
         
         pain_point = st.text_area(
             "Pain Point",
+            value=(
+                "Can't afford marketing agency, seeing no social media awareness, spending too much time "
+                "creating social media content, not being able to work on the business since they are too "
+                "busy creating marketing content instead, no customers, no money."
+            ),
             placeholder="e.g., Struggling to find time for exercise, Managing inventory is complex...",
             height=80,
             help="What problem does your audience face?"
@@ -121,18 +135,13 @@ def create_story_page():
         
         cta_goal = st.text_input(
             "Goal (Call-to-Action)",
+            value="Brand Awareness through useful tips",
             placeholder="e.g., Book a free consultation, Sign up for 7-day trial...",
             help="What action do you want them to take?"
         )
         
         st.subheader("⚙️ Optional Settings")
-        num_slides = st.slider(
-            "Number of Slides",
-            min_value=3,
-            max_value=10,
-            value=5,
-            help="Leave as default for AI to decide optimal length"
-        )
+        num_slides = 3
         
         submitted = st.form_submit_button("Generate Story & Carousel")
         
@@ -233,7 +242,36 @@ def view_results_page():
                         for i, color in enumerate(style_guide["color_palette"]):
                             cols[i].color_picker("", color, disabled=True)
             
-            # Show scenes
+            # Show carousel result and images
+            carousel = status.get("carousel_result")
+            if carousel:
+                st.subheader("🖼️ Carousel Slides")
+                slides = carousel.get("slides", []) or []
+                for slide in slides:
+                    slide_number = slide.get("slide_number")
+                    slide_title = slide.get("slide_purpose", "Slide")
+                    expander_label = f"Slide {slide_number}: {slide_title}" if slide_number else slide_title
+                    with st.expander(expander_label, expanded=False):
+                        if slide.get("text_on_screen"):
+                            st.markdown(f"**Text on Screen:** {slide['text_on_screen']}")
+                        if slide.get("image_generation_prompt"):
+                            with st.expander("Prompt", expanded=False):
+                                st.write(slide["image_generation_prompt"])
+
+                        image_path = slide.get("image_path")
+                        if image_path:
+                            resolved_path = image_path
+                            if not os.path.isabs(resolved_path):
+                                resolved_path = os.path.abspath(os.path.join(os.getcwd(), resolved_path))
+
+                            if os.path.exists(resolved_path):
+                                st.image(resolved_path, caption=f"Slide {slide_number}" if slide_number else None, use_column_width=True)
+                            else:
+                                st.warning(f"Image file not found: {resolved_path}")
+                        else:
+                            st.info("Image not yet generated for this slide.")
+
+            # Show scenes (legacy story data)
             if status.get("scenes"):
                 st.subheader("🎬 Scenes")
                 for scene in status["scenes"]:

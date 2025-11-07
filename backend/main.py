@@ -4,7 +4,7 @@ import uvicorn
 import os
 import logging
 
-from app.api.routes import router
+from app.router.routes import router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

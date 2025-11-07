@@ -82,7 +82,7 @@ Content-Type: application/json
 
 {
   "story_idea": "A young wizard discovers a magical library",
-  "num_slides": 5
+  "num_slides": 3
 }
 ```
 

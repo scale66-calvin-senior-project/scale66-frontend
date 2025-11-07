@@ -26,6 +26,7 @@ class FormatSelectorAgent(BaseAgent):
             )
             
             carousel_format = self._parse_format_response(response)
+            carousel_format.target_slides = story_request.num_slides or 3
             return carousel_format
             
         except Exception as e:
@@ -138,5 +139,5 @@ Respond in JSON format:
                 format_name="Story/Case Study",
                 format_description="Hook with relatable problem, struggle, turning point, solution",
                 reasoning="Fallback format selected due to parsing error",
-                target_slides=6
+                target_slides=story_request.num_slides or 3
             )

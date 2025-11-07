@@ -1,6 +1,6 @@
 from typing import Dict, Any, List
 import os
-import asyncio
+
 from .base_agent import BaseAgent
 from ..models.pipeline import SlideContent
 from ..services.gemini_service import GeminiService
@@ -17,6 +17,8 @@ class ImageGeneratorAgent(BaseAgent):
                 self.gemini_service = GeminiService()
             except ValueError as e:
                 self.log_error(f"Failed to initialize Gemini service: {e}")
+        else:
+            self.log_error("Gemini API key is not configured. Image generation will fail.")
         
     async def process(self, input_data: Dict[str, Any]) -> List[SlideContent]:
         slide_contents = input_data.get("slide_contents", [])
@@ -48,7 +50,6 @@ class ImageGeneratorAgent(BaseAgent):
             slide_content.image_path = generated_path
         else:
             self.log_info("Using placeholder image generation (no Gemini API key)")
-            # Create placeholder file
             await self._create_placeholder_image(image_path, slide_content.image_prompt)
             slide_content.image_path = image_path
         
@@ -69,20 +70,11 @@ class ImageGeneratorAgent(BaseAgent):
         image_filename = f"carousel_slide_{slide_number}.png"
         image_path = os.path.join(pipeline_output_dir, image_filename)
         
-        if self.gemini_service:
-            # Generate image using Gemini (prompt already enhanced by OpenAI)
-            generated_path = await self.gemini_service.generate_image(prompt, image_path)
-            return generated_path
-        else:
-            self.log_info("Using placeholder image generation (no Gemini API key)")
-            # Create placeholder file
-            await self._create_placeholder_image(image_path, prompt)
-            return image_path
+        if not self.gemini_service:
+            raise RuntimeError("Gemini service is not available. Configure GEMINI_API_KEY to enable image generation.")
 
-    async def _create_placeholder_image(self, image_path: str, prompt: str):
-        # Placeholder implementation for when Gemini API is not available
-        with open(image_path, 'w') as f:
-            f.write(f"Placeholder image for prompt: {prompt}\n\nTo use Gemini image generation, add your Gemini API key to the .env file.")
+        generated_path = await self.gemini_service.generate_image(prompt, image_path)
+        return generated_path
             
     def _validate_image_prompt(self, prompt: str) -> bool:
         return len(prompt.strip()) > 0

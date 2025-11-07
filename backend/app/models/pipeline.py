@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from typing import List, Optional, Dict, Any
 from enum import Enum
 
@@ -15,14 +15,47 @@ class PipelineStatus(str, Enum):
 
 
 class StoryRequest(BaseModel):
-    niche: str
-    target_audience: str
-    pain_point: str
-    cta_goal: str
-    num_slides: Optional[int] = None
+    story_idea: Optional[str] = None
+    niche: Optional[str] = None
+    target_audience: Optional[str] = None
+    pain_point: Optional[str] = None
+    cta_goal: Optional[str] = None
+    num_slides: int = 3
     style_preferences: Optional[Dict[str, Any]] = None
-    
-    
+
+    @model_validator(mode="after")
+    def ensure_story_idea(self):
+        if not self.story_idea:
+            descriptive_parts = []
+            if self.niche:
+                niche_segment = f"the {self.niche} niche"
+            else:
+                niche_segment = "this business"
+
+            if self.target_audience:
+                audience_segment = f" targeting {self.target_audience}"
+            else:
+                audience_segment = ""
+
+            idea_parts = [f"Create a story for {niche_segment}{audience_segment}."]
+
+            if self.pain_point:
+                idea_parts.append(f"Highlight how it solves {self.pain_point}.")
+
+            if self.cta_goal:
+                idea_parts.append(f"Encourage viewers to {self.cta_goal}.")
+
+            if any([self.niche, self.target_audience, self.pain_point, self.cta_goal]):
+                self.story_idea = " ".join(idea_parts).strip()
+
+        self.num_slides = 3
+
+        if not (self.story_idea and self.story_idea.strip()):
+            raise ValueError("Story idea is required. Provide 'story_idea' directly or supply niche, target_audience, pain_point, and cta_goal.")
+
+        return self
+
+
 class StoryScene(BaseModel):
     scene_number: int
     content: str
