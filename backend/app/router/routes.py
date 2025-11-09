@@ -1,71 +1,45 @@
+from typing import Dict
+
 from fastapi import APIRouter, HTTPException
-from typing import Dict, List
-from ..models.pipeline import StoryRequest, PipelineResult, CarouselResult
-from ..core.pipeline import StoryPipeline
+
+from ..core.pipeline import CarouselPipeline
+from ..models.pipeline import CarouselRequest, PipelineResult
+
+
+# Overview:
+# - Purpose: Expose FastAPI endpoints for managing carousel generation pipelines.
+# Key Components:
+# - router: registers creation and retrieval routes backed by CarouselPipeline services.
+
 
 router = APIRouter()
-
-# Initialize pipeline instance
-pipeline = StoryPipeline()
+pipeline = CarouselPipeline()
 
 
 @router.post("/carousel/create", response_model=dict)
-async def create_carousel(story_request: StoryRequest):
-    """Start a new carousel generation pipeline using business information"""
-    try:
-        pipeline_id = await pipeline.start_pipeline(story_request)
-        return {
-            "pipeline_id": pipeline_id,
-            "status": "started",
-            "message": "Carousel generation pipeline started successfully"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/story/create", response_model=dict)
-async def create_story(story_request: StoryRequest):
-    """Start a new story generation pipeline (legacy endpoint)"""
-    try:
-        pipeline_id = await pipeline.start_pipeline(story_request)
-        return {
-            "pipeline_id": pipeline_id,
-            "status": "started",
-            "message": "Story generation pipeline started successfully"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+async def create_carousel(request: CarouselRequest):
+    pipeline_id = await pipeline.start_pipeline(request)
+    return {
+        "pipeline_id": pipeline_id,
+        "status": "started",
+        "message": "Carousel generation pipeline started successfully",
+    }
 
 
 @router.get("/carousel/{pipeline_id}", response_model=PipelineResult)
 async def get_carousel_status(pipeline_id: str):
-    """Get the status and results of a carousel generation pipeline"""
     result = pipeline.get_pipeline_status(pipeline_id)
-    
     if not result:
         raise HTTPException(status_code=404, detail="Pipeline not found")
-    
     return result
 
 
-@router.get("/story/{pipeline_id}", response_model=PipelineResult)
-async def get_story_status(pipeline_id: str):
-    """Get the status and results of a story generation pipeline (legacy endpoint)"""
-    result = pipeline.get_pipeline_status(pipeline_id)
-    
-    if not result:
-        raise HTTPException(status_code=404, detail="Pipeline not found")
-    
-    return result
-
-
-@router.get("/stories", response_model=Dict[str, PipelineResult])
-async def list_stories():
-    """List all story generation pipelines"""
+@router.get("/carousels", response_model=Dict[str, PipelineResult])
+async def list_carousels():
     return pipeline.list_pipelines()
 
 
 @router.get("/health")
 async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "service": "story-pipeline-backend"}
+    return {"status": "healthy", "service": "carousel-pipeline-backend"}
+

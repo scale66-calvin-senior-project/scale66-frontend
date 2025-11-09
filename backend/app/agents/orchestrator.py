@@ -1,52 +1,40 @@
-from typing import Dict, Any
-from .base_agent import BaseAgent
-from ..models.pipeline import StoryRequest, PipelineResult, PipelineStatus
 import uuid
 from datetime import datetime
+from typing import Dict, Any
+
+from .base_agent import BaseAgent
+from ..models.pipeline import CarouselRequest, PipelineResult, PipelineStatus
+
+
+# Overview:
+# - Purpose: Validate incoming carousel requests and produce initial pipeline state.
+# Key Components:
+# - OrchestratorAgent: generates pipeline identifiers, validates slide counts, and seeds status tracking.
 
 
 class OrchestratorAgent(BaseAgent):
     def __init__(self, config: Dict[str, Any] = None):
         super().__init__("Orchestrator", config)
-        
-    async def process(self, input_data: StoryRequest) -> PipelineResult:
-        self.log_info(f"Starting pipeline for story: {input_data.story_idea[:50]}...")
-        
-        # Create initial pipeline result
+
+    async def process(self, request: CarouselRequest) -> PipelineResult:
+        self.log_info(f"Planning pipeline for: {request.story_idea[:50]}")
         pipeline_id = str(uuid.uuid4())
         now = datetime.utcnow().isoformat()
-        
         result = PipelineResult(
             id=pipeline_id,
             status=PipelineStatus.PLANNING,
-            story_request=input_data,
+            request=request,
             created_at=now,
-            updated_at=now
+            updated_at=now,
         )
-        
-        # Validate input
-        if not input_data.story_idea.strip():
+        if not request.story_idea or not request.story_idea.strip():
             result.status = PipelineStatus.FAILED
-            result.error_message = "Story idea cannot be empty"
+            result.error_message = "story_idea cannot be empty"
             return result
-            
-        if input_data.num_slides < 1 or input_data.num_slides > 20:
+        if request.num_slides > 20:
             result.status = PipelineStatus.FAILED
-            result.error_message = "Number of slides must be between 1 and 20"
+            result.error_message = "num_slides must be 20 or fewer"
             return result
-            
-        self.log_info(f"Pipeline {pipeline_id} planned successfully")
-        result.status = PipelineStatus.STORY_GENERATION
+        result.status = PipelineStatus.CAROUSEL_GENERATION
         result.updated_at = datetime.utcnow().isoformat()
-        
         return result
-        
-    def determine_next_step(self, current_status: PipelineStatus) -> PipelineStatus:
-        status_flow = {
-            PipelineStatus.PLANNING: PipelineStatus.STORY_GENERATION,
-            PipelineStatus.STORY_GENERATION: PipelineStatus.STYLE_GENERATION,
-            PipelineStatus.STYLE_GENERATION: PipelineStatus.CONTENT_GENERATION,
-            PipelineStatus.CONTENT_GENERATION: PipelineStatus.FINAL_ASSEMBLY,
-            PipelineStatus.FINAL_ASSEMBLY: PipelineStatus.COMPLETED
-        }
-        return status_flow.get(current_status, PipelineStatus.FAILED)

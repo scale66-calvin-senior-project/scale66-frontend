@@ -1,114 +1,64 @@
-import json
-import re
 from typing import Dict, Any, List
+
 from .base_agent import BaseAgent
-from ..models.pipeline import CarouselSlide, StoryRequest, CarouselStrategy
+from ..models.pipeline import CarouselSlide, CarouselRequest, CarouselStrategy
 from ..services.openai_service import OpenAIService
 
 
+# Overview:
+# - Purpose: Enrich slide-level image prompts for consistent carousel visuals.
+# Key Components:
+# - ImagePromptEnhancerAgent: crafts base prompts and refines them into production-ready image instructions.
+
+
 class ImagePromptEnhancerAgent(BaseAgent):
-    """Agent responsible for creating and enhancing image generation prompts using OpenAI only"""
-    
     def __init__(self, config: Dict[str, Any] = None):
-        super().__init__(config)
-        self.openai_service = OpenAIService(config)
-    
+        super().__init__("ImagePromptEnhancer", config)
+        self.client = OpenAIService(config)
+
     async def process(self, input_data: Dict[str, Any]) -> List[CarouselSlide]:
-        """Generate and enhance image prompts for carousel slides using OpenAI only"""
-        
-        slides = input_data["slides"]
-        story_request = input_data["story_request"]
-        strategy = input_data["strategy"]
-        
-        enhanced_slides = []
-        
+        slides: List[CarouselSlide] = input_data["slides"]
+        request: CarouselRequest = input_data["request"]
+        strategy: CarouselStrategy = input_data["strategy"]
+        enhanced: List[CarouselSlide] = []
         for slide in slides:
-            # Generate base image prompt using OpenAI
-            base_prompt = await self._generate_base_image_prompt(slide, story_request, strategy)
-            
-            # Enhance the prompt using OpenAI
-            enhanced_prompt = await self._enhance_with_openai(base_prompt, slide)
-            
-            # Update slide with enhanced prompt
-            slide.image_generation_prompt = enhanced_prompt
-            enhanced_slides.append(slide)
-        
-        return enhanced_slides
-    
-    async def _generate_base_image_prompt(self, slide: CarouselSlide, story_request: StoryRequest, strategy: CarouselStrategy) -> str:
-        """Generate base image prompt using OpenAI"""
-        
-        prompt_generation_prompt = f"""You are an expert at creating image generation prompts for TikTok carousel content.
+            base_prompt = await self._generate_base_prompt(slide, request, strategy)
+            slide.image_generation_prompt = await self._enhance_prompt(base_prompt)
+            enhanced.append(slide)
+        return enhanced
 
-## CONTEXT:
-**Slide #{slide.slide_number}:** {slide.slide_purpose}
-**Text on Screen:** {slide.text_on_screen}
-**Target Audience:** {story_request.target_audience}
-**Niche:** {story_request.niche}
-**Content Goal:** {story_request.cta_goal}
+    async def _generate_base_prompt(self, slide: CarouselSlide, request: CarouselRequest, strategy: CarouselStrategy) -> str:
+        prompt = f"""
+Create an image prompt for a TikTok carousel slide.
 
-## YOUR TASK:
-Create a detailed image generation prompt that:
-1. Visually reinforces the slide's message
-2. Appeals to the target audience
-3. Uses appropriate visual metaphors
-4. Maintains brand consistency across slides
-5. NO TEXT should appear in the generated image
+Slide {slide.slide_number}: {slide.slide_purpose}
+On-screen Text: {slide.text_on_screen}
+Audience: {request.target_audience}
+Niche: {request.niche}
+CTA Goal: {request.cta_goal}
+Strategy Hook: {strategy.hook_strategy}
 
-## REQUIREMENTS:
-- Main subject and their emotional state/body language
-- Lighting conditions and mood
-- Setting/environment details  
-- Color palette (warm/cool/dramatic/bright)
-- Camera angle and composition
-- Photography style (cinematic, documentary, lifestyle, etc.)
-- Specific visual metaphors that reinforce the message
-
-## EXAMPLE OUTPUT:
-"Close-up of a confident young professional in modern office setting, warm natural lighting streaming through windows, showing determination and focus, realistic photography style, clean minimalist background, professional attire, shot from slightly below to convey empowerment"
-
-Generate the image prompt:"""
-        
+Describe subject, emotion, setting, lighting, palette, camera angle, and ensure no text appears in the image.
+"""
         try:
-            response = await self.openai_service.generate_text(
-                prompt=prompt_generation_prompt,
-                max_tokens=300,
-                temperature=0.7
-            )
-            
+            response = await self.client.generate_text(prompt=prompt, max_tokens=260, temperature=0.7)
             return response.strip()
-            
-        except Exception as e:
-            self.log_error(f"Failed to generate base image prompt: {e}")
-            return f"Professional image related to {story_request.niche}, clean modern style, {story_request.target_audience} demographic"
-    
-    async def _enhance_with_openai(self, base_prompt: str, slide: CarouselSlide) -> str:
-        """Enhance image prompt using OpenAI"""
-        
-        enhancement_prompt = f"""Enhance this image generation prompt to be more specific and visually compelling:
+        except Exception as error:
+            self.log_error(f"Image prompt fallback: {error}")
+            return f"Dynamic lifestyle scene for {request.niche} targeting {request.target_audience}."
 
-Original: {base_prompt}
+    async def _enhance_prompt(self, base_prompt: str) -> str:
+        prompt = f"""
+Enhance this image prompt with vivid specifics while keeping it under 150 words.
+Highlight lighting, camera work, subject detail, environment, and color mood.
+Ensure the generated image contains no text.
 
-Make it more detailed with:
-- Specific lighting (golden hour, studio lighting, natural light, etc.)
-- Precise camera work (close-up, wide shot, over-shoulder, etc.)  
-- Detailed subject description (age, expression, posture, clothing)
-- Environmental specifics (background, setting, props)
-- Color mood that matches the message
-
-Keep under 150 words. Ensure NO TEXT in the image.
-
-Enhanced prompt:"""
-        
+Original Prompt: {base_prompt}
+"""
         try:
-            response = await self.openai_service.generate_text(
-                prompt=enhancement_prompt,
-                max_tokens=200,
-                temperature=0.6
-            )
-            
+            response = await self.client.generate_text(prompt=prompt, max_tokens=220, temperature=0.6)
             return response.strip()
-            
-        except Exception as e:
-            self.log_error(f"Failed to enhance with OpenAI: {e}")
+        except Exception as error:
+            self.log_error(f"Image prompt enhancement fallback: {error}")
             return base_prompt
+

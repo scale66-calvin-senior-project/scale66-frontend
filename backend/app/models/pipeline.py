@@ -1,81 +1,54 @@
-from pydantic import BaseModel, model_validator
-from typing import List, Optional, Dict, Any
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel, model_validator
+
+
+# Overview:
+# - Purpose: Define data contracts for the carousel pipeline, including requests, statuses, and results.
+# Key Components:
+# - PipelineStatus: enumerates lifecycle stages for carousel generation.
+# - CarouselRequest: input schema that builds prompts from business context.
+# - CarouselResult: encapsulates strategy, slides, and analysis metadata.
+# - PipelineResult: aggregates pipeline state for API responses and persistence.
 
 
 class PipelineStatus(str, Enum):
-    PENDING = "pending"
     PLANNING = "planning"
-    STORY_GENERATION = "story_generation"
-    STYLE_GENERATION = "style_generation"
-    CONTENT_GENERATION = "content_generation"
+    CAROUSEL_GENERATION = "carousel_generation"
+    IMAGE_GENERATION = "image_generation"
     FINAL_ASSEMBLY = "final_assembly"
     COMPLETED = "completed"
     FAILED = "failed"
 
 
-class StoryRequest(BaseModel):
+class CarouselRequest(BaseModel):
     story_idea: Optional[str] = None
     niche: Optional[str] = None
     target_audience: Optional[str] = None
     pain_point: Optional[str] = None
     cta_goal: Optional[str] = None
     num_slides: int = 3
-    style_preferences: Optional[Dict[str, Any]] = None
 
     @model_validator(mode="after")
-    def ensure_story_idea(self):
+    def populate_story_idea(self):
         if not self.story_idea:
-            descriptive_parts = []
+            parts: List[str] = []
             if self.niche:
-                niche_segment = f"the {self.niche} niche"
-            else:
-                niche_segment = "this business"
-
+                parts.append(f"Create a carousel for the {self.niche} niche")
             if self.target_audience:
-                audience_segment = f" targeting {self.target_audience}"
-            else:
-                audience_segment = ""
-
-            idea_parts = [f"Create a story for {niche_segment}{audience_segment}."]
-
+                parts.append(f"targeting {self.target_audience}")
             if self.pain_point:
-                idea_parts.append(f"Highlight how it solves {self.pain_point}.")
-
+                parts.append(f"addressing {self.pain_point}")
             if self.cta_goal:
-                idea_parts.append(f"Encourage viewers to {self.cta_goal}.")
-
-            if any([self.niche, self.target_audience, self.pain_point, self.cta_goal]):
-                self.story_idea = " ".join(idea_parts).strip()
-
-        self.num_slides = 3
-
-        if not (self.story_idea and self.story_idea.strip()):
-            raise ValueError("Story idea is required. Provide 'story_idea' directly or supply niche, target_audience, pain_point, and cta_goal.")
-
+                parts.append(f"with a call to action to {self.cta_goal}")
+            if parts:
+                self.story_idea = ", ".join(parts)
+        if not self.story_idea:
+            raise ValueError("story_idea or descriptive business context is required")
+        if self.num_slides < 1:
+            raise ValueError("num_slides must be at least 1")
         return self
-
-
-class StoryScene(BaseModel):
-    scene_number: int
-    content: str
-    slide_text: Optional[str] = None
-    image_path: Optional[str] = None
-
-
-class StyleGuide(BaseModel):
-    color_palette: List[str]
-    imagery_style: str
-    design_direction: str
-    font_suggestions: List[str]
-    mood: str
-    
-
-class SlideContent(BaseModel):
-    scene_number: int
-    text: str
-    image_prompt: str
-    image_path: Optional[str] = None
 
 
 class CarouselSlide(BaseModel):
@@ -110,10 +83,7 @@ class CarouselResult(BaseModel):
 class PipelineResult(BaseModel):
     id: str
     status: PipelineStatus
-    story_request: StoryRequest
-    complete_story: Optional[str] = None
-    style_guide: Optional[StyleGuide] = None
-    scenes: List[StoryScene] = []
+    request: CarouselRequest
     carousel_result: Optional[CarouselResult] = None
     output_folder: Optional[str] = None
     created_at: str

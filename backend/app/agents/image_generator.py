@@ -1,80 +1,55 @@
-from typing import Dict, Any, List
 import os
+from typing import Dict, Any, List
 
 from .base_agent import BaseAgent
-from ..models.pipeline import SlideContent
 from ..services.gemini_service import GeminiService
 from ..core.config import settings
+
+
+# Overview:
+# - Purpose: Render carousel slide imagery to disk using the configured image provider.
+# Key Components:
+# - ImageGeneratorAgent: saves prompts to disk through Gemini and manages output directories per pipeline.
 
 
 class ImageGeneratorAgent(BaseAgent):
     def __init__(self, config: Dict[str, Any] = None):
         super().__init__("ImageGenerator", config)
-        self.output_dir = config.get("output_dir", "./output") if config else "./output"
+        self.output_dir = (config or {}).get("output_dir", settings.output_dir)
         self.gemini_service = None
         if settings.gemini_api_key:
             try:
                 self.gemini_service = GeminiService()
-            except ValueError as e:
-                self.log_error(f"Failed to initialize Gemini service: {e}")
+            except Exception as error:
+                self.log_error(f"Gemini init failed: {error}")
         else:
-            self.log_error("Gemini API key is not configured. Image generation will fail.")
-        
-    async def process(self, input_data: Dict[str, Any]) -> List[SlideContent]:
-        slide_contents = input_data.get("slide_contents", [])
+            self.log_error("Gemini API key not configured; image generation disabled")
+
+    async def process(self, input_data: Dict[str, Any]) -> List[str]:
+        prompts: List[str] = input_data.get("prompts", [])
         pipeline_id = input_data.get("pipeline_id", "default")
-        
-        self.log_info(f"Generating images for {len(slide_contents)} slides")
-        
-        # Create output directory for this pipeline
-        pipeline_output_dir = os.path.join(self.output_dir, pipeline_id)
-        os.makedirs(pipeline_output_dir, exist_ok=True)
-        
-        # Generate images for each slide
-        updated_contents = []
-        for slide_content in slide_contents:
-            updated_content = await self._generate_image(slide_content, pipeline_output_dir)
-            updated_contents.append(updated_content)
-            
-        return updated_contents
-        
-    async def _generate_image(self, slide_content: SlideContent, output_dir: str) -> SlideContent:
-        self.log_info(f"Generating image for scene {slide_content.scene_number}")
-        
-        image_filename = f"scene_{slide_content.scene_number}.png"
-        image_path = os.path.join(output_dir, image_filename)
-        
-        if self.gemini_service:
-            # Generate image using Gemini (prompt already enhanced by OpenAI)
-            generated_path = await self.gemini_service.generate_image(slide_content.image_prompt, image_path)
-            slide_content.image_path = generated_path
-        else:
-            self.log_info("Using placeholder image generation (no Gemini API key)")
-            await self._create_placeholder_image(image_path, slide_content.image_prompt)
-            slide_content.image_path = image_path
-        
-        return slide_content
-        
+        generated_paths: List[str] = []
+        for index, prompt in enumerate(prompts, start=1):
+            generated_paths.append(
+                await self.generate_single_image(
+                    {
+                        "prompt": prompt,
+                        "pipeline_id": pipeline_id,
+                        "slide_number": index,
+                    }
+                )
+            )
+        return generated_paths
+
     async def generate_single_image(self, input_data: Dict[str, Any]) -> str:
-        """Generate a single image for carousel slides"""
         prompt = input_data.get("prompt", "")
         pipeline_id = input_data.get("pipeline_id", "default")
         slide_number = input_data.get("slide_number", 1)
-        
-        self.log_info(f"Generating single image for slide {slide_number}")
-        
-        # Create output directory for this pipeline
+        if not self.gemini_service:
+            raise RuntimeError("Gemini service is unavailable")
         pipeline_output_dir = os.path.join(self.output_dir, pipeline_id)
         os.makedirs(pipeline_output_dir, exist_ok=True)
-        
         image_filename = f"carousel_slide_{slide_number}.png"
         image_path = os.path.join(pipeline_output_dir, image_filename)
-        
-        if not self.gemini_service:
-            raise RuntimeError("Gemini service is not available. Configure GEMINI_API_KEY to enable image generation.")
+        return await self.gemini_service.generate_image(prompt, image_path)
 
-        generated_path = await self.gemini_service.generate_image(prompt, image_path)
-        return generated_path
-            
-    def _validate_image_prompt(self, prompt: str) -> bool:
-        return len(prompt.strip()) > 0

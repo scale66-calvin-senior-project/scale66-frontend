@@ -2,7 +2,11 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 import logging
 
-logger = logging.getLogger(__name__)
+
+# Overview:
+# - Purpose: Supply shared utility and logging for all pipeline agents.
+# Key Components:
+# - BaseAgent: defines configuration handling and logging helpers for subclasses.
 
 
 class BaseAgent(ABC):

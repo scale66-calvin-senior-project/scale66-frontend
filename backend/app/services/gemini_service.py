@@ -10,6 +10,12 @@ from ..core.config import settings
 logger = logging.getLogger(__name__)
 
 
+# Overview:
+# - Purpose: Wrap the Gemini SDK to generate image assets for carousel slides.
+# Key Components:
+# - GeminiService: exposes generate_image and utility helpers for parsing binary responses.
+
+
 class GeminiService:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or settings.gemini_api_key
