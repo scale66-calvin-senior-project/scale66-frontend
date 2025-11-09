@@ -1,16 +1,27 @@
+"""
+Pipeline Data Models - Type-safe data contracts for the carousel generation pipeline.
+Defines all request/response models, enums, and validation logic for the carousel
+workflow including requests, strategies, slides, and pipeline state tracking.
+
+Main Models:
+    1. PipelineStatus - Enum tracking pipeline lifecycle stages
+    2. CarouselRequest - Input schema with business context and auto-generated story_idea
+    3. CarouselSlide - Individual slide with purpose, text, and image details
+    4. CarouselFormat - Selected format with description and reasoning
+    5. CarouselStrategy - Content strategy with hook, flow, tactics, and CTA
+    6. CarouselResult - Complete carousel with format, strategy, analysis, and slides
+    7. PipelineResult - Full pipeline state with status, request, result, and metadata
+
+Connections:
+    - Used by: All agents and core.pipeline for type safety and validation
+    - Validated with: Pydantic validators (e.g., story_idea auto-population)
+    - Serialized to: JSON for API responses and output files
+"""
+
 from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel, model_validator
-
-
-# Overview:
-# - Purpose: Define data contracts for the carousel pipeline, including requests, statuses, and results.
-# Key Components:
-# - PipelineStatus: enumerates lifecycle stages for carousel generation.
-# - CarouselRequest: input schema that builds prompts from business context.
-# - CarouselResult: encapsulates strategy, slides, and analysis metadata.
-# - PipelineResult: aggregates pipeline state for API responses and persistence.
 
 
 class PipelineStatus(str, Enum):

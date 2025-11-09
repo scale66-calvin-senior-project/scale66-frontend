@@ -1,3 +1,22 @@
+"""
+ContentGeneratorAgent - Carousel strategy and slide content generation agent.
+Creates comprehensive content strategy (hook, flow, tactics, CTA) and generates
+detailed slide scripts including purpose and on-screen text for each slide.
+
+Main Functions:
+    1. process() - Generates complete strategy and slides for carousel
+    2. _generate_strategy() - Creates CarouselStrategy using OpenAI
+    3. _generate_slides() - Generates slide-by-slide content with purposes and text
+    4. _parse_strategy_response() - Extracts strategy from AI response with fallback
+    5. _parse_slides_response() - Extracts slides from AI response with fallback
+
+Connections:
+    - Inherits from: BaseAgent
+    - Uses services: OpenAIService for content generation
+    - Uses models: CarouselRequest, CarouselFormat, CarouselSlide, CarouselStrategy
+    - Called by: CarouselGeneratorAgent.process()
+"""
+
 import json
 import re
 from typing import Dict, Any, List
@@ -5,12 +24,6 @@ from typing import Dict, Any, List
 from .base_agent import BaseAgent
 from ..models.pipeline import CarouselRequest, CarouselFormat, CarouselSlide, CarouselStrategy
 from ..services.openai_service import OpenAIService
-
-
-# Overview:
-# - Purpose: Draft carousel strategy and slides from a selected format and business brief.
-# Key Components:
-# - ContentGeneratorAgent: prompts OpenAI for structured JSON and converts it into domain models.
 
 
 class ContentGeneratorAgent(BaseAgent):

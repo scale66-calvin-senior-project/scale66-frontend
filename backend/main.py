@@ -1,3 +1,18 @@
+"""
+FastAPI Application Entry Point - Main server configuration and initialization.
+Configures the FastAPI application with CORS middleware and routes, providing
+the REST API interface for the carousel generation pipeline.
+
+Main Functions:
+    1. root() - Returns API discovery information and endpoint documentation
+    2. Main execution block - Launches uvicorn server with hot reload
+
+Connections:
+    - Routes: Includes app.router.routes for all API endpoints
+    - Configuration: Uses environment variables for port and host settings
+    - Started by: run_backend.sh or direct Python execution
+"""
+
 import logging
 import os
 
@@ -6,13 +21,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from app.router.routes import router
-
-
-# Overview:
-# - Purpose: Configure and launch the FastAPI application for the carousel pipeline.
-# Key Components:
-# - app: FastAPI instance with CORS enabled and router attached.
-# - root endpoint: provides discovery details for clients.
 
 
 logging.basicConfig(level=logging.INFO)

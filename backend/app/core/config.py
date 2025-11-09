@@ -1,14 +1,22 @@
+"""
+Settings Configuration - Centralized environment-driven configuration management.
+Loads API keys, model names, server settings, and output paths from environment
+variables or .env file with sensible defaults.
+
+Main Components:
+    1. Settings class - Pydantic model for type-safe configuration
+    2. settings instance - Singleton configuration object used throughout application
+
+Connections:
+    - Used by: All services (OpenAIService, GeminiService) and agents for configuration
+    - Loads from: .env file or environment variables
+    - Provides: API keys, model names, host/port, output directory
+"""
+
 import os
 from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
-# Overview:
-# - Purpose: Centralize environment-driven settings for the carousel backend.
-# Key Components:
-# - Settings: captures API, model, and provider configuration.
-# - settings: singleton instance with ensured output directory.
 
 
 class Settings(BaseSettings):

@@ -1,3 +1,21 @@
+"""
+CarouselGeneratorAgent - High-level carousel composition and performance analysis agent.
+Orchestrates the complete carousel creation workflow by coordinating format selection,
+content generation, image prompt enhancement, and performance analysis.
+
+Main Functions:
+    1. process() - Coordinates all sub-agents to produce complete CarouselResult
+    2. _generate_performance_analysis() - Analyzes why carousel will perform well on TikTok
+    3. _format_slides_for_analysis() - Formats slide data for performance evaluation
+
+Connections:
+    - Inherits from: BaseAgent
+    - Coordinates agents: FormatSelectorAgent, ContentGeneratorAgent, ImagePromptEnhancerAgent
+    - Uses services: OpenAIService for performance analysis
+    - Uses models: CarouselRequest, CarouselResult
+    - Called by: CarouselPipeline._process_pipeline()
+"""
+
 import json
 import re
 from typing import Dict, Any, List
@@ -8,12 +26,6 @@ from .content_generator import ContentGeneratorAgent
 from .image_prompt_enhancer import ImagePromptEnhancerAgent
 from ..models.pipeline import CarouselRequest, CarouselResult
 from ..services.openai_service import OpenAIService
-
-
-# Overview:
-# - Purpose: Compose specialized agents to produce a complete carousel package.
-# Key Components:
-# - CarouselGeneratorAgent: coordinates format selection, content generation, prompt enhancement, and performance analysis.
 
 
 class CarouselGeneratorAgent(BaseAgent):

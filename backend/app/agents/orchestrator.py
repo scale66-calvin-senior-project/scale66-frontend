@@ -1,15 +1,24 @@
+"""
+OrchestratorAgent - Pipeline initialization and request validation agent.
+Validates incoming carousel requests, generates unique pipeline IDs, and creates
+initial pipeline state for tracking through the generation workflow.
+
+Main Functions:
+    1. process() - Validates CarouselRequest and initializes PipelineResult
+
+Connections:
+    - Inherits from: BaseAgent
+    - Uses models: CarouselRequest, PipelineResult, PipelineStatus
+    - Called by: CarouselPipeline.start_pipeline()
+    - Returns: PipelineResult with PLANNING or FAILED status
+"""
+
 import uuid
 from datetime import datetime
 from typing import Dict, Any
 
 from .base_agent import BaseAgent
 from ..models.pipeline import CarouselRequest, PipelineResult, PipelineStatus
-
-
-# Overview:
-# - Purpose: Validate incoming carousel requests and produce initial pipeline state.
-# Key Components:
-# - OrchestratorAgent: generates pipeline identifiers, validates slide counts, and seeds status tracking.
 
 
 class OrchestratorAgent(BaseAgent):

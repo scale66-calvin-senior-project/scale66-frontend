@@ -1,15 +1,27 @@
+"""
+API Routes - FastAPI endpoint definitions for carousel pipeline operations.
+Exposes REST API endpoints for creating carousels, checking pipeline status,
+listing all pipelines, and health checks.
+
+Main Endpoints:
+    1. POST /carousel/create - Initiates new carousel generation pipeline
+    2. GET /carousel/{pipeline_id} - Retrieves status and results for specific pipeline
+    3. GET /carousels - Lists all pipelines with their current states
+    4. GET /health - Returns service health status
+
+Connections:
+    - Uses: CarouselPipeline for all carousel operations
+    - Uses models: CarouselRequest (input), PipelineResult (output)
+    - Mounted at: /api/v1 prefix in main.py
+    - Called by: Frontend, Streamlit app, or API clients
+"""
+
 from typing import Dict
 
 from fastapi import APIRouter, HTTPException
 
 from ..core.pipeline import CarouselPipeline
 from ..models.pipeline import CarouselRequest, PipelineResult
-
-
-# Overview:
-# - Purpose: Expose FastAPI endpoints for managing carousel generation pipelines.
-# Key Components:
-# - router: registers creation and retrieval routes backed by CarouselPipeline services.
 
 
 router = APIRouter()

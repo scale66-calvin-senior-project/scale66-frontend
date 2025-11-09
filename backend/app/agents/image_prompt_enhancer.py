@@ -1,14 +1,25 @@
+"""
+ImagePromptEnhancerAgent - Slide-level image prompt generation and enhancement agent.
+Crafts detailed, consistent image generation prompts for each carousel slide by
+analyzing slide purpose, text, and overall strategy to create vivid visual directions.
+
+Main Functions:
+    1. process() - Enhances all slides with detailed image generation prompts
+    2. _generate_base_prompt() - Creates initial image prompt from slide context
+    3. _enhance_prompt() - Refines base prompt with lighting, camera, and mood details
+
+Connections:
+    - Inherits from: BaseAgent
+    - Uses services: OpenAIService for prompt generation and enhancement
+    - Uses models: CarouselSlide, CarouselRequest, CarouselStrategy
+    - Called by: CarouselGeneratorAgent.process()
+"""
+
 from typing import Dict, Any, List
 
 from .base_agent import BaseAgent
 from ..models.pipeline import CarouselSlide, CarouselRequest, CarouselStrategy
 from ..services.openai_service import OpenAIService
-
-
-# Overview:
-# - Purpose: Enrich slide-level image prompts for consistent carousel visuals.
-# Key Components:
-# - ImagePromptEnhancerAgent: crafts base prompts and refines them into production-ready image instructions.
 
 
 class ImagePromptEnhancerAgent(BaseAgent):

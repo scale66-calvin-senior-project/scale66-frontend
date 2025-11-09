@@ -1,3 +1,20 @@
+"""
+GeminiService - Wrapper for Google Gemini image generation API.
+Provides async image generation capabilities using Gemini's official SDK,
+handling binary response extraction and file I/O operations.
+
+Main Functions:
+    1. generate_image() - Generates and saves image from text prompt
+    2. _extract_image_bytes() - Extracts binary image data from API response
+    3. _write_bytes() - Saves binary data to file system
+
+Connections:
+    - Uses: Google genai client for image generation API
+    - Configuration: Loads API key and model from settings
+    - Used by: ImageGeneratorAgent for all visual asset generation
+    - Saves to: Pipeline-specific output directories
+"""
+
 import asyncio
 import os
 from typing import Optional
@@ -10,12 +27,6 @@ from ..core.config import settings
 logger = logging.getLogger(__name__)
 
 
-# Overview:
-# - Purpose: Wrap the Gemini SDK to generate image assets for carousel slides.
-# Key Components:
-# - GeminiService: exposes generate_image and utility helpers for parsing binary responses.
-
-
 class GeminiService:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or settings.gemini_api_key
@@ -26,7 +37,6 @@ class GeminiService:
         self.client = genai.Client(api_key=self.api_key)
 
     async def generate_image(self, prompt: str, output_path: str) -> str:
-        """Generate an image with Gemini using the official image API."""
         try:
             logger.info("Generating image with Gemini model '%s'", self.model_name)
 

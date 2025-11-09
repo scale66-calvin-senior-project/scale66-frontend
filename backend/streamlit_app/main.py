@@ -1,16 +1,32 @@
+"""
+Streamlit Testing Interface - Interactive UI for carousel pipeline testing and monitoring.
+Provides a web-based interface for creating carousel requests, monitoring pipeline
+progress, viewing results with images, and listing all generated carousels.
+
+Main Functions:
+    1. check_backend_health() - Verifies FastAPI backend is accessible
+    2. create_carousel_request() - Sends new carousel request to backend
+    3. fetch_pipeline_status() - Retrieves status for specific pipeline
+    4. fetch_all_pipelines() - Gets list of all pipelines
+    5. render_create_page() - UI for creating new carousels with form
+    6. render_results_page() - UI for viewing pipeline results and images
+    7. render_list_page() - UI for browsing all pipelines
+    8. _poll_pipeline_progress() - Real-time progress monitoring with status updates
+    9. _display_pipeline_snapshot() - Renders complete pipeline results with images
+
+Connections:
+    - Connects to: FastAPI backend at localhost:8000
+    - Uses endpoints: /carousel/create, /carousel/{id}, /carousels, /health
+    - Started by: run_streamlit.sh
+    - Purpose: Development testing and pipeline visualization
+"""
+
 import os
 import time
 from typing import Dict, Any, Optional
 
 import requests
 import streamlit as st
-
-
-# Overview:
-# - Purpose: Provide a lightweight UI for triggering and inspecting carousel generation pipelines.
-# Key Components:
-# - Helper functions: HTTP utilities for create, fetch status, and list pipelines.
-# - Streamlit layout: interactive forms for launching requests and reviewing results.
 
 
 API_BASE_URL = "http://localhost:8000/api/v1"

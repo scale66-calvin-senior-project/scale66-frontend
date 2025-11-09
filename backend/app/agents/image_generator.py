@@ -1,15 +1,26 @@
+"""
+ImageGeneratorAgent - Carousel slide image rendering agent.
+Generates visual assets for carousel slides using Gemini's image generation API,
+managing output directories and saving images to disk with proper naming conventions.
+
+Main Functions:
+    1. process() - Generates images for all prompts in batch
+    2. generate_single_image() - Renders a single slide image from prompt
+
+Connections:
+    - Inherits from: BaseAgent
+    - Uses services: GeminiService for image generation
+    - Uses config: settings.output_dir, settings.gemini_api_key
+    - Called by: CarouselPipeline._process_pipeline()
+    - Saves to: output/{pipeline_id}/carousel_slide_{n}.png
+"""
+
 import os
 from typing import Dict, Any, List
 
 from .base_agent import BaseAgent
 from ..services.gemini_service import GeminiService
 from ..core.config import settings
-
-
-# Overview:
-# - Purpose: Render carousel slide imagery to disk using the configured image provider.
-# Key Components:
-# - ImageGeneratorAgent: saves prompts to disk through Gemini and manages output directories per pipeline.
 
 
 class ImageGeneratorAgent(BaseAgent):

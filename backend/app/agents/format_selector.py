@@ -1,3 +1,20 @@
+"""
+FormatSelectorAgent - Carousel format recommendation agent.
+Analyzes business context (niche, audience, pain point, CTA) and selects the most
+effective carousel format using AI-driven strategy selection.
+
+Main Functions:
+    1. process() - Selects optimal carousel format for the given request
+    2. _build_prompt() - Constructs format selection prompt for OpenAI
+    3. _parse_response() - Extracts CarouselFormat from AI response with fallback
+
+Connections:
+    - Inherits from: BaseAgent
+    - Uses services: OpenAIService for format recommendation
+    - Uses models: CarouselRequest, CarouselFormat
+    - Called by: CarouselGeneratorAgent.process()
+"""
+
 import json
 import re
 from typing import Dict, Any
@@ -5,12 +22,6 @@ from typing import Dict, Any
 from .base_agent import BaseAgent
 from ..models.pipeline import CarouselRequest, CarouselFormat
 from ..services.openai_service import OpenAIService
-
-
-# Overview:
-# - Purpose: Choose the most effective carousel structure for the supplied business context.
-# Key Components:
-# - FormatSelectorAgent: prompts OpenAI for a structured format recommendation and parses the response.
 
 
 class FormatSelectorAgent(BaseAgent):

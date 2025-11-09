@@ -1,15 +1,24 @@
+"""
+OpenAIService - Async wrapper for OpenAI chat completion API.
+Provides simplified text generation interface for all content-related agents,
+with centralized configuration and error handling.
+
+Main Functions:
+    1. generate_text() - Generates text completion with configurable parameters
+
+Connections:
+    - Uses: AsyncOpenAI client for async API calls
+    - Configuration: Loads API key and model from settings
+    - Used by: FormatSelectorAgent, ContentGeneratorAgent, ImagePromptEnhancerAgent,
+               CarouselGeneratorAgent for all text generation tasks
+"""
+
 import logging
 from typing import Optional
 
 from openai import AsyncOpenAI
 
 from ..core.config import settings
-
-
-# Overview:
-# - Purpose: Provide a minimal async wrapper around OpenAI chat completions.
-# Key Components:
-# - OpenAIService: exposes generate_text for downstream agents with shared configuration.
 
 
 logger = logging.getLogger(__name__)

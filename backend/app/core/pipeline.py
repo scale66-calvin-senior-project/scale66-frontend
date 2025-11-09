@@ -1,3 +1,22 @@
+"""
+CarouselPipeline - Core orchestration engine for multi-agent carousel generation.
+Coordinates the end-to-end process of validating requests, generating content strategy, 
+creating slides, rendering images, and packaging final output.
+
+Main Functions:
+    1. start_pipeline() - Initializes a new carousel generation pipeline
+    2. _process_pipeline() - Executes the multi-stage generation workflow asynchronously
+    3. _create_final_output() - Packages carousel data and images into output directory
+    4. get_pipeline_status() - Retrieves current status of a pipeline by ID
+    5. list_pipelines() - Returns all active and completed pipelines
+
+Connections:
+    - Agents: OrchestratorAgent (validation), CarouselGeneratorAgent (content), 
+              ImageGeneratorAgent (visuals)
+    - Models: Uses CarouselRequest, PipelineResult, PipelineStatus from models.pipeline
+    - Called by: app.router.routes for REST API endpoints
+"""
+
 import asyncio
 import json
 import os
@@ -8,12 +27,6 @@ from ..agents.orchestrator import OrchestratorAgent
 from ..agents.image_generator import ImageGeneratorAgent
 from ..agents.carousel_generator import CarouselGeneratorAgent
 from ..models.pipeline import CarouselRequest, PipelineResult, PipelineStatus
-
-
-# Overview:
-# - Purpose: Coordinate the carousel content pipeline and persist intermediate state.
-# Key Components:
-# - CarouselPipeline: orchestrates planning, carousel generation, image rendering, and output packaging.
 
 
 class CarouselPipeline:
