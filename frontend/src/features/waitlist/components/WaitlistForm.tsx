@@ -26,8 +26,15 @@ export default function WaitlistForm() {
       setSubmitted(true);
     } catch (error) {
       console.error('Error submitting form:', error);
-      // For now, still show success to user since no-cors mode doesn't return proper response
-      setSubmitted(true);
+      // Check if it's a Firebase configuration error
+      if (error instanceof Error && error.message.includes('project ID')) {
+        console.error('Firebase configuration error detected');
+        alert('There was a configuration error. Please try again or contact support.');
+      } else {
+        console.error('Firebase submission error:', error);
+        // For now, still show success to user since mail extension might still work
+        setSubmitted(true);
+      }
     } finally {
       setIsSubmitting(false);
     }

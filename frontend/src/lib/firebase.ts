@@ -1,19 +1,30 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
-// Your Firebase config - replace with your actual config values
+// Firebase configuration - all values from environment variables
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyB73YswNIFHfujImuJ9tVn87AmS7ilTsMc",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "scale66-app.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "scale66-app",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "scale66-app.firebasestorage.app",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "940840829791",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:940840829791:web:72d236c8f3b46c9047ecea"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Validate configuration
-if (!firebaseConfig.projectId) {
-  throw new Error('Firebase project ID is required');
+// Validate that all required environment variables are present
+const requiredEnvVars = [
+  'NEXT_PUBLIC_FIREBASE_API_KEY',
+  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
+  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+  'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+  'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+  'NEXT_PUBLIC_FIREBASE_APP_ID'
+];
+
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+  throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
 }
 
 // Initialize Firebase

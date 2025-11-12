@@ -8,7 +8,6 @@ router = APIRouter()
 # Initialize pipeline instance
 pipeline = StoryPipeline()
 
-
 @router.post("/carousel/create", response_model=dict)
 async def create_carousel(story_request: StoryRequest):
     """Start a new carousel generation pipeline using business information"""

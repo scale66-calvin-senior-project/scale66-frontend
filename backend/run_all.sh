@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Starting Story Pipeline - Backend & Frontend"
+echo "Starting Story Pipeline - Backend & Frontend"
 
 # Check if virtual environment exists
 if [ ! -d "venv" ]; then
