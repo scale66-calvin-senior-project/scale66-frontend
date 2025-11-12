@@ -17,7 +17,7 @@ export default function Home() {
         <meta property="og:url" content="https://scale66.com" />
         <meta property="og:type" content="website" />
 
-        {/* Twitter Tags */}
+        {/* Twitter/X Tags */}
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <LandingPage />
