@@ -6,9 +6,9 @@ export default function Home() {
   return (
     <>
       <Head>
-        {/* Primary Meta Tags */}
         <title>Scale66</title>
-        <link rel="icon" href="/logo.png" />
+        <meta property="og:title" content="Scale66" />
+        <meta property="og:url" content="https://scale66.com" />
       </Head>
       <LandingPage />
     </>

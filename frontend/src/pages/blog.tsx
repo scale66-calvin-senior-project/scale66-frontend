@@ -8,7 +8,9 @@ export default function Blog() {
       <Head>
         <title>Blog - Scale66</title>
         <meta name="description" content="Scale66 Blog - Marketing insights, AI tips, and business growth strategies" />
-        <link rel="icon" href="/logo.png" />
+        <meta property="og:title" content="Blog - Scale66" />
+        <meta property="og:description" content="Scale66 Blog - Marketing insights, AI tips, and business growth strategies" />
+        <meta property="og:url" content="https://scale66.com/blog" />
       </Head>
       <BlogPage />
     </>

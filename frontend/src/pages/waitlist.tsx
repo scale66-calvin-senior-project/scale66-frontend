@@ -7,7 +7,10 @@ export default function Waitlist() {
     <>
       <Head>
         <title>Join Waitlist - Scale66</title>
-        <link rel="icon" href="/logo.png" />
+        <meta name="description" content="Join the Scale66 waitlist to be among the first to access our AI-powered marketing platform" />
+        <meta property="og:title" content="Join Waitlist - Scale66" />
+        <meta property="og:description" content="Join the Scale66 waitlist to be among the first to access our AI-powered marketing platform" />
+        <meta property="og:url" content="https://scale66.com/waitlist" />
       </Head>
       <WaitlistPage />
     </>
