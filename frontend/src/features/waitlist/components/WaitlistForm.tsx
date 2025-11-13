@@ -99,7 +99,6 @@ export default function WaitlistForm() {
           />
         </div>
 
-
         <button 
           type="submit" 
           className={styles.submitButton}
