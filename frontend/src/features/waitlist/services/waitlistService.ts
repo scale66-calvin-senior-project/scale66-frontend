@@ -86,54 +86,75 @@ export async function submitToWaitlist(formData: WaitlistFormData): Promise<Wait
   }
 
   // Send welcome email immediately
-  const emailResult = await resend.emails.send({
-    from: 'Scale66 <hello@scale66.com>',
-    to: [email],
-    subject: 'Welcome to Scale66 – You\'re on the list!',
-    html: `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-        <h1 style="color: #1a1a1a; font-size: 28px; margin-bottom: 10px;">Hey there!</h1>
-        
-        <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
-          Thanks so much for joining the Scale66 waitlist – we're genuinely excited to have you here!
-        </p>
-        
-        <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
-          I know you're probably busy building your startup, which is exactly why we created Scale66. We're building an AI-powered marketing platform that helps software founders like you turn attention into paying customers through organic content that actually works.
-        </p>
-        
-        <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
-          As we get closer to launch, we'll keep you in the loop with:
-        </p>
-        
-        <ul style="font-size: 16px; line-height: 1.8; margin-bottom: 20px; padding-left: 24px;">
-          <li>Early access opportunities</li>
-          <li>Exclusive updates on new features</li>
-          <li>Tips and insights from other founders</li>
-          <li>Behind-the-scenes peeks at what we're building</li>
-        </ul>
-        
-        <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
-          In the meantime, if you have any questions or just want to say hi, feel free to reply to this email. We read every message and love hearing from our community.
-        </p>
-        
-        <p style="font-size: 16px; line-height: 1.6; margin-bottom: 8px;">
-          Looking forward to building something amazing together,
-        </p>
-        
-        <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">
-          <strong>The Scale66 Team</strong><br>
-          <span style="color: #666; font-size: 14px;">hello@scale66.com</span>
-        </p>
-      </div>
-    `,
-  });
+  try {
+    const emailResult = await resend.emails.send({
+      from: 'Scale66 <hello@scale66.com>',
+      to: [email],
+      subject: 'Welcome to Scale66 – You\'re on the list!',
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+          <h1 style="color: #1a1a1a; font-size: 28px; margin-bottom: 10px;">Hey there!</h1>
+          
+          <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
+            Thanks so much for joining the Scale66 waitlist – we're genuinely excited to have you here!
+          </p>
+          
+          <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
+            I know you're probably busy building your startup, which is exactly why we created Scale66. We're building an AI-powered marketing platform that helps software founders like you turn attention into paying customers through organic content that actually works.
+          </p>
+          
+          <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
+            As we get closer to launch, we'll keep you in the loop with:
+          </p>
+          
+          <ul style="font-size: 16px; line-height: 1.8; margin-bottom: 20px; padding-left: 24px;">
+            <li>Early access opportunities</li>
+            <li>Exclusive updates on new features</li>
+            <li>Tips and insights from other founders</li>
+            <li>Behind-the-scenes peeks at what we're building</li>
+          </ul>
+          
+          <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
+            In the meantime, if you have any questions or just want to say hi, feel free to reply to this email. We read every message and love hearing from our community.
+          </p>
+          
+          <p style="font-size: 16px; line-height: 1.6; margin-bottom: 8px;">
+            Looking forward to building something amazing together,
+          </p>
+          
+          <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">
+            <strong>The Scale66 Team</strong><br>
+            <span style="color: #666; font-size: 14px;">hello@scale66.com</span>
+          </p>
+        </div>
+      `,
+    });
 
-  return {
-    success: true,
-    message: 'Successfully added to waitlist and email sent',
-    emailId: emailResult.data?.id,
-  };
+    // Log the full response to debug
+    console.log('Resend email send response:', JSON.stringify(emailResult, null, 2));
+
+    if (emailResult.error) {
+      console.error('❌ Resend API returned an error when sending email:', emailResult.error);
+      throw new Error(`Failed to send email: ${JSON.stringify(emailResult.error)}`);
+    }
+
+    if (emailResult.data?.id) {
+      console.log(`✅ Welcome email sent successfully to ${email}`);
+      console.log('Email ID:', emailResult.data.id);
+    } else {
+      console.warn('⚠️ Resend API call succeeded but no email ID returned');
+    }
+
+    return {
+      success: true,
+      message: 'Successfully added to waitlist and email sent',
+      emailId: emailResult.data?.id,
+    };
+  } catch (emailError) {
+    console.error('❌ Error sending welcome email:', emailError);
+    const errorMessage = emailError instanceof Error ? emailError.message : String(emailError);
+    throw new Error(`Failed to send welcome email: ${errorMessage}`);
+  }
 }
 
 // Client-side function (called from components)

@@ -25,16 +25,8 @@ export default function WaitlistForm() {
       await WaitlistService.submitToWaitlist(formData as WaitlistFormData);
       setSubmitted(true);
     } catch (error) {
-      console.error('Error submitting form:', error);
-      // Check if it's a Firebase configuration error
-      if (error instanceof Error && error.message.includes('project ID')) {
-        console.error('Firebase configuration error detected');
-        alert('There was a configuration error. Please try again or contact support.');
-      } else {
-        console.error('Firebase submission error:', error);
-        // For now, still show success to user since mail extension might still work
-        setSubmitted(true);
-      }
+      console.error('Error submitting waitlist form:', error);
+      alert(error instanceof Error ? error.message : 'Failed to submit waitlist. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
