@@ -32,7 +32,7 @@ export default function Features() {
       <div className={styles.container}>
         <div className={styles.header}>
           <span className={styles.label}>Why Choose Scale66</span>
-          <h2 className={styles.title}>Adnvanced Features</h2>
+          <h2 className={styles.title}>Advanced Features</h2>
           <p className={styles.subtitle}>
             Everything you need to scale your marketing efforts without the complexity
           </p>
