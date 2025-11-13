@@ -36,5 +36,6 @@ jobs:
           channelId: live
           projectId: scale66-app
           entryPoint: ./frontend
+          firebaseToolsArgs: '--force'
         env:
           FIREBASE_CLI_EXPERIMENTS: webframeworks
