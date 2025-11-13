@@ -1,8 +1,24 @@
+"""
+BaseAgent - Abstract base class providing common functionality for all pipeline agents.
+Defines the standard interface and shared utilities (logging, configuration) that all
+specialized agents inherit.
+
+Main Functions:
+    1. process() - Abstract method that all agents must implement
+    2. log_info() - Logs informational messages with agent name prefix
+    3. log_error() - Logs error messages with agent name prefix
+    4. log_debug() - Logs debug messages with agent name prefix
+
+Connections:
+    - Inherited by: All agent classes (OrchestratorAgent, FormatSelectorAgent, 
+                    ContentGeneratorAgent, CarouselGeneratorAgent, ImagePromptEnhancerAgent,
+                    ImageGeneratorAgent)
+    - Used for: Standardizing agent behavior and logging across the pipeline
+"""
+
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 import logging
-
-logger = logging.getLogger(__name__)
 
 
 class BaseAgent(ABC):

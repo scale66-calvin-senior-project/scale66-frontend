@@ -1,48 +1,65 @@
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+"""
+Pipeline Data Models - Type-safe data contracts for the carousel generation pipeline.
+Defines all request/response models, enums, and validation logic for the carousel
+workflow including requests, strategies, slides, and pipeline state tracking.
+
+Main Models:
+    1. PipelineStatus - Enum tracking pipeline lifecycle stages
+    2. CarouselRequest - Input schema with business context and auto-generated story_idea
+    3. CarouselSlide - Individual slide with purpose, text, and image details
+    4. CarouselFormat - Selected format with description and reasoning
+    5. CarouselStrategy - Content strategy with hook, flow, tactics, and CTA
+    6. CarouselResult - Complete carousel with format, strategy, analysis, and slides
+    7. PipelineResult - Full pipeline state with status, request, result, and metadata
+
+Connections:
+    - Used by: All agents and core.pipeline for type safety and validation
+    - Validated with: Pydantic validators (e.g., story_idea auto-population)
+    - Serialized to: JSON for API responses and output files
+"""
+
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel, model_validator
 
 
 class PipelineStatus(str, Enum):
-    PENDING = "pending"
     PLANNING = "planning"
-    STORY_GENERATION = "story_generation"
-    STYLE_GENERATION = "style_generation"
-    CONTENT_GENERATION = "content_generation"
+    CAROUSEL_GENERATION = "carousel_generation"
+    IMAGE_GENERATION = "image_generation"
     FINAL_ASSEMBLY = "final_assembly"
     COMPLETED = "completed"
     FAILED = "failed"
 
 
-class StoryRequest(BaseModel):
-    niche: str
-    target_audience: str
-    pain_point: str
-    cta_goal: str
-    num_slides: Optional[int] = None
-    style_preferences: Optional[Dict[str, Any]] = None
-    
-    
-class StoryScene(BaseModel):
-    scene_number: int
-    content: str
-    slide_text: Optional[str] = None
-    image_path: Optional[str] = None
+class CarouselRequest(BaseModel):
+    story_idea: Optional[str] = None
+    niche: Optional[str] = None
+    target_audience: Optional[str] = None
+    pain_point: Optional[str] = None
+    cta_goal: Optional[str] = None
+    num_slides: int = 3
 
-
-class StyleGuide(BaseModel):
-    color_palette: List[str]
-    imagery_style: str
-    design_direction: str
-    font_suggestions: List[str]
-    mood: str
-    
-
-class SlideContent(BaseModel):
-    scene_number: int
-    text: str
-    image_prompt: str
-    image_path: Optional[str] = None
+    @model_validator(mode="after")
+    def populate_story_idea(self):
+        if not self.story_idea:
+            parts: List[str] = []
+            if self.niche:
+                parts.append(f"Create a carousel for the {self.niche} niche")
+            if self.target_audience:
+                parts.append(f"targeting {self.target_audience}")
+            if self.pain_point:
+                parts.append(f"addressing {self.pain_point}")
+            if self.cta_goal:
+                parts.append(f"with a call to action to {self.cta_goal}")
+            if parts:
+                self.story_idea = ", ".join(parts)
+        if not self.story_idea:
+            raise ValueError("story_idea or descriptive business context is required")
+        if self.num_slides < 1:
+            raise ValueError("num_slides must be at least 1")
+        return self
 
 
 class CarouselSlide(BaseModel):
@@ -77,10 +94,7 @@ class CarouselResult(BaseModel):
 class PipelineResult(BaseModel):
     id: str
     status: PipelineStatus
-    story_request: StoryRequest
-    complete_story: Optional[str] = None
-    style_guide: Optional[StyleGuide] = None
-    scenes: List[StoryScene] = []
+    request: CarouselRequest
     carousel_result: Optional[CarouselResult] = None
     output_folder: Optional[str] = None
     created_at: str

@@ -1,287 +1,192 @@
-import streamlit as st
-import requests
-import json
+"""
+Streamlit Testing Interface - Interactive UI for carousel pipeline testing and monitoring.
+Provides a web-based interface for creating carousel requests, monitoring pipeline
+progress, viewing results with images, and listing all generated carousels.
+
+Main Functions:
+    1. check_backend_health() - Verifies FastAPI backend is accessible
+    2. create_carousel_request() - Sends new carousel request to backend
+    3. fetch_pipeline_status() - Retrieves status for specific pipeline
+    4. fetch_all_pipelines() - Gets list of all pipelines
+    5. render_create_page() - UI for creating new carousels with form
+    6. render_results_page() - UI for viewing pipeline results and images
+    7. render_list_page() - UI for browsing all pipelines
+    8. _poll_pipeline_progress() - Real-time progress monitoring with status updates
+    9. _display_pipeline_snapshot() - Renders complete pipeline results with images
+
+Connections:
+    - Connects to: FastAPI backend at localhost:8000
+    - Uses endpoints: /carousel/create, /carousel/{id}, /carousels, /health
+    - Started by: run_streamlit.sh
+    - Purpose: Development testing and pipeline visualization
+"""
+
+import os
 import time
-from typing import Optional, Dict, Any
+from typing import Dict, Any, Optional
 
-# Configure page
-st.set_page_config(
-    page_title="Story Pipeline Tester",
-    page_icon="📚",
-    layout="wide"
-)
+import requests
+import streamlit as st
 
-# Backend API URL
+
 API_BASE_URL = "http://localhost:8000/api/v1"
 
+
 def check_backend_health() -> bool:
-    """Check if backend is running"""
     try:
         response = requests.get(f"{API_BASE_URL}/health", timeout=5)
         return response.status_code == 200
-    except:
+    except Exception:
         return False
 
-def create_story(niche: str, target_audience: str, pain_point: str, cta_goal: str, num_slides: Optional[int] = None) -> Optional[str]:
-    """Create a new story pipeline"""
+
+def create_carousel_request(payload: Dict[str, Any]) -> Optional[str]:
     try:
+        response = requests.post(f"{API_BASE_URL}/carousel/create", json=payload, timeout=20)
+        if response.status_code == 200:
+            return response.json().get("pipeline_id")
+        st.error(f"Create request failed: {response.text}")
+    except Exception as error:
+        st.error(f"Backend connection error: {error}")
+    return None
+
+
+def fetch_pipeline_status(pipeline_id: str) -> Optional[Dict[str, Any]]:
+    try:
+        response = requests.get(f"{API_BASE_URL}/carousel/{pipeline_id}", timeout=20)
+        if response.status_code == 200:
+            return response.json()
+        st.error(f"Status fetch failed: {response.text}")
+    except Exception as error:
+        st.error(f"Backend connection error: {error}")
+    return None
+
+
+def fetch_all_pipelines() -> Optional[Dict[str, Any]]:
+    try:
+        response = requests.get(f"{API_BASE_URL}/carousels", timeout=20)
+        if response.status_code == 200:
+            return response.json()
+        st.error(f"List fetch failed: {response.text}")
+    except Exception as error:
+        st.error(f"Backend connection error: {error}")
+    return None
+
+
+def render_create_page():
+    st.header("Create Carousel")
+    with st.form("carousel_form"):
+        niche = st.text_input("Niche", value="Social media marketing")
+        audience = st.text_input("Target Audience", value="Solopreneurs and small business owners")
+        pain_point = st.text_area("Pain Point", value="Overwhelmed with content creation; no time to grow revenue.")
+        cta_goal = st.text_input("Call To Action", value="Join the newsletter for weekly playbooks")
+        num_slides = st.number_input("Number of Slides", min_value=3, max_value=10, value=5)
+        submitted = st.form_submit_button("Generate Carousel")
+    if submitted:
+        if not all([niche.strip(), audience.strip(), pain_point.strip(), cta_goal.strip()]):
+            st.error("Please complete every field before submitting.")
+            return
         payload = {
             "niche": niche,
-            "target_audience": target_audience,
+            "target_audience": audience,
             "pain_point": pain_point,
-            "cta_goal": cta_goal
+            "cta_goal": cta_goal,
+            "num_slides": num_slides,
         }
-        if num_slides:
-            payload["num_slides"] = num_slides
-            
-        response = requests.post(f"{API_BASE_URL}/story/create", json=payload)
-        if response.status_code == 200:
-            return response.json()["pipeline_id"]
-        else:
-            st.error(f"Error creating story: {response.text}")
-            return None
-    except Exception as e:
-        st.error(f"Error connecting to backend: {str(e)}")
-        return None
+        with st.spinner("Launching pipeline..."):
+            pipeline_id = create_carousel_request(payload)
+        if pipeline_id:
+            st.success(f"Pipeline started: {pipeline_id}")
+            st.session_state.current_pipeline_id = pipeline_id
+            _poll_pipeline_progress(pipeline_id)
 
-def get_pipeline_status(pipeline_id: str) -> Optional[Dict[str, Any]]:
-    """Get pipeline status"""
-    try:
-        response = requests.get(f"{API_BASE_URL}/story/{pipeline_id}")
-        if response.status_code == 200:
-            return response.json()
-        else:
-            st.error(f"Error getting status: {response.text}")
-            return None
-    except Exception as e:
-        st.error(f"Error connecting to backend: {str(e)}")
-        return None
 
-def list_all_pipelines() -> Optional[Dict[str, Any]]:
-    """List all pipelines"""
-    try:
-        response = requests.get(f"{API_BASE_URL}/stories")
-        if response.status_code == 200:
-            return response.json()
-        else:
-            st.error(f"Error listing stories: {response.text}")
-            return None
-    except Exception as e:
-        st.error(f"Error connecting to backend: {str(e)}")
-        return None
+def _poll_pipeline_progress(pipeline_id: str):
+    placeholder = st.empty()
+    progress = st.progress(0)
+    status_map = {
+        "planning": 0.2,
+        "carousel_generation": 0.5,
+        "image_generation": 0.8,
+        "final_assembly": 0.9,
+        "completed": 1.0,
+        "failed": 0.0,
+    }
+    for _ in range(40):
+        snapshot = fetch_pipeline_status(pipeline_id)
+        if not snapshot:
+            time.sleep(1)
+            continue
+        current_status = snapshot.get("status", "unknown")
+        placeholder.info(f"Status: {current_status}")
+        progress.progress(status_map.get(current_status, 0.1))
+        if current_status in {"completed", "failed"}:
+            break
+        time.sleep(1)
+
+
+def render_results_page():
+    st.header("Pipeline Results")
+    pipeline_id = st.text_input("Pipeline ID", value=st.session_state.get("current_pipeline_id", ""))
+    if st.button("Load Results") and pipeline_id:
+        snapshot = fetch_pipeline_status(pipeline_id)
+        if snapshot:
+            _display_pipeline_snapshot(snapshot)
+
+
+def _display_pipeline_snapshot(snapshot: Dict[str, Any]):
+    st.subheader("Status")
+    st.write(snapshot.get("status", "unknown"))
+    request = snapshot.get("request", {})
+    st.subheader("Request Context")
+    st.json(request)
+    carousel_result = snapshot.get("carousel_result")
+    if carousel_result:
+        st.subheader("Strategy")
+        st.json(carousel_result.get("strategy", {}))
+        st.subheader("Why This Works")
+        for reason in carousel_result.get("why_this_works", []):
+            st.write(f"• {reason}")
+        st.subheader("Slides")
+        for slide in carousel_result.get("slides", []):
+            with st.expander(f"Slide {slide.get('slide_number')}: {slide.get('slide_purpose')}"):
+                st.write(slide.get("text_on_screen"))
+                prompt_text = slide.get("image_generation_prompt")
+                if prompt_text:
+                    st.markdown("**Image Prompt**")
+                    st.write(prompt_text)
+                image_path = slide.get("image_path")
+                if image_path and os.path.exists(image_path):
+                    st.image(image_path, use_column_width=True)
+
+
+def render_list_page():
+    st.header("All Pipelines")
+    if st.button("Refresh"):
+        snapshots = fetch_all_pipelines()
+        if snapshots:
+            for pipeline_id, payload in snapshots.items():
+                with st.expander(f"Pipeline {pipeline_id}"):
+                    st.write(payload.get("status", "unknown"))
+                    st.json(payload.get("request", {}))
+
 
 def main():
-    st.title("📚 Story Pipeline Tester")
-    st.markdown("Test the agentic story generation pipeline")
-    
-    # Check backend health
-    backend_status = check_backend_health()
-    if backend_status:
-        st.success("✅ Backend is running")
-    else:
-        st.error("❌ Backend is not running. Start the backend with: `python main.py`")
+    st.set_page_config(page_title="Carousel Pipeline", page_icon="🎠", layout="wide")
+    st.title("Carousel Pipeline Tester")
+    if not check_backend_health():
+        st.error("Backend is not reachable. Start the FastAPI server.")
         st.stop()
-    
-    # Sidebar for navigation
     st.sidebar.title("Navigation")
-    page = st.sidebar.selectbox("Choose a page", ["Create Story", "View Results", "All Pipelines"])
-    
-    if page == "Create Story":
-        create_story_page()
-    elif page == "View Results":
-        view_results_page()
-    elif page == "All Pipelines":
-        all_pipelines_page()
+    page = st.sidebar.selectbox("Choose a page", ["Create", "Results", "Pipelines"])
+    if page == "Create":
+        render_create_page()
+    elif page == "Results":
+        render_results_page()
+    else:
+        render_list_page()
 
-def create_story_page():
-    st.header("🎬 Create New Story")
-    st.markdown("Enter your business context to generate a targeted story and carousel:")
-    
-    with st.form("story_form"):
-        st.subheader("📊 Business Context")
-        
-        niche = st.text_input(
-            "Niche",
-            placeholder="e.g., Fitness coaching, SaaS for restaurants, Real estate...",
-            help="What industry or market are you in?"
-        )
-        
-        target_audience = st.text_input(
-            "Target Audience", 
-            placeholder="e.g., Busy professionals aged 25-40, Small restaurant owners...",
-            help="Who is your ideal customer?"
-        )
-        
-        pain_point = st.text_area(
-            "Pain Point",
-            placeholder="e.g., Struggling to find time for exercise, Managing inventory is complex...",
-            height=80,
-            help="What problem does your audience face?"
-        )
-        
-        cta_goal = st.text_input(
-            "Goal (Call-to-Action)",
-            placeholder="e.g., Book a free consultation, Sign up for 7-day trial...",
-            help="What action do you want them to take?"
-        )
-        
-        st.subheader("⚙️ Optional Settings")
-        num_slides = st.slider(
-            "Number of Slides",
-            min_value=3,
-            max_value=10,
-            value=5,
-            help="Leave as default for AI to decide optimal length"
-        )
-        
-        submitted = st.form_submit_button("Generate Story & Carousel")
-        
-        if submitted:
-            # Validate required fields
-            if not all([niche.strip(), target_audience.strip(), pain_point.strip(), cta_goal.strip()]):
-                st.error("Please fill in all business context fields")
-                return
-                
-            with st.spinner("Creating story pipeline..."):
-                pipeline_id = create_story(niche, target_audience, pain_point, cta_goal, num_slides)
-                
-            if pipeline_id:
-                st.success(f"✅ Pipeline created! ID: `{pipeline_id}`")
-                st.session_state.current_pipeline_id = pipeline_id
-                
-                # Show real-time status
-                status_placeholder = st.empty()
-                progress_bar = st.progress(0)
-                
-                for i in range(30):  # Check for 30 seconds
-                    status = get_pipeline_status(pipeline_id)
-                    if status:
-                        current_status = status.get("status", "unknown")
-                        status_placeholder.info(f"Status: {current_status}")
-                        
-                        # Update progress bar based on status
-                        progress_map = {
-                            "pending": 0.1,
-                            "planning": 0.2,
-                            "story_generation": 0.4,
-                            "style_generation": 0.6,
-                            "content_generation": 0.8,
-                            "final_assembly": 0.9,
-                            "completed": 1.0,
-                            "failed": 0.0
-                        }
-                        progress_bar.progress(progress_map.get(current_status, 0.1))
-                        
-                        if current_status in ["completed", "failed"]:
-                            break
-                            
-                    time.sleep(1)
-                
-                st.info(f"💡 Go to 'View Results' page and enter pipeline ID: `{pipeline_id}`")
-
-def view_results_page():
-    st.header("📊 View Pipeline Results")
-    
-    pipeline_id = st.text_input(
-        "Pipeline ID",
-        value=st.session_state.get("current_pipeline_id", ""),
-        placeholder="Enter pipeline ID..."
-    )
-    
-    if st.button("Get Status") and pipeline_id:
-        status = get_pipeline_status(pipeline_id)
-        
-        if status:
-            # Display basic info
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Status", status.get("status", "unknown"))
-            with col2:
-                st.metric("Slides", len(status.get("scenes", [])))
-            with col3:
-                created_at = status.get("created_at", "")
-                st.metric("Created", created_at[:10] if created_at else "unknown")
-            
-            # Show story request
-            if "story_request" in status:
-                st.subheader("📝 Business Context")
-                request = status['story_request']
-                st.write(f"**Niche:** {request.get('niche', 'N/A')}")
-                st.write(f"**Target Audience:** {request.get('target_audience', 'N/A')}")
-                st.write(f"**Pain Point:** {request.get('pain_point', 'N/A')}")
-                st.write(f"**Goal:** {request.get('cta_goal', 'N/A')}")
-                if request.get('num_slides'):
-                    st.write(f"**Slides:** {request['num_slides']}")
-            
-            # Show complete story
-            if status.get("complete_story"):
-                st.subheader("📖 Complete Story")
-                st.text_area("Story", status["complete_story"], height=200, disabled=True)
-            
-            # Show style guide
-            if status.get("style_guide"):
-                st.subheader("🎨 Style Guide")
-                style_guide = status["style_guide"]
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.write(f"**Mood:** {style_guide.get('mood', 'N/A')}")
-                    st.write(f"**Imagery Style:** {style_guide.get('imagery_style', 'N/A')}")
-                with col2:
-                    if style_guide.get("color_palette"):
-                        st.write("**Color Palette:**")
-                        cols = st.columns(len(style_guide["color_palette"]))
-                        for i, color in enumerate(style_guide["color_palette"]):
-                            cols[i].color_picker("", color, disabled=True)
-            
-            # Show scenes
-            if status.get("scenes"):
-                st.subheader("🎬 Scenes")
-                for scene in status["scenes"]:
-                    with st.expander(f"Scene {scene['scene_number']}"):
-                        st.write("**Content:**")
-                        st.write(scene["content"])
-                        if scene.get("slide_text"):
-                            st.write("**Slide Text:**")
-                            st.write(scene["slide_text"])
-                        if scene.get("image_path"):
-                            st.write(f"**Image Path:** {scene['image_path']}")
-            
-            # Show raw JSON
-            with st.expander("🔍 Raw JSON"):
-                st.json(status)
-
-def all_pipelines_page():
-    st.header("📚 All Pipelines")
-    
-    if st.button("Refresh"):
-        pipelines = list_all_pipelines()
-        
-        if pipelines:
-            if not pipelines:
-                st.info("No pipelines found")
-            else:
-                for pipeline_id, pipeline_data in pipelines.items():
-                    with st.expander(f"Pipeline: {pipeline_id[:8]}..."):
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.write(f"**Status:** {pipeline_data.get('status', 'unknown')}")
-                        with col2:
-                            st.write(f"**Slides:** {len(pipeline_data.get('scenes', []))}")
-                        with col3:
-                            created = pipeline_data.get('created_at', '')
-                            st.write(f"**Created:** {created[:10] if created else 'unknown'}")
-                        
-                        if pipeline_data.get('story_request'):
-                            request = pipeline_data['story_request']
-                            niche = request.get('niche', '')
-                            st.write(f"**Niche:** {niche[:50]}{'...' if len(niche) > 50 else ''}")
-                            target = request.get('target_audience', '')
-                            if target:
-                                st.write(f"**Target:** {target[:50]}{'...' if len(target) > 50 else ''}")
-                        
-                        if st.button(f"View Details", key=f"view_{pipeline_id}"):
-                            st.session_state.current_pipeline_id = pipeline_id
-                            st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
+

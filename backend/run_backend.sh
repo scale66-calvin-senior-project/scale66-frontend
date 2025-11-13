@@ -1,27 +1,16 @@
 #!/bin/bash
+# Overview:
+# - Purpose: Boot the backend API with dependencies ensured inside a virtual environment.
+# Key Steps:
+# - Provision venv, install dependencies, create env file, and run FastAPI.
 
-echo "🚀 Starting Story Pipeline Backend..."
-
-# Check if virtual environment exists
+echo "🚀 Starting Carousel Pipeline Backend..."
 if [ ! -d "venv" ]; then
-    echo "📦 Creating virtual environment..."
     python3 -m venv venv
 fi
-
-# Activate virtual environment
-echo "🔧 Activating virtual environment..."
 source venv/bin/activate
-
-# Install dependencies
-echo "📚 Installing dependencies..."
 pip install -r requirements.txt
-
-# Create .env if it doesn't exist
 if [ ! -f ".env" ]; then
-    echo "⚙️ Creating .env file..."
     cp .env.example .env
 fi
-
-# Start the backend
-echo "🏃 Starting FastAPI server..."
 python main.py

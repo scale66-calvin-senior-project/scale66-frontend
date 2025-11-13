@@ -1,40 +1,40 @@
-from pydantic_settings import BaseSettings
-from typing import Optional
+"""
+Settings Configuration - Centralized environment-driven configuration management.
+Loads API keys, model names, server settings, and output paths from environment
+variables or .env file with sensible defaults.
+
+Main Components:
+    1. Settings class - Pydantic model for type-safe configuration
+    2. settings instance - Singleton configuration object used throughout application
+
+Connections:
+    - Used by: All services (OpenAIService, GeminiService) and agents for configuration
+    - Loads from: .env file or environment variables
+    - Provides: API keys, model names, host/port, output directory
+"""
+
 import os
+from typing import Optional
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # API Configuration
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     debug: bool = True
-    
-    # Output Configuration
     output_dir: str = "./output"
-    
-    # Agent Configuration
-    max_slides: int = 20
-    min_slides: int = 1
-    
-    # External API Keys
     openai_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
-    
-    # LLM Configuration
-    text_generation_provider: str = "openai"  # openai for ChatGPT
-    openai_model: str = "gpt-3.5-turbo"  # or gpt-4
-    
-    # Image Generation
-    image_generation_provider: str = "gemini"  # gemini for nanobanana
-    gemini_model: str = "gemini-pro-vision"  # or specific nanobanana model
-    
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    openai_model: str = "gpt-3.5-turbo"
+    gemini_model: str = "gemini-2.5-flash-image"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
 
-# Global settings instance
 settings = Settings()
-
-# Ensure output directory exists
 os.makedirs(settings.output_dir, exist_ok=True)
