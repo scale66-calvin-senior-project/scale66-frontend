@@ -1,5 +1,5 @@
 /**
- * Canvas Components (CORE FEATURE)
+ * Canvas Components (CORE FEATURE) TODO: Implement canvas interface
  *
  * TODO: Export components when created:
  * - CanvasLayout
