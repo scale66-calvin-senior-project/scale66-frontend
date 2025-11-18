@@ -37,8 +37,7 @@ src/
 │   ├── (auth)/                # Authentication pages
 │   ├── (app)/                 # Protected app pages
 │   ├── layout.tsx             # Root layout
-│   ├── globals.css            # Global styles
-│   └── api/                   # API routes
+│   └── globals.css            # Global styles
 ├── components/
 │   ├── ui/                    # Primitive components (Button, Input, Modal, etc.)
 │   ├── common/                # Shared composites (LoadingSpinner, ErrorBoundary, etc.)
@@ -84,14 +83,13 @@ src/
 npm install
 
 # Environment variables (.env.local)
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 NEXT_PUBLIC_FIREBASE_API_KEY=
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 NEXT_PUBLIC_FIREBASE_APP_ID=
-NEXT_PUBLIC_API_BASE_URL=
-RESEND_API_KEY=
 
 # Run dev server
 npm run dev
@@ -145,13 +143,17 @@ All paths use `@/` prefix: `@/components/ui`, `@/hooks`, `@/features/auth`, `@/l
 
 ## Backend API Endpoints
 
+FastAPI backend at `http://localhost:8000/api/v1/`
+
 ```
-Auth:        POST /api/auth/{login,signup,logout}, GET /api/auth/me
-Campaigns:   GET,POST /api/campaigns, GET,PUT,DELETE /api/campaigns/:id
-AI (CORE):   POST /api/ai/{generate,variations,enhance-prompt}
-Brand:       GET,PUT /api/brand, POST /api/brand/assets
-Posting:     POST /api/post/{instagram,tiktok}, GET /api/post/status/:id
-Payment:     POST /api/payment/{create-checkout,webhook}, GET /api/payment/subscription
+Waitlist:    POST /waitlist
+Carousel:    POST /carousel/create, GET /carousel/:id, GET /carousels
+Auth:        POST /auth/{login,signup,logout}, GET /auth/me
+Campaigns:   GET,POST /campaigns, GET,PUT,DELETE /campaigns/:id
+AI (CORE):   POST /ai/{generate,variations,enhance-prompt}
+Brand:       GET,PUT /brand, POST /brand/assets
+Posting:     POST /post/{instagram,tiktok}, GET /post/status/:id
+Payment:     POST /payment/{create-checkout,webhook}, GET /payment/subscription
 ```
 
 ## Workflow
