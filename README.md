@@ -6,16 +6,16 @@
 
 Scale66 helps small software founders:
 
-* Build an online brand that actually converts
-* Automate social content distribution across platforms
-* Understand what content drives customer growth
+- Build an online brand that actually converts
+- Automate social content distribution across platforms
+- Understand what content drives customer growth
 
 ## Tech Stack
 
-* **Framework:** Next.js (React + TypeScript)
-* **Deployment:** Firebase + Custome domain
-* **Backend:** Firebase DB
-* **CI/CD:** GitHub Actions (with dev → prod branch workflow)
+- **Framework:** Next.js (React + TypeScript)
+- **Deployment:** Firebase + Custome domain
+- **Backend:** Firebase DB
+- **CI/CD:** GitHub Actions (with dev → prod branch workflow)
 
 ---
 
@@ -53,8 +53,8 @@ npm start
 
 ## Branch Workflow
 
-* **`dev`** → development environment (auto-deploys preview to Vercel)
-* **`main`** → production environment (auto-deploys live version to Vercel)
+- **`dev`** → development environment (auto-deploys preview to Vercel)
+- **`main`** → production environment (auto-deploys live version to Vercel)
 
 **Typical flow:**
 
@@ -74,23 +74,23 @@ git push origin main
 
 ## CI/CD Setup
 
-* Every push to `dev` triggers a preview deployment on Vercel.
-* Every push to `main` updates the production site.
-* GitHub Actions handles build & test checks automatically.
+- Every push to `dev` triggers a preview deployment on Vercel.
+- Every push to `main` updates the production site.
+- GitHub Actions handles build & test checks automatically.
 
 ---
 
 ## Contributing
 
 1. Fork the repository.
-2. Create a new branch (`feature/incredible-idea`).
+2. Create a new branch.
 3. Commit your changes.
 4. Open a Pull Request to the dev branch.
 5. Once we have a prod ready version/update dev can be merged into main.
 
 ### Pull Request Reviews
 
-* Every Pull Request must be reviewed and approved by **at least one collaborator** before merging.
-* The review ensures code quality, consistent structure, and stability in both `dev` and `main` branches.
-* Automated checks will run via GitHub Actions on all PRs — make sure they pass before requesting review.
-* Once approved, the PR can be merged into `dev` (or `main` if ready for production).
+- Every Pull Request must be reviewed and approved by **at least one collaborator** before merging.
+- The review ensures code quality, consistent structure, and stability in both `dev` and `main` branches.
+- Automated checks will run via GitHub Actions on all PRs — make sure they pass before requesting review.
+- Once approved, the PR can be merged into `dev` (or `main` if ready for production).
