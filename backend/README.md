@@ -48,6 +48,7 @@ backend/
 │   │   └── payment.py
 │   ├── core/               # Config, auth, Supabase
 │   ├── crud/               # Database operations
+│   ├── models/             # Pydantic schemas (organized by feature)
 │   ├── services/           # External integrations
 │   │   ├── ai/            # OpenAI + Gemini
 │   │   ├── storage_service.py
