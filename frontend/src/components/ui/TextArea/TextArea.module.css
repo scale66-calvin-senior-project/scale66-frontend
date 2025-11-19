@@ -1,0 +1,25 @@
+/* TODO: Implement textarea styles */
+.container {
+  /* Container styles */
+}
+
+.label {
+  /* Label styles */
+}
+
+.textarea {
+  /* Base textarea styles */
+}
+
+.textarea.error {
+  /* Error state */
+}
+
+.errorText {
+  /* Error message styles */
+}
+
+.helperText {
+  /* Helper text styles */
+}
+

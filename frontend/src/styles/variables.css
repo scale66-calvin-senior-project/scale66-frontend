@@ -1,0 +1,52 @@
+/**
+ * CSS Variables
+ * Centralized design tokens for the application
+ */
+
+:root {
+  /* Colors */
+  --background: #121212;
+  --foreground: #F8F8F8;
+  --text-primary: #FFFFFF;
+  --text-secondary: #EBEBEB;
+  --text-muted: #F8F8F8;
+  
+  /* TODO: Add more design tokens as needed */
+  /* --primary: ; */
+  /* --secondary: ; */
+  /* --accent: ; */
+  /* --error: ; */
+  /* --success: ; */
+  /* --warning: ; */
+  
+  /* Spacing */
+  /* --spacing-xs: 4px; */
+  /* --spacing-sm: 8px; */
+  /* --spacing-md: 16px; */
+  /* --spacing-lg: 24px; */
+  /* --spacing-xl: 32px; */
+  
+  /* Typography */
+  /* --font-family-primary: ; */
+  /* --font-size-xs: ; */
+  /* --font-size-sm: ; */
+  /* --font-size-md: ; */
+  /* --font-size-lg: ; */
+  /* --font-size-xl: ; */
+  
+  /* Border Radius */
+  /* --radius-sm: 4px; */
+  /* --radius-md: 8px; */
+  /* --radius-lg: 12px; */
+  
+  /* Shadows */
+  /* --shadow-sm: ; */
+  /* --shadow-md: ; */
+  /* --shadow-lg: ; */
+  
+  /* Z-index layers */
+  /* --z-modal: 1000; */
+  /* --z-dropdown: 900; */
+  /* --z-header: 800; */
+}
+

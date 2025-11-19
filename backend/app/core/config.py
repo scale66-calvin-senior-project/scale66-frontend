@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     gemini_api_key: Optional[str] = None
     openai_model: str = "gpt-3.5-turbo"
     gemini_model: str = "gemini-2.5-flash-image"
+    resend_api_key: Optional[str] = None
+    resend_audience_id: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -1,0 +1,60 @@
+/**
+ * Utility Classes
+ * Reusable utility classes for common styling patterns
+ */
+
+/* Container utilities */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+@media (max-width: 1240px) {
+  .container {
+    max-width: calc(100% - 48px);
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    max-width: calc(100% - 32px);
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    max-width: calc(100% - 24px);
+    padding: 0 12px;
+  }
+}
+
+/* Text utilities */
+/* TODO: Add text utility classes as needed */
+/* .text-center { text-align: center; } */
+/* .text-left { text-align: left; } */
+/* .text-right { text-align: right; } */
+
+/* Flexbox utilities */
+/* TODO: Add flexbox utility classes as needed */
+/* .flex { display: flex; } */
+/* .flex-col { flex-direction: column; } */
+/* .items-center { align-items: center; } */
+/* .justify-center { justify-content: center; } */
+/* .justify-between { justify-content: space-between; } */
+
+/* Spacing utilities */
+/* TODO: Add spacing utility classes as needed */
+/* .mt-1 { margin-top: var(--spacing-xs); } */
+/* .mb-1 { margin-bottom: var(--spacing-xs); } */
+/* .p-1 { padding: var(--spacing-xs); } */
+
+/* Visibility utilities */
+/* TODO: Add visibility utility classes as needed */
+/* .hidden { display: none; } */
+/* .visible { visibility: visible; } */
+/* .invisible { visibility: hidden; } */
+

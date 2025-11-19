@@ -1,0 +1,25 @@
+/* TODO: Implement input styles */
+.container {
+  /* Container styles */
+}
+
+.label {
+  /* Label styles */
+}
+
+.input {
+  /* Base input styles */
+}
+
+.input.error {
+  /* Error state */
+}
+
+.errorText {
+  /* Error message styles */
+}
+
+.helperText {
+  /* Helper text styles */
+}
+
