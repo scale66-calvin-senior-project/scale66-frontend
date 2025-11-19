@@ -1,54 +1,111 @@
 """
-FastAPI Application Entry Point - Main server configuration and initialization.
-Configures the FastAPI application with CORS middleware and routes, providing
-the REST API interface for the carousel generation pipeline.
+FastAPI Application Entry Point - Scale66 MVP Backend
 
-Main Functions:
-    1. root() - Returns API discovery information and endpoint documentation
-    2. Main execution block - Launches uvicorn server with hot reload
+Configures the FastAPI application with:
+- CORS middleware
+- API v1 routes (auth, brand_kit, campaigns, content, posts, social, payment)
+- Exception handlers
+- Supabase integration
 
-Connections:
-    - Routes: Includes app.router.routes for all API endpoints
-    - Configuration: Uses environment variables for port and host settings
-    - Started by: run_backend.sh or direct Python execution
+Architecture:
+- API Layer: FastAPI routers in app/api/v1/
+- Agents: AI pipeline in app/agents/
+- CRUD: Database operations in app/crud/
+- Services: External integrations in app/services/
 """
 
 import logging
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import uvicorn
 
-from app.router.routes import router
+# Import API routers
+from app.api.v1 import auth, brand_kit, campaigns, content, posts, social, payment
+from app.core.config import settings
 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Carousel Pipeline API",
-    description="Agentic pipeline for automated carousel content generation",
-    version="1.0.0",
+    title="Scale66 API",
+    description="AI-powered carousel content generation platform",
+    version="2.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # TODO: Restrict to specific origins in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(router, prefix="/api/v1")
+# Register API v1 routers
+app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
+app.include_router(brand_kit.router, prefix="/api/v1", tags=["brand_kit"])
+app.include_router(campaigns.router, prefix="/api/v1", tags=["campaigns"])
+app.include_router(content.router, prefix="/api/v1", tags=["content"])
+app.include_router(posts.router, prefix="/api/v1", tags=["posts"])
+app.include_router(social.router, prefix="/api/v1", tags=["social"])
+app.include_router(payment.router, prefix="/api/v1", tags=["payment"])
+
+
+# Exception handlers
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    """Handle validation errors."""
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(exc)}
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Handle unexpected errors."""
+    logger.error(f"Unexpected error: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Internal server error"}
+    )
 
 
 @app.get("/")
 async def root():
+    """API root endpoint with service information."""
     return {
-        "message": "Carousel Pipeline API",
+        "name": "Scale66 API",
+        "version": "2.0.0",
+        "description": "AI-powered carousel content generation",
         "docs": "/docs",
-        "health": "/api/v1/health",
+        "redoc": "/redoc",
+        "api_version": "v1",
+        "endpoints": {
+            "auth": "/api/v1/auth",
+            "brand_kit": "/api/v1/brand-kit",
+            "campaigns": "/api/v1/campaigns",
+            "content": "/api/v1/content",
+            "posts": "/api/v1/posts",
+            "social": "/api/v1/social",
+            "payment": "/api/v1/payment"
+        }
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {
+        "status": "healthy",
+        "service": "scale66-backend",
+        "version": "2.0.0"
     }
 
 
