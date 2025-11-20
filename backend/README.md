@@ -7,7 +7,9 @@ AI-powered carousel content generation platform built with FastAPI, Supabase, an
 - **Framework:** FastAPI + Uvicorn
 - **Package Manager:** uv (fast, modern Python package management)
 - **Database:** Supabase (PostgreSQL + Auth + Storage)
-- **AI Services:** OpenAI (GPT-4) + Google Gemini
+- **AI Services:** Anthropic (Claude) + Google Gemini
+  - **Text Generation:** Claude Sonnet 4.5 (smartest model for complex tasks)
+  - **Image Generation:** Google Gemini (gemini-2.5-flash-image)
 - **Image Processing:** Pillow
 - **Payment:** Stripe
 - **Email:** Resend
@@ -50,7 +52,7 @@ backend/
 │   ├── crud/               # Database operations
 │   ├── models/             # Pydantic schemas (organized by feature)
 │   ├── services/           # External integrations
-│   │   ├── ai/            # OpenAI + Gemini
+│   │   ├── ai/            # Anthropic + Gemini
 │   │   ├── storage_service.py
 │   │   ├── stripe_service.py
 │   │   └── social_media_service.py
@@ -103,7 +105,7 @@ SUPABASE_SERVICE_KEY=your-service-role-key
 SUPABASE_JWT_SECRET=your-jwt-secret
 
 # AI Services (Required)
-OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
 GEMINI_API_KEY=...
 
 # Email (Required)

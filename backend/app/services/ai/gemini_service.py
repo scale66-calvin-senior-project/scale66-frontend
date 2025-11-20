@@ -118,8 +118,8 @@ class GeminiService:
         return image_bytes
         ```
         
-        NOTE: Gemini's image generation capabilities may be limited.
-        Consider using DALL-E (OpenAI) or Stable Diffusion instead.
+        NOTE: This is the primary image generation service for the platform.
+        For text generation, use Anthropic Claude instead.
         """
         # TODO: Implement image generation
         pass

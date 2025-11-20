@@ -232,8 +232,8 @@ class ImageGenerator(BaseAgent):
            - Not be too busy/complex
            '''
         
-        2. Call image generation API (DALL-E, Midjourney, Stable Diffusion):
-           - Use OpenAI DALL-E 3 or
+        2. Call image generation API (Gemini, Midjourney, Stable Diffusion):
+           - Use Google Gemini for image generation or
            - Stable Diffusion via Replicate or
            - Consider using background templates + overlays
         

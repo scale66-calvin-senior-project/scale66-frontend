@@ -53,7 +53,7 @@ class BaseAgent:
     async def _call_llm(
         self, 
         prompt: str, 
-        model: str = "gpt-4",
+        model: str = "claude-sonnet-4-5",
         temperature: float = 0.7,
         max_tokens: Optional[int] = None
     ) -> str:
@@ -62,7 +62,7 @@ class BaseAgent:
         
         Args:
             prompt: The prompt to send to the LLM
-            model: Model name (e.g., "gpt-4", "gemini-2.5-flash")
+            model: Model name (e.g., "claude-sonnet-4-5", "claude-haiku-4-5", "gemini-2.5-flash")
             temperature: Sampling temperature (0.0 to 1.0)
             max_tokens: Maximum tokens to generate
             
@@ -73,8 +73,8 @@ class BaseAgent:
             Exception: If all retries fail
         
         TODO: Implement LLM call wrapper:
-        1. Detect model type (OpenAI vs Gemini)
-        2. Call appropriate service (OpenAIService or GeminiService)
+        1. Detect model type (Anthropic vs Gemini)
+        2. Call appropriate service (AnthropicService or GeminiService)
         3. Add retry logic (exponential backoff)
         4. Log request/response for debugging
         5. Handle rate limit errors
@@ -82,15 +82,15 @@ class BaseAgent:
         
         Example:
         ```python
-        from app.services.ai.openai_service import OpenAIService
+        from app.services.ai.anthropic_service import AnthropicService
         from app.services.ai.gemini_service import GeminiService
         
-        if "gpt" in model:
-            service = OpenAIService()
-            response = await service.call(prompt, model, temperature, max_tokens)
+        if "claude" in model:
+            service = AnthropicService()
+            response = await service.generate_text(prompt, max_tokens, temperature, model)
         elif "gemini" in model:
             service = GeminiService()
-            response = await service.call(prompt, model, temperature, max_tokens)
+            response = await service.generate_text(prompt, max_tokens, temperature, model)
         
         return response
         ```

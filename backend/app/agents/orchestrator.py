@@ -7,8 +7,8 @@ Pipeline Flow (6 steps):
 1. Orchestrator validates input
 2. CarouselFormatDecider decides format
 3. StoryGenerator creates hook, script, slides
-4. ImageGenerator generates images (parallel with step 5)
-5. TextGenerator generates text (parallel with step 4)
+4. ImageGenerator generates images (must complete first)
+5. TextGenerator generates text (requires hook_image from step 4)
 6. Finalizer combines text + images into final carousel
 """
 
@@ -29,10 +29,11 @@ class Orchestrator(BaseAgent):
     1. Validate Brand Kit input data
     2. Call carousel_format_decider (step 2)
     3. Call story_generator (step 3)
-    4. Call text_generator and image_generator in parallel (steps 4-5)
-    5. Call finalizer (step 6)
-    6. Return complete carousel with metadata
-    7. Handle errors and retries at pipeline level
+    4. Call image_generator (step 4)
+    5. Call text_generator (step 5) - requires hook_image from step 4
+    6. Call finalizer (step 6)
+    7. Return complete carousel with metadata
+    8. Handle errors and retries at pipeline level
     
     Pipeline State Management:
     - Tracks progress through each step
@@ -129,19 +130,18 @@ class Orchestrator(BaseAgent):
             user_prompt
         )
         
-        STEP 4-5: Generate images and text in PARALLEL
-        import asyncio
-        image_task = self.image_generator.generate(story_data, brand_kit_data)
-        text_task = self.text_generator.generate(story_data, brand_kit_data)
+        STEP 4: Generate images (MUST complete first)
+        image_data = await self.image_generator.generate(story_data, brand_kit_data)
         
-        image_data, text_data = await asyncio.gather(image_task, text_task)
+        NOTE: ImageGenerator must complete before TextGenerator!
+        TextGenerator needs hook_image_url for style generation.
         
-        NOTE: text_generator needs hook_image_url from image_generator for style generation
-        Coordination:
-        - image_generator runs first to generate hook_image
-        - text_generator then uses hook_image for style
-        OR
-        - Run in parallel but text_generator waits for hook_image
+        STEP 5: Generate text (uses hook_image from step 4)
+        text_data = await self.text_generator.generate(
+            story_data, 
+            brand_kit_data,
+            hook_image_url=image_data["hook_image_url"]
+        )
         
         STEP 6: Finalize carousel (combine text + images)
         carousel_output = await self.finalizer.finalize(

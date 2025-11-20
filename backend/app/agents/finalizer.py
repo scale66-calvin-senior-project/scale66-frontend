@@ -175,7 +175,7 @@ class Finalizer(BaseAgent):
         image_bytes = await self._download_image(image_url)
         
         STEP 2: LLM analyzes image and decides text styling
-        Use vision-capable LLM (GPT-4V or Gemini Vision):
+        Use vision-capable LLM (Claude Vision or Gemini Vision):
         
         prompt = '''
         Analyze this image and decide how to overlay text.
@@ -323,27 +323,19 @@ class Finalizer(BaseAgent):
         TODO: Implement vision LLM call:
         
         Options:
-        1. OpenAI GPT-4V:
+        1. Anthropic Claude Vision:
            ```python
-           import openai
+           from app.services.ai.anthropic_service import anthropic_service
            import base64
            
            base64_image = base64.b64encode(image_data).decode('utf-8')
            
-           response = openai.ChatCompletion.create(
-               model="gpt-4-vision-preview",
-               messages=[{
-                   "role": "user",
-                   "content": [
-                       {"type": "text", "text": prompt},
-                       {"type": "image_url", "image_url": {
-                           "url": f"data:image/png;base64,{base64_image}"
-                       }}
-                   ]
-               }]
+           response = await anthropic_service.analyze_image_base64(
+               image_base64=base64_image,
+               prompt=prompt
            )
            
-           return json.loads(response.choices[0].message.content)
+           return json.loads(response)
            ```
         
         2. Google Gemini Vision:

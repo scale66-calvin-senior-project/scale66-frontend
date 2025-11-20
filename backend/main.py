@@ -9,9 +9,13 @@ Configures the FastAPI application with:
 
 Architecture:
 - API Layer: FastAPI routers in app/api/v1/
-- Agents: AI pipeline in app/agents/
+- Agents: 6-step AI pipeline in app/agents/ (sequential execution)
 - CRUD: Database operations in app/crud/
 - Services: External integrations in app/services/
+
+AI Pipeline Flow:
+1. Orchestrator → 2. FormatDecider → 3. StoryGenerator
+→ 4. ImageGenerator → 5. TextGenerator → 6. Finalizer
 """
 
 import logging

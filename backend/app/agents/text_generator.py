@@ -8,9 +8,9 @@ Has 3 sub-components:
 2. Hook Text Generator - Creates text for Hook Slide (text only)
 3. Body Slides Text Generator - Creates text for body slides
 
-NOTE: Style Generator needs hook_image from ImageGenerator (step 4)
-Orchestrator must coordinate: ImageGenerator generates hook_image first,
-then TextGenerator can use it for style generation.
+IMPORTANT: This agent REQUIRES hook_image_url from ImageGenerator (step 4).
+ImageGenerator must complete BEFORE TextGenerator runs.
+The orchestrator must execute these agents sequentially, not in parallel.
 """
 
 from typing import Dict, Any, List
@@ -162,7 +162,7 @@ class TextGenerator(BaseAgent):
         The LLM analyzes the hook_image to decide text style that
         will look good overlaid on the images.
         
-        1. Use vision-capable LLM (GPT-4V or Gemini Vision)
+        1. Use vision-capable LLM (Claude Vision or Gemini Vision)
         
         2. Build prompt:
            '''

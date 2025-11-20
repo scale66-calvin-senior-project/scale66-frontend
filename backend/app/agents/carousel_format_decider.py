@@ -21,18 +21,8 @@ class CarouselFormatDecider(BaseAgent):
     3. Decide optimal carousel format from predefined options
     4. Return format decision with rationale
     
-    Available Carousel Formats:
-    - "educational_tips": List of tips/tricks (e.g., "5 Ways to...")
-    - "problem_solution": Problem → Solution flow
-    - "before_after": Transformation story
-    - "step_by_step": Tutorial format
-    - "myth_busting": Common myths debunked
-    - "stats_facts": Data-driven insights
-    - "story_narrative": Emotional storytelling
-    - "comparison": Product/concept comparison
-    
     Decision Criteria:
-    - Content type (educational, promotional, entertaining)
+    - Content type
     - Audience sophistication level
     - Brand style (professional, casual, bold)
     - Pain point complexity

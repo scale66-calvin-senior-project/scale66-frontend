@@ -8,7 +8,7 @@ Main Components:
     2. settings instance - Singleton configuration object used throughout application
 
 Connections:
-    - Used by: All services (OpenAIService, GeminiService) and agents for configuration
+    - Used by: All services (AnthropicService, GeminiService) and agents for configuration
     - Loads from: .env file or environment variables
     - Provides: API keys, model names, host/port, output directory
 """
@@ -34,25 +34,14 @@ class Settings(BaseSettings):
     supabase_jwt_secret: Optional[str] = None  # For JWT verification
     
     # AI Services
-    openai_api_key: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
-    openai_model: str = "gpt-4"
+    anthropic_model: str = "claude-sonnet-4-5"
     gemini_model: str = "gemini-2.5-flash-image"
     
     # Email service (Resend)
     resend_api_key: Optional[str] = None
     resend_audience_id: Optional[str] = None
-    
-    # Storage (AWS S3 - optional, if not using Supabase Storage)
-    aws_access_key_id: Optional[str] = None
-    aws_secret_access_key: Optional[str] = None
-    s3_bucket_name: Optional[str] = None
-    s3_region: str = "us-east-1"
-    
-    # Cloudinary (alternative storage - optional)
-    cloudinary_cloud_name: Optional[str] = None
-    cloudinary_api_key: Optional[str] = None
-    cloudinary_api_secret: Optional[str] = None
     
     # Social Media APIs
     instagram_client_id: Optional[str] = None
