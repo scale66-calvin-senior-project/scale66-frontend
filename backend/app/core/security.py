@@ -1,10 +1,23 @@
 """
-Security Utilities - JWT verification and authentication helpers.
+Security Utilities - JWT token verification for Supabase Auth.
 
-This module provides:
-- JWT token verification (for Supabase tokens)
-- Password hashing (if using custom auth instead of Supabase Auth)
-- Token generation helpers
+This module provides JWT verification for tokens issued by Supabase Auth.
+
+Frontend Authentication Flow:
+1. Frontend calls Supabase Auth directly (signup, login, OAuth)
+2. Supabase issues JWT access token
+3. Frontend includes token in Authorization header
+4. Backend validates token using functions in this module
+
+Backend's Role:
+- Verify JWT tokens issued by Supabase
+- Extract user info from token claims
+- Protect endpoints via get_current_user dependency
+
+This module does NOT:
+- Handle signup/login (frontend → Supabase)
+- Hash passwords (Supabase handles this)
+- Issue tokens (Supabase issues tokens)
 """
 
 from typing import Optional, Dict, Any
@@ -120,91 +133,15 @@ def extract_token_from_header(authorization: str) -> Optional[str]:
     pass
 
 
-# Password hashing functions (if using custom auth instead of Supabase Auth)
-def hash_password(password: str) -> str:
-    """
-    Hash password using bcrypt.
-    
-    Args:
-        password: Plain text password
-        
-    Returns:
-        Hashed password
-    
-    TODO: Implement password hashing:
-    
-    NOTE: Only needed if using CUSTOM auth instead of Supabase Auth!
-    If using Supabase Auth, password hashing is handled by Supabase.
-    
-    ```python
-    return pwd_context.hash(password)
-    ```
-    """
-    # TODO: Implement if using custom auth
-    # return pwd_context.hash(password)
-    pass
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """
-    Verify password against hash.
-    
-    Args:
-        plain_password: Plain text password
-        hashed_password: Hashed password from database
-        
-    Returns:
-        True if password matches, False otherwise
-    
-    TODO: Implement password verification:
-    
-    NOTE: Only needed if using CUSTOM auth instead of Supabase Auth!
-    If using Supabase Auth, password verification is handled by Supabase.
-    
-    ```python
-    return pwd_context.verify(plain_password, hashed_password)
-    ```
-    """
-    # TODO: Implement if using custom auth
-    # return pwd_context.verify(plain_password, hashed_password)
-    pass
-
-
-def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
-    """
-    Create JWT access token.
-    
-    Args:
-        data: Data to encode in token (e.g., {"sub": user_id})
-        expires_delta: Token expiration time
-        
-    Returns:
-        Encoded JWT token
-    
-    TODO: Implement token creation:
-    
-    NOTE: Only needed if using CUSTOM auth instead of Supabase Auth!
-    If using Supabase Auth, tokens are issued by Supabase.
-    
-    ```python
-    to_encode = data.copy()
-    
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    
-    to_encode.update({"exp": expire})
-    
-    encoded_jwt = jwt.encode(
-        to_encode,
-        settings.jwt_secret_key,
-        algorithm="HS256"
-    )
-    
-    return encoded_jwt
-    ```
-    """
-    # TODO: Implement if using custom auth
-    pass
+# Note: Password hashing, verification, and token creation functions
+# are NOT needed because we use Supabase Auth.
+#
+# Supabase Auth handles:
+# - Password hashing (bcrypt)
+# - Password verification
+# - JWT token issuance
+# - Token refresh
+# - OAuth flows
+#
+# Backend only needs to VERIFY tokens issued by Supabase (see verify_supabase_jwt above)
 

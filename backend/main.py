@@ -3,15 +3,20 @@ FastAPI Application Entry Point - Scale66 MVP Backend
 
 Configures the FastAPI application with:
 - CORS middleware
-- API v1 routes (auth, brand_kit, campaigns, content, posts, social, payment)
+- API v1 routes (brand_kit, campaigns, content, posts, social, payment)
 - Exception handlers
-- Supabase integration
+- Supabase JWT validation
 
 Architecture:
 - API Layer: FastAPI routers in app/api/v1/
 - Agents: 6-step AI pipeline in app/agents/ (sequential execution)
 - CRUD: Database operations in app/crud/
 - Services: External integrations in app/services/
+
+Authentication:
+- Frontend handles auth directly with Supabase Auth
+- Backend validates JWT tokens from Supabase
+- All protected endpoints use get_current_user dependency
 
 AI Pipeline Flow:
 1. Orchestrator → 2. FormatDecider → 3. StoryGenerator
@@ -27,7 +32,7 @@ from fastapi.responses import JSONResponse
 import uvicorn
 
 # Import API routers
-from app.api.v1 import auth, brand_kit, campaigns, content, posts, social, payment
+from app.api.v1 import brand_kit, campaigns, content, posts, social, payment
 from app.core.config import settings
 
 
@@ -52,7 +57,7 @@ app.add_middleware(
 )
 
 # Register API v1 routers
-app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
+# Note: Auth is handled by frontend → Supabase directly
 app.include_router(brand_kit.router, prefix="/api/v1", tags=["brand_kit"])
 app.include_router(campaigns.router, prefix="/api/v1", tags=["campaigns"])
 app.include_router(content.router, prefix="/api/v1", tags=["content"])
@@ -92,14 +97,14 @@ async def root():
         "redoc": "/redoc",
         "api_version": "v1",
         "endpoints": {
-            "auth": "/api/v1/auth",
             "brand_kit": "/api/v1/brand-kit",
             "campaigns": "/api/v1/campaigns",
             "content": "/api/v1/content",
             "posts": "/api/v1/posts",
             "social": "/api/v1/social",
             "payment": "/api/v1/payment"
-        }
+        },
+        "note": "Auth handled by frontend → Supabase directly. Backend validates JWT tokens."
     }
 
 

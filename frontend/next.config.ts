@@ -1,11 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Use a server build so Firebase App Hosting can run the app
+  // Standalone build for deployment
   output: 'standalone',
   trailingSlash: true,
   images: {
-    unoptimized: true
+    unoptimized: true,
+    domains: ['your-supabase-project.supabase.co'], // Add Supabase storage domain
   }
 };
 

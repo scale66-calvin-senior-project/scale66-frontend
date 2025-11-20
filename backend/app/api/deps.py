@@ -2,9 +2,15 @@
 API Dependencies - Reusable dependencies for FastAPI endpoints.
 
 This module provides:
-- get_current_user: Verify Supabase JWT token and extract user
+- get_current_user: Verify JWT token from frontend (issued by Supabase Auth)
 - get_supabase_client: Inject Supabase client for database operations
 - get_supabase_admin: Inject Supabase admin client (bypasses RLS)
+
+Authentication Flow:
+1. Frontend authenticates with Supabase Auth directly (signup/login)
+2. Supabase issues JWT access token
+3. Frontend includes token in Authorization: Bearer <token>
+4. Backend validates token and extracts user info via get_current_user()
 """
 
 from typing import Optional
