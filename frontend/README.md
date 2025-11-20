@@ -21,7 +21,7 @@ frontend/
 │   ├── favicon.ico                            # App favicon
 │   └── logo.png                               # Brand logo
 │
-└── src/                                       # ⭐ MAIN APPLICATION SOURCE
+└── src/                                       # MAIN APPLICATION SOURCE
     ├── app/                                   # Next.js App Router (Route Handlers)
     │   ├── layout.tsx                         # Root layout with providers
     │   ├── globals.css                        # Global styles & CSS reset
@@ -66,7 +66,7 @@ frontend/
     ├── components/                            # Reusable Components
     │   ├── index.ts                           # Components barrel exports
     │   │
-    │   ├── ui/                                # 🎨 UI Primitives (Design System)
+    │   ├── ui/                                # UI Primitives (Design System)
     │   │   ├── index.ts                       # UI components barrel
     │   │   ├── Button/
     │   │   │   ├── Button.tsx                 # Button component (primary, secondary, ghost)
@@ -101,7 +101,7 @@ frontend/
     │   │       ├── Spinner.module.css         # Spinner styles
     │   │       └── index.ts                   # Spinner exports
     │   │
-    │   ├── common/                            # 🧩 Common Composites
+    │   ├── common/                            # Common Composites
     │   │   ├── index.ts                       # Common components barrel
     │   │   ├── LoadingSpinner/
     │   │   │   ├── LoadingSpinner.tsx         # Full-page loading spinner
@@ -120,7 +120,7 @@ frontend/
     │   │       ├── SuccessMessage.module.css  # Success message styles
     │   │       └── index.ts                   # SuccessMessage exports
     │   │
-    │   └── layouts/                           # 📐 Layout Components
+    │   └── layouts/                           # Layout Components
     │       ├── index.ts                       # Layouts barrel
     │       ├── LandingLayout/
     │       │   ├── LandingLayout.tsx          # Landing page layout
@@ -139,7 +139,7 @@ frontend/
     │           ├── AppLayout.module.css       # App layout styles
     │           └── index.ts                   # AppLayout exports
     │
-    ├── features/                              # 🎯 Feature Modules (Feature-Based Architecture)
+    ├── features/                              # Feature Modules (Feature-Based Architecture)
     │   ├── index.ts                           # Features barrel exports
     │   │
     │   ├── auth/                              # Authentication Feature
@@ -202,7 +202,7 @@ frontend/
     │   │       ├── index.ts                   # Campaigns types barrel
     │   │       └── campaigns.types.ts         # Campaign, CampaignCreate types
     │   │
-    │   ├── canvas/                            # Canvas Feature ⭐ CORE FEATURE
+    │   ├── canvas/                            # Canvas Feature - CORE FEATURE
     │   │   ├── index.ts                       # Canvas barrel
     │   │   ├── components/
     │   │   │   └── index.ts                   # Canvas components (AI chat, preview, etc.)
@@ -424,7 +424,7 @@ frontend/
 
 ### **features/**
 
-**Feature-based architecture (co-located by domain)  CORE ARCHITECTURE**
+**Feature-based architecture (co-located by domain) CORE ARCHITECTURE**
 
 - **Purpose:** Organize code by business feature, not file type
 - **Pattern:** Each feature contains:
@@ -437,7 +437,7 @@ frontend/
   - **auth/** - Login, signup, OAuth via Supabase Auth
   - **brand-kit/** - Brand profile, colors, style (via backend API)
   - **campaigns/** - Campaign CRUD, analytics (via backend API)
-  - **canvas/** -  **CORE FEATURE** - AI chat interface for carousel generation
+  - **canvas/** - **CORE FEATURE** - AI chat interface for carousel generation
   - **dashboard/** - Main landing page, stats, recent activity
   - **landing/** - Marketing pages (hero, features, pricing, testimonials)
   - **onboarding/** - 6-step wizard for new users
@@ -480,7 +480,7 @@ frontend/
 
 ### **services/api/**
 
-**API service layer (centralized backend communication)  CRITICAL**
+**API service layer (centralized backend communication) CRITICAL**
 
 - **Purpose:** Abstract all HTTP calls to backend, handle auth, errors, retries
 - **Files:**
@@ -506,13 +506,23 @@ frontend/
 
 - **Purpose:** Initialize and configure external services
 - **Files:**
-  - **supabase.ts** - Supabase client for **AUTHENTICATION ONLY**
-    - ✅ Used for: `signUp()`, `signInWithPassword()`, `signOut()`, `getSession()`
-    - ❌ NOT used for: Database queries, storage, realtime (use backend API instead)
-    - Exports helper functions: `getAccessToken()`, `getSession()`, `signOut()`
+  - **supabase.ts** - Supabase client for **AUTHENTICATION ONLY** - **Enhanced**
+    - **Authentication Functions:**
+      - `signUp(email, password)` - Register new user
+      - `signInWithPassword(email, password)` - Email/password login
+      - `signInWithOAuth(provider)` - OAuth login (Google, GitHub, Apple)
+      - `signOut()` - Log out current user
+      - `resetPassword(email)` - Send password reset email
+      - `updatePassword(newPassword)` - Update user password
+    - **Session Management:**
+      - `getSession()` - Get active session with JWT
+      - `getCurrentUser()` - Get authenticated user data
+      - `getAccessToken()` - Get JWT for backend API calls
+    - NOT used for: Database queries, storage, realtime (use backend API instead)
     - Auto-refreshes tokens, persists session to localStorage
+    - Type-safe with TypeScript exports: `Session`, `User`
   - **stripe.ts** - Stripe client configuration (for frontend checkout flows)
-- **Pattern:** Export configured client instances, not raw SDKs
+- **Pattern:** Export configured client instances and helper functions, not raw SDKs
 - **Critical Note:** Supabase is ONLY for auth. All other operations go through backend API.
 
 ### **types/**
@@ -624,35 +634,30 @@ This project follows a **feature-based architecture**. Key principles:
 
 ## Feature Status
 
-| Feature           | Status      | Backend Deps           | Notes                                       |
-| ----------------- | ----------- | ---------------------- | ------------------------------------------- |
-| **Landing Pages** | ✅ Complete | None                   | Migrated from Pages Router                  |
-| **Auth**          | 🔨 Setup    | Supabase Auth (direct) | Login/Signup/OAuth ready for implementation |
-| **Onboarding**    | 🔨 Setup    | `/api/v1/brand-kit`    | 6-step wizard structure                     |
-| **Payment**       | 🔨 Setup    | `/api/v1/payment/*`    | Structure ready, Stripe integration needed  |
-| **Dashboard**     | 🔨 Setup    | `/api/v1/campaigns`    | Main landing page after login               |
-| **Campaigns**     | 🔨 Setup    | `/api/v1/campaigns/*`  | Campaign management grid                    |
-| **Canvas**        | 🔨 Setup    | `/api/v1/content/*`    | **CORE FEATURE** - AI chat interface        |
-| **Posting**       | 🔨 Setup    | `/api/v1/social/*`     | Post to Instagram/TikTok                    |
-| **Brand Kit**     | 🔨 Setup    | `/api/v1/brand-kit`    | Brand profile management                    |
-| **Settings**      | 🔨 Setup    | `/api/v1/posts/*`      | Account settings                            |
+| Feature           | Status   | Backend Deps           | Notes                                      |
+| ----------------- | -------- | ---------------------- | ------------------------------------------ |
+| **Landing Pages** | Complete | None                   | Migrated from Pages Router                 |
+| **Auth**          | Ready    | Supabase Auth (direct) | Authentication functions fully implemented |
+| **Onboarding**    | Setup    | `/api/v1/brand-kit`    | 6-step wizard structure                    |
+| **Payment**       | Setup    | `/api/v1/payment/*`    | Structure ready, Stripe integration needed |
+| **Dashboard**     | Setup    | `/api/v1/campaigns`    | Main landing page after login              |
+| **Campaigns**     | Setup    | `/api/v1/campaigns/*`  | Campaign management grid                   |
+| **Canvas**        | Setup    | `/api/v1/content/*`    | **CORE FEATURE** - AI chat interface       |
+| **Posting**       | Setup    | `/api/v1/social/*`     | Post to Instagram/TikTok                   |
+| **Brand Kit**     | Setup    | `/api/v1/brand-kit`    | Brand profile management                   |
+| **Settings**      | Setup    | `/api/v1/posts/*`      | Account settings                           |
 
 **Legend:**
 
-- ✅ Complete - Fully functional
-- 🔨 Setup - Structure created, needs implementation
-- ⏳ Pending - Not yet started
+- Complete - Fully functional
+- Setup - Structure created, needs implementation
+- Pending - Not yet started
 
 ## Getting Started
 
 ```bash
 # Install dependencies
 npm install
-
-# Environment variables (.env.local)
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 # Run dev server
 npm run dev
@@ -661,6 +666,13 @@ npm run dev
 npm run build
 npm start
 ```
+
+**Note:** Supabase authentication is fully configured. The client provides complete auth functionality including:
+
+- Email/password authentication
+- OAuth (Google, GitHub, Apple)
+- Password reset flows
+- Session management with automatic JWT refresh
 
 ## Development Guide
 
@@ -703,33 +715,6 @@ All paths use `@/` prefix: `@/components/ui`, `@/hooks`, `@/features/auth`, `@/l
 
 ## Architecture Overview
 
-### Frontend ↔ Backend Communication
-
-```
-┌────────────────────────────────────────┐
-│            Frontend (Next.js)          │
-│                                        │
-│  1. User authenticates with Supabase  │
-│     └─> Get JWT token                 │
-│                                        │
-│  2. All other operations              │
-│     └─> Call Backend API + JWT        │
-│         (Axios automatically adds it) │
-└────────────────────────────────────────┘
-                  │
-                  │ HTTP + JWT Token
-                  ▼
-┌────────────────────────────────────────┐
-│         Backend (FastAPI)              │
-│                                        │
-│  1. Validate JWT token                │
-│  2. Execute business logic             │
-│  3. Query Supabase database            │
-│  4. Call AI services (Claude, Gemini) │
-│  5. Return response                    │
-└────────────────────────────────────────┘
-```
-
 ### Backend API Endpoints
 
 FastAPI backend at `http://localhost:8000/api/v1/`
@@ -737,7 +722,7 @@ FastAPI backend at `http://localhost:8000/api/v1/`
 ```
 Brand Kit:   POST,GET,PUT,DELETE /brand-kit
 Campaigns:   GET,POST /campaigns, GET,PUT,DELETE /campaigns/{id}
-Content:     POST /content/generate, GET /content/status/{job_id}  ⭐ CORE
+Content:     POST /content/generate, GET /content/status/{job_id}  [CORE]
 Posts:       GET,POST /posts, GET,PUT,DELETE /posts/{id}, POST /posts/{id}/publish
 Social:      GET /social/connect/{platform}, GET /social/accounts
 Payment:     POST /payment/create-checkout-session, POST /payment/webhook

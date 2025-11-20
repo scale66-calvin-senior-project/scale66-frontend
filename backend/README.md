@@ -122,7 +122,7 @@ backend/
 - **Structure:** Versioned API (v1) with route modules organized by feature
 - **Auth:** JWT validation (tokens issued by Supabase Auth on frontend)
 - **Key Endpoints:**
-  - `/api/v1/content/generate` - 🎯 **CORE** - Main AI pipeline trigger
+  - `/api/v1/content/generate` - **CORE** - Main AI pipeline trigger
   - `/api/v1/brand-kit` - Brand kit CRUD operations
   - `/api/v1/campaigns` - Campaign management
   - `/api/v1/posts` - Generated content management
@@ -146,9 +146,13 @@ backend/
   - **security.py** - JWT verification (Supabase-issued tokens only)
     - `verify_supabase_jwt()` - Validates JWT tokens from frontend
     - `extract_token_from_header()` - Extracts Bearer token
-    -  No password hashing or token creation (handled by Supabase Auth)
-  - **supabase.py** - Database client singleton
-    - Returns configured Supabase client
+    - No password hashing or token creation (handled by Supabase Auth)
+  - **supabase.py** - Supabase client initialization - **Implemented**
+    - `get_supabase_client()` - Client with anon key (respects RLS)
+    - `get_supabase_admin_client()` - Client with service role key (bypasses RLS)
+    - `get_supabase_dep()` - FastAPI dependency for RLS-aware operations
+    - `get_supabase_admin_dep()` - FastAPI dependency for admin operations
+    - Singleton pattern with `@lru_cache()` for efficient reuse
     - Used for database operations only (not auth)
 
 ### **crud/**
@@ -262,7 +266,7 @@ Base URL: `http://localhost:8000/api/v1`
 ```
 Brand Kit:   POST,GET,PUT,DELETE /brand-kit
 Campaigns:   GET,POST /campaigns, GET,PUT,DELETE /campaigns/{id}
-Content:     POST /content/generate, GET /content/status/{job_id}  ⭐ CORE
+Content:     POST /content/generate, GET /content/status/{job_id}  [CORE]
 Posts:       GET,POST /posts, GET,PUT,DELETE /posts/{id}, POST /posts/{id}/publish
 Social:      GET /social/connect/{platform}, GET /social/accounts
 Payment:     POST /payment/create-checkout-session, POST /payment/webhook
@@ -276,11 +280,11 @@ Health:      GET /health
 ## Environment Variables
 
 ```env
-# Supabase (Required)
+# Supabase (Required) - Configuration Implemented
 SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-anon-key
-SUPABASE_SERVICE_KEY=your-service-role-key
-SUPABASE_JWT_SECRET=your-jwt-secret  # For validating JWT tokens from frontend
+SUPABASE_KEY=your-anon-key                    # For RLS-aware database operations
+SUPABASE_SERVICE_KEY=your-service-role-key    # For admin operations (bypasses RLS)
+SUPABASE_JWT_SECRET=your-jwt-secret           # For validating JWT tokens from frontend
 
 # AI Services (Required)
 ANTHROPIC_API_KEY=sk-ant-...
@@ -361,23 +365,32 @@ uv run python main.py
 
 ## Implementation Status
 
-**Current Status:** 🟡 Structure complete, ready for implementation
+**Current Status:** Structure complete, core infrastructure implemented
 
 All files contain:
 
-- ✅ Class/function signatures with type hints
-- ✅ Comprehensive docstrings
-- ✅ TODO comments with examples
-- ❌ Implementation pending (by design)
+- Class/function signatures with type hints
+- Comprehensive docstrings
+- Supabase client initialization (**IMPLEMENTED**)
+- Implementation in progress
 
 ### Implementation Priority
 
-1. **Core Infrastructure** - Supabase client, JWT validation, CRUD operations
+1. **Core Infrastructure** - Supabase client (DONE), JWT validation, CRUD operations
 2. **API Endpoints** - Brand kit, campaigns, content generation
 3. **AI Pipeline** - Implement agents (2 → 3 → 4 → 5 → 6 → 1)
 4. **Services** - Storage, email, social OAuth, Stripe
 
-**Note:** Authentication (signup/login) is handled by frontend → Supabase Auth. Backend only validates JWT tokens.
+### Recently Completed
+
+- **Supabase Client Initialization** (`app/core/supabase.py`)
+  - Implemented `get_supabase_client()` with anon key (RLS-aware)
+  - Implemented `get_supabase_admin_client()` with service role key (bypasses RLS)
+  - Added FastAPI dependency injection functions
+  - Environment variable validation with helpful error messages
+  - Singleton pattern using `@lru_cache()` for efficient client reuse
+
+**Note:** Authentication (signup/login) is handled by frontend → Supabase Auth. Backend only validates JWT tokens and performs database operations.
 
 ## Branch Strategy
 

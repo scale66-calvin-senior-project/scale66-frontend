@@ -25,31 +25,27 @@ def get_supabase_client() -> Client:
     Returns:
         Supabase client instance
     
-    TODO: Implement Supabase client initialization:
-    
-    ```python
-    from supabase import create_client
-    from app.core.config import settings
-    
-    client = create_client(
-        supabase_url=settings.supabase_url,
-        supabase_key=settings.supabase_key  # anon key
-    )
-    
-    return client
-    ```
+    Raises:
+        ValueError: If Supabase URL or anon key is not configured
     
     The anon key respects RLS policies, so users can only access
     their own data (if RLS is configured correctly).
     
     NOTE: Using @lru_cache() to ensure single instance (singleton pattern)
     """
-    # TODO: Initialize Supabase client with anon key
-    # if not settings.supabase_url or not settings.supabase_key:
-    #     raise ValueError("Supabase URL and Key must be configured")
-    # 
-    # return create_client(settings.supabase_url, settings.supabase_key)
-    pass
+    if not settings.supabase_url:
+        raise ValueError(
+            "SUPABASE_URL is not configured. "
+            "Please set it in your .env file."
+        )
+    
+    if not settings.supabase_key:
+        raise ValueError(
+            "SUPABASE_KEY (anon key) is not configured. "
+            "Please set it in your .env file."
+        )
+    
+    return create_client(settings.supabase_url, settings.supabase_key)
 
 
 @lru_cache()
@@ -69,19 +65,8 @@ def get_supabase_admin_client() -> Client:
     Returns:
         Supabase admin client instance
     
-    TODO: Implement Supabase admin client initialization:
-    
-    ```python
-    from supabase import create_client
-    from app.core.config import settings
-    
-    client = create_client(
-        supabase_url=settings.supabase_url,
-        supabase_key=settings.supabase_service_key  # service role key
-    )
-    
-    return client
-    ```
+    Raises:
+        ValueError: If Supabase URL or service role key is not configured
     
     Use Cases:
     - Creating users after signup
@@ -89,14 +74,21 @@ def get_supabase_admin_client() -> Client:
     - Data migrations
     - Admin dashboards
     
-    NOTE: Using @lru_cache() to ensure single instance
+    NOTE: Using @lru_cache() to ensure single instance (singleton pattern)
     """
-    # TODO: Initialize Supabase admin client with service role key
-    # if not settings.supabase_url or not settings.supabase_service_key:
-    #     raise ValueError("Supabase URL and Service Key must be configured")
-    # 
-    # return create_client(settings.supabase_url, settings.supabase_service_key)
-    pass
+    if not settings.supabase_url:
+        raise ValueError(
+            "SUPABASE_URL is not configured. "
+            "Please set it in your .env file."
+        )
+    
+    if not settings.supabase_service_key:
+        raise ValueError(
+            "SUPABASE_SERVICE_KEY is not configured. "
+            "Please set it in your .env file."
+        )
+    
+    return create_client(settings.supabase_url, settings.supabase_service_key)
 
 
 # Dependency injection functions for FastAPI
@@ -108,11 +100,13 @@ def get_supabase_dep() -> Client:
     ```python
     @router.get("/example")
     async def example(supabase: Client = Depends(get_supabase_dep)):
-        # Use supabase client
-        pass
+        # Use supabase client (respects RLS)
+        result = supabase.table("posts").select("*").execute()
+        return result.data
     ```
     
-    TODO: Return Supabase client instance
+    Returns:
+        Supabase client instance (anon key, respects RLS)
     """
     return get_supabase_client()
 
@@ -121,15 +115,21 @@ def get_supabase_admin_dep() -> Client:
     """
     FastAPI dependency for Supabase admin client.
     
+    ⚠️ WARNING: This bypasses Row Level Security. Use with caution!
+    
     Usage in endpoints:
     ```python
-    @router.get("/admin/example")
-    async def admin_example(supabase: Client = Depends(get_supabase_admin_dep)):
-        # Use admin client
-        pass
+    @router.post("/admin/users")
+    async def create_user_system(
+        supabase: Client = Depends(get_supabase_admin_dep)
+    ):
+        # Use admin client (bypasses RLS)
+        result = supabase.table("users").insert(user_data).execute()
+        return result.data
     ```
     
-    TODO: Return Supabase admin client instance
+    Returns:
+        Supabase admin client instance (service role key, bypasses RLS)
     """
     return get_supabase_admin_client()
 
