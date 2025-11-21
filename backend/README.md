@@ -81,11 +81,7 @@ backend/
 │       ├── formatters.py                     # Data formatting utilities
 │       └── validators.py                     # Input validation functions
 │
-└── supabase/                                 # Database Schema
-    ├── config.toml                           # Supabase local config
-    └── migrations/                           # SQL migrations
-        ├── 20240115000000_create_initial_schema.sql  # Initial database schema
-        └── README.md                         # Migration instructions
+└── .venv/                                    # Virtual environment (created by uv)
 ```
 
 ---
@@ -280,33 +276,35 @@ Health:      GET /health
 ## Environment Variables
 
 ```env
-# Supabase (Required) - Configuration Implemented
+# Supabase
 SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-anon-key                    # For RLS-aware database operations
-SUPABASE_SERVICE_KEY=your-service-role-key    # For admin operations (bypasses RLS)
-SUPABASE_JWT_SECRET=your-jwt-secret           # For validating JWT tokens from frontend
+SUPABASE_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_KEY=your-supabase-service-role-key
+SUPABASE_JWT_SECRET=your-jwt-secret
 
-# AI Services (Required)
-ANTHROPIC_API_KEY=sk-ant-...
+# AI Services
+ANTHROPIC_API_KEY=sk-...
+VOYAGE_API_KEY=...
 GEMINI_API_KEY=...
 
-# Email (Required)
+# Email
 RESEND_API_KEY=re_...
+RESEND_AUDIENCE_ID=...
 
-# Social Media (Optional)
+# Social Media
 INSTAGRAM_CLIENT_ID=...
 INSTAGRAM_CLIENT_SECRET=...
 TIKTOK_CLIENT_KEY=...
 TIKTOK_CLIENT_SECRET=...
 
-# Payment (Optional)
+# Stripe
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
-# Storage (Optional - if using AWS instead of Supabase Storage)
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
-S3_BUCKET_NAME=scale66-content
+# App Settings
+API_HOST=0.0.0.0
+API_PORT=8000
+DEBUG=True
 ```
 
 See `.env.example` for complete list.
@@ -315,23 +313,30 @@ See `.env.example` for complete list.
 
 **Using Supabase:**
 
-```bash
-# 1. Create project at https://supabase.com
-# 2. Copy credentials to .env
-# 3. Run migrations:
+1. Create a project at https://supabase.com
+2. Set up your database schema through Supabase Dashboard or SQL Editor
+3. Copy your project credentials to `.env`:
+   - `SUPABASE_URL` - Your project URL
+   - `SUPABASE_KEY` - Anonymous/public key
+   - `SUPABASE_SERVICE_KEY` - Service role key
+   - `SUPABASE_JWT_SECRET` - JWT secret for token validation
 
-brew install supabase/tap/supabase  # Install CLI (macOS)
-supabase link --project-ref your-project-ref
-supabase db push                     # Apply migrations
-```
+**Required Database Tables:**
 
-**Database includes:**
+- `users` - User profiles and settings
+- `brand_kits` - Brand identity configurations
+- `campaigns` - Campaign management
+- `posts` - Generated content posts
+- `post_variations` - Post variations and A/B tests
+- `chat_history` - AI conversation history
+- `social_media_accounts` - Connected social accounts
+- `payment_transactions` - Payment and subscription records
 
-- 9 tables with Row Level Security (RLS)
-- Storage buckets for carousel images and brand assets
-- Authentication configured (managed by Supabase Auth)
+**Additional Setup:**
 
-**Tables:** users, brand_kits, campaigns, posts, post_variations, chat_history, social_media_accounts, payment_transactions
+- Enable Row Level Security (RLS) on all tables
+- Create storage buckets for carousel images and brand assets
+- Configure authentication providers in Supabase Dashboard
 
 ## Development
 
@@ -341,16 +346,6 @@ supabase db push                     # Apply migrations
 uv add package-name              # Add dependency
 uv add --optional dev pytest-mock # Add to optional group
 uv sync                          # Sync environment
-```
-
-### Code Quality
-
-```bash
-uv sync --extra dev              # Install dev tools
-uv run black app/                # Format
-uv run ruff check app/           # Lint
-uv run mypy app/                 # Type check
-uv run pytest                    # Run tests
 ```
 
 ### Running the Server
@@ -373,29 +368,3 @@ All files contain:
 - Comprehensive docstrings
 - Supabase client initialization (**IMPLEMENTED**)
 - Implementation in progress
-
-### Implementation Priority
-
-1. **Core Infrastructure** - Supabase client (DONE), JWT validation, CRUD operations
-2. **API Endpoints** - Brand kit, campaigns, content generation
-3. **AI Pipeline** - Implement agents (2 → 3 → 4 → 5 → 6 → 1)
-4. **Services** - Storage, email, social OAuth, Stripe
-
-### Recently Completed
-
-- **Supabase Client Initialization** (`app/core/supabase.py`)
-  - Implemented `get_supabase_client()` with anon key (RLS-aware)
-  - Implemented `get_supabase_admin_client()` with service role key (bypasses RLS)
-  - Added FastAPI dependency injection functions
-  - Environment variable validation with helpful error messages
-  - Singleton pattern using `@lru_cache()` for efficient client reuse
-
-**Note:** Authentication (signup/login) is handled by frontend → Supabase Auth. Backend only validates JWT tokens and performs database operations.
-
-## Branch Strategy
-
-**Naming:** `backend/{feature,fix,refactor}/[name]`
-
-## License
-
-Proprietary – Scale66 internal use only.

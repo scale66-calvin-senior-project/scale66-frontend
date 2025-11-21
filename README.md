@@ -12,49 +12,123 @@ Scale66 helps small software founders:
 
 ## Tech Stack
 
-- **Framework:** Next.js (React + TypeScript)
-- **Deployment:** Firebase + Custome domain
-- **Backend:** Firebase DB
-- **CI/CD:** GitHub Actions (with dev → prod branch workflow)
+### Backend
+
+- **Framework:** FastAPI (Python 3.11+)
+- **Package Manager:** uv
+- **Database/Auth:** Supabase (PostgreSQL)
+- **AI Services:** Anthropic (Claude), Google Gemini
+- **Payment:** Stripe
+- **Email:** Resend
+
+### Frontend
+
+- **Framework:** Next.js 15 (App Router) with React 19
+- **Language:** TypeScript (Strict Mode)
+- **Styling:** CSS Modules
+- **Auth/Database:** Supabase
+- **HTTP Client:** Axios
+- **Package Manager:** npm
+
+### Infrastructure
+
+- **CI/CD:** GitHub Actions
+- **Branch Strategy:** dev (development) → main (production)
 
 ---
 
 ## Getting Started
 
-### 1. Clone the Repository
+### Backend Setup
 
 ```bash
-git clone https://github.com/<your-username>/<repo-name>.git
-cd <repo-name>
+cd backend
+
+# Install uv (if not installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install dependencies
+uv sync
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your API keys
+
+# Run development server
+uv run uvicorn main:app --reload
+# Server runs at http://localhost:8000
 ```
 
-### 2. Install Dependencies
+### Frontend Setup
 
 ```bash
+cd frontend
+
+# Install dependencies
 npm install
-```
 
-### 3. Run the Development Server
+# Configure environment
+cp .env.example .env
+# Edit .env with your Supabase credentials
 
-```bash
+# Run development server
 npm run dev
+# Server runs at http://localhost:3000
 ```
 
-Then open your browser to [http://localhost:3000](http://localhost:3000)
+### Running Both Services
 
-### 4. Build for Production
+For local development, run both backend and frontend in separate terminals:
 
 ```bash
-npm run build
-npm start
+# Terminal 1 - Backend
+cd backend && uv run uvicorn main:app --reload
+
+# Terminal 2 - Frontend
+cd frontend && npm run dev
 ```
+
+---
+
+## Project Structure
+
+```
+scale66/
+├── backend/          # FastAPI backend (Python)
+│   ├── app/
+│   │   ├── agents/   # AI pipeline agents
+│   │   ├── api/      # API endpoints (v1)
+│   │   ├── core/     # Configuration & security
+│   │   ├── crud/     # Database operations
+│   │   ├── models/   # Pydantic schemas
+│   │   ├── services/ # External integrations (AI, payment, email)
+│   │   └── utils/    # Utility functions
+│   └── main.py       # Application entry point
+│
+├── frontend/         # Next.js frontend (TypeScript)
+│   └── src/
+│       ├── app/      # Next.js App Router (pages & layouts)
+│       ├── components/ # Reusable components
+│       ├── features/ # Feature-based modules
+│       ├── hooks/    # Custom React hooks
+│       ├── services/ # API service layer
+│       ├── lib/      # Third-party integrations
+│       └── types/    # TypeScript types
+│
+└── README.md         # This file
+```
+
+For detailed architecture documentation:
+
+- Backend: See `backend/README.md`
+- Frontend: See `frontend/README.md`
 
 ---
 
 ## Branch Workflow
 
-- **`dev`** → development environment (auto-deploys preview to Vercel)
-- **`main`** → production environment (auto-deploys live version to Vercel)
+- **`dev`** → development environment (preview deployments)
+- **`main`** → production environment (live deployments)
 
 **Typical flow:**
 
@@ -74,23 +148,24 @@ git push origin main
 
 ## CI/CD Setup
 
-- Every push to `dev` triggers a preview deployment on Vercel.
-- Every push to `main` updates the production site.
-- GitHub Actions handles build & test checks automatically.
+- Every push to `dev` triggers preview deployments
+- Every push to `main` updates production
+- GitHub Actions handles build & test checks automatically
 
 ---
 
 ## Contributing
 
-1. Fork the repository.
-2. Create a new branch.
-3. Commit your changes.
-4. Open a Pull Request to the dev branch.
-5. Once we have a prod ready version/update dev can be merged into main.
+1. Fork the repository
+2. Create a feature branch from `dev`
+3. Make your changes
+4. Open a Pull Request to `dev`
+5. After review and approval, merge to `dev`
+6. Once stable, `dev` can be merged into `main` for production
 
 ### Pull Request Reviews
 
-- Every Pull Request must be reviewed and approved by **at least one collaborator** before merging.
-- The review ensures code quality, consistent structure, and stability in both `dev` and `main` branches.
-- Automated checks will run via GitHub Actions on all PRs — make sure they pass before requesting review.
-- Once approved, the PR can be merged into `dev` (or `main` if ready for production).
+- Every Pull Request must be reviewed and approved by at least one collaborator
+- Automated checks must pass before merging
+- Code should follow project conventions (see backend/frontend README files)
+- Features should be well-tested before merging to `main`
