@@ -19,43 +19,22 @@ logger = logging.getLogger(__name__)
 class BaseAgent:
     """
     Base class for all AI agents in the pipeline.
-    
-    Provides common functionality that all agents need:
-    - Standardized error handling
-    - Logging of agent steps
-    - Retry logic for LLM calls
-    - Rate limiting
-    - Common LLM call interface
-    
-    TODO: Implement base functionality:
-    1. Set up logging configuration
-    2. Implement retry logic with exponential backoff
-    3. Add rate limiting to prevent API quota issues
-    4. Create unified LLM call interface
-    5. Add error handling with meaningful error messages
     """
     
     def __init__(self):
         """
         Initialize base agent.
-        
-        TODO: Initialize common resources:
-        - Logger instance
-        - Retry configuration
-        - Rate limiter
-        - Error tracking
         """
+        self.anthropic = anthropic_service
+        self.gemini = gemini_service
         self.logger = logging.getLogger(self.__class__.__name__)
-        # TODO: Initialize rate limiter
-        # TODO: Set retry configuration
-        pass
+
     
     async def _call_llm(
         self, 
         prompt: str, 
         model: str = "claude-sonnet-4-5",
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None
     ) -> str:
         """
         Call LLM with error handling and retry logic.
