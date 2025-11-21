@@ -52,7 +52,7 @@ backend/
 │   │   └── user.py                           # User database operations
 │   │
 │   ├── models/                               # Pydantic Schemas
-│   │   ├── __init__.py                       # Models package
+│   │   ├── __init__.py                       # Models package (comprehensive exports)
 │   │   ├── brand_kit.py                      # Brand kit schemas (create, update, response)
 │   │   ├── campaign.py                       # Campaign schemas
 │   │   ├── post.py                           # Post schemas
@@ -60,17 +60,17 @@ backend/
 │   │   ├── social.py                         # Social media integration schemas
 │   │   ├── payment.py                        # Stripe payment schemas
 │   │   ├── content.py                        # Content generation request/response schemas
-│   │   ├── common.py                         # Shared/common schemas
-│   │   └── pipeline.py                       # AI pipeline internal schemas (agent communication)
+│   │   ├── common.py                         # Shared schemas (MessageResponse, ErrorResponse, enums)
+│   │   └── pipeline.py                       # AI pipeline schemas (6-step agent I/O models)
 │   │
 │   ├── services/                             # External Integrations
 │   │   ├── __init__.py                       # Services package
 │   │   ├── ai/                               # AI Services
 │   │   │   ├── __init__.py                   # AI services package
-│   │   │   ├── anthropic_service.py          # Anthropic Claude API (Sonnet 4.5, Haiku 4.5, Opus 4.1)
-│   │   │   └── gemini_service.py             # Google Gemini API (gemini-2.5-flash-image)
+│   │   │   ├── anthropic_service.py          # Anthropic Claude API (text + vision) - IMPLEMENTED
+│   │   │   └── gemini_service.py             # Gemini Service using Imagen 4 (image generation) - IMPLEMENTED
 │   │   ├── email_service.py                  # Resend email API
-│   │   ├── image_overlay_service.py          # Image composition (text on images with Pillow)
+│   │   ├── image_overlay_service.py          # Image composition (text overlay with Pillow)
 │   │   ├── social_media_service.py           # Instagram/TikTok posting APIs
 │   │   ├── storage_service.py                # File upload (Supabase Storage/S3)
 │   │   └── stripe_service.py                 # Stripe payment processing
@@ -95,20 +95,21 @@ backend/
 - **Purpose:** Orchestrate multi-agent AI workflow to generate branded carousel content
 - **Architecture:** Base agent class with 5 specialized agents executing in strict sequence
 - **Flow:**
-  1. **Orchestrator** - Coordinates entire pipeline, manages state
-  2. **Format Decider** - Selects optimal carousel format (educational, problem-solution, etc.)
-  3. **Story Generator** - Creates hook → script → splits into slides
-  4. **Image Generator** - Generates AI images for all slides (Google Gemini)
-  5. **Text Generator** - Creates on-screen text with styling
-  6. **Finalizer** - Overlays text on images using Claude Vision + Pillow
-- **Key Feature:** Sequential execution with dependencies (TextGenerator requires ImageGenerator output)
+  1. **Orchestrator** - Coordinates entire pipeline, manages state (OrchestratorInput)
+  2. **Format Decider** - Selects optimal carousel format (CarouselFormatDeciderInput/Output)
+  3. **Story Generator** - Creates hook → script → splits into slides (StoryGeneratorInput/Output)
+  4. **Image Generator** - Generates AI images for all slides (ImageGeneratorInput/Output)
+  5. **Text Generator** - Creates on-screen text with styling (TextGeneratorInput/Output)
+  6. **Finalizer** - Overlays text on images (FinalizerInput/Output)
+- **Key Feature:** Sequential execution with dependencies (each step receives output from previous)
 - **AI Models:**
   - Claude Sonnet 4.5 (complex reasoning, story generation)
   - Claude Haiku 4.5 (fast, simple tasks)
   - Claude Opus 4.1 (highest quality, final output)
   - Claude Vision (image analysis for text placement)
-  - Google Gemini (image generation)
-- **Status:** Architecture defined, implementation pending
+  - Imagen 4.0 (image generation)
+- **Data Flow:** Fully typed with Pydantic schemas in `models/pipeline.py`
+- **Status:** Pipeline schemas fully defined, agent classes structure complete, implementation in progress
 
 ### **api/**
 
@@ -175,27 +176,59 @@ backend/
 - **Types:**
   - **Entity models** - User, BrandKit, Campaign, Post
   - **API request/response models** - Create, Update, Response schemas
-  - **Pipeline internal models** - Agent communication (pipeline.py)
+  - **Pipeline internal models** - Complete agent communication schemas (pipeline.py)
+    - Step 1: OrchestratorInput
+    - Step 2: CarouselFormatDeciderInput/Output
+    - Step 3: StoryGeneratorInput/Output
+    - Step 4: ImageGeneratorInput/Output
+    - Step 5: TextGeneratorInput/Output
+    - Step 6: FinalizerInput/Output
+  - **Common models** - Shared schemas (common.py)
+    - MessageResponse, ErrorResponse
+    - Enums: PostStatus, PipelineStatus, SocialPlatform
+    - Mixins: TimestampedMixin
+    - Base classes: BasePipelineStep
 - **Benefits:** Type safety, automatic validation, OpenAPI docs generation
 - **Organization:** One file per feature for clarity
+- **Status:** Fully defined with comprehensive type validation
 
 ### **services/**
 
 **External API integrations**
 
-- **AI Services:**
-  - **Anthropic** - Claude Sonnet 4.5, Haiku 4.5, Opus 4.1 (text generation, vision)
-  - **Gemini** - Google Gemini 2.5 Flash (image generation)
+- **AI Services (ai/):**
+  - **anthropic_service.py** - IMPLEMENTED
+    - Singleton pattern with AsyncAnthropic client
+    - `generate_text()` - Text generation using Claude Sonnet 4.5
+    - `analyze_image()` - Vision analysis with base64 image support
+    - Error handling with AnthropicServiceError
+    - Configurable temperature and max_tokens
+  - **gemini_service.py** (Imagen 4) - IMPLEMENTED
+    - Singleton pattern with Gemini client
+    - `generate_image()` - Image generation with Imagen 4.0
+    - Configurable aspect ratio (1:1, 3:4, 4:3, 9:16, 16:9) and size (1K, 2K)
+    - Returns base64 encoded images
+    - Error handling with GeminiServiceError
 - **Social Media:**
-  - Instagram Graph API (OAuth, posting)
-  - TikTok Content Posting API (OAuth, posting)
-- **Payments:** Stripe
-  - Checkout sessions
-  - Webhooks
-  - Subscription management
-- **Storage:** Supabase Storage (images, assets) or AWS S3
-- **Email:** Resend API (transactional emails, waitlist)
-- **Image Processing:** Pillow (PIL) for text overlay on generated images
+  - **social_media_service.py** - Instagram Graph API, TikTok Content Posting API
+    - OAuth integration
+    - Post publishing
+- **Payments:**
+  - **stripe_service.py** - Stripe integration
+    - Checkout sessions
+    - Webhooks
+    - Subscription management
+- **Storage:**
+  - **storage_service.py** - File storage (Supabase Storage/S3)
+    - Image upload and retrieval
+- **Email:**
+  - **email_service.py** - Resend API integration
+    - Transactional emails
+    - Waitlist management
+- **Image Processing:**
+  - **image_overlay_service.py** - Pillow-based image manipulation
+    - Text overlay on generated images
+    - Font styling and positioning
 
 ### **utils/**
 
@@ -219,10 +252,13 @@ AI-powered carousel content generation platform built with FastAPI, Supabase, an
 - **Framework:** FastAPI + Uvicorn
 - **Package Manager:** uv (fast, modern Python package management)
 - **Database:** Supabase (PostgreSQL + Auth + Storage)
-- **AI Services:** Anthropic (Claude) + Google Gemini
-  - **Text Generation:** Claude Sonnet 4.5 (smartest model for complex tasks)
-  - **Image Generation:** Google Gemini (gemini-2.5-flash-image)
-- **Image Processing:** Pillow
+- **AI Services:**
+  - **Anthropic Claude** - Text generation and vision analysis (IMPLEMENTED)
+    - Sonnet 4.5 (complex reasoning, story generation)
+    - Vision API (image analysis for text placement)
+  - **Google Imagen 4** - Image generation (IMPLEMENTED)
+    - Imagen 4.0 (carousel image generation with configurable aspect ratios)
+- **Image Processing:** Pillow (PIL) for text overlay
 - **Payment:** Stripe
 - **Email:** Resend
 - **Authentication:** Supabase Auth (frontend) + JWT validation (backend)
@@ -244,14 +280,16 @@ uv run python main.py           # Start server (http://localhost:8000)
 
 **6-step carousel generation flow:**
 
-1. **Orchestrator** - Coordinates entire pipeline
-2. **Format Decider** - Selects optimal carousel format (educational, problem-solution, etc.)
-3. **Story Generator** - Creates hook → script → splits into slides
-4. **Image Generator** - Generates AI images for all slides
-5. **Text Generator** - Creates on-screen text with styling
-6. **Finalizer** - Overlays text on images (Claude Vision + Pillow)
+1. **Orchestrator** - Coordinates entire pipeline (OrchestratorInput)
+2. **Format Decider** - Selects optimal carousel format (CarouselFormatDeciderInput/Output)
+3. **Story Generator** - Creates hook → script → splits into slides (StoryGeneratorInput/Output)
+4. **Image Generator** - Generates AI images for all slides via Gemini (ImageGeneratorInput/Output)
+5. **Text Generator** - Creates on-screen text with styling (TextGeneratorInput/Output)
+6. **Finalizer** - Overlays text on images using Claude Vision + Pillow (FinalizerInput/Output)
 
-**Output:** Ready-to-post carousel slides
+**Data Models:** Fully typed with Pydantic schemas for each step (see `app/models/pipeline.py`)
+
+**Output:** Ready-to-post carousel slides with metadata
 
 ## API Endpoints
 
@@ -360,11 +398,37 @@ uv run python main.py
 
 ## Implementation Status
 
-**Current Status:** Structure complete, core infrastructure implemented
+**Core Infrastructure:** Complete
 
-All files contain:
+- Supabase client initialization: IMPLEMENTED
+- Configuration and settings: IMPLEMENTED
+- Security and JWT validation: IMPLEMENTED
 
-- Class/function signatures with type hints
-- Comprehensive docstrings
-- Supabase client initialization (**IMPLEMENTED**)
-- Implementation in progress
+**AI Services:**
+
+- Anthropic service (text + vision): IMPLEMENTED
+- Gemini service (image generation via Imagen 4): IMPLEMENTED
+
+**Models (Pydantic Schemas):** Fully defined
+
+- All entity models (User, BrandKit, Campaign, Post): COMPLETE
+- All API request/response models: COMPLETE
+- Pipeline models (6-step agent I/O): COMPLETE
+- Common models (enums, mixins, base classes): COMPLETE
+
+**Agents (AI Pipeline):** Structure complete, implementation in progress
+
+- Base agent class: COMPLETE
+- 5 specialized agents: Structure defined, logic pending
+
+**API Endpoints:** Structure complete, implementation in progress
+
+- Route handlers defined
+- Dependency injection configured
+- Integration with agents pending
+
+**Services:** Structure complete, implementation varies
+
+- Anthropic: IMPLEMENTED
+- Gemini: PARTIAL
+- Email, Storage, Stripe, Social Media: Structure complete, implementation pending
