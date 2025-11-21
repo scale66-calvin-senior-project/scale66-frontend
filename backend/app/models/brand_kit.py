@@ -16,7 +16,6 @@ class BrandKitBase(BaseModel):
     customer_pain_points: str
     product_service_desc: str
     social_media_links: Optional[dict] = None
-    logo_url: Optional[str] = None
     brand_images: Optional[List[str]] = None
     past_posts: Optional[List[str]] = None
 

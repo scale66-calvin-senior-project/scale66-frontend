@@ -55,13 +55,6 @@ class Settings(BaseSettings):
     
     # CORS origins (comma-separated in .env)
     cors_origins: str = "http://localhost:3000"
-    
-    # Optional: Background jobs
-    redis_url: Optional[str] = None
-    celery_broker_url: Optional[str] = None
-    
-    # Optional: Monitoring
-    sentry_dsn: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=".env",
