@@ -129,12 +129,96 @@ class AnthropicService:
             ],
         )
         
-            response_text = response.content[0].text.strip()
-            logger.info(f"Analyzed image: {response_text}")
-            return response_text
-
-        except Exception as e:
-            logger.error(f"Failed to analyze image: {e}")
-            raise AnthropicServiceError(f"Failed to analyze image: {e}")
+        return response.content[0].text
+        ```
+        
+        Use case: Finalizer agent analyzes images to decide text positioning.
+        """
+        # TODO: Implement vision analysis
+        pass
     
+    async def analyze_image_base64(
+        self, 
+        image_base64: str,
+        prompt: str,
+        detail: str = "auto"
+    ) -> str:
+        """
+        Analyze image from base64 data using Claude Vision.
+        
+        Args:
+            image_base64: Base64 encoded image
+            prompt: Analysis prompt
+            detail: Detail level
+            
+        Returns:
+            Analysis result
+        
+        TODO: Implement base64 vision analysis:
+        ```python
+        response = await self.client.messages.create(
+            model=self.model,
+            max_tokens=1000,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/jpeg",
+                                "data": image_base64,
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ],
+                }
+            ],
+        )
+        
+        return response.content[0].text
+        ```
+        """
+        # TODO: Implement base64 vision analysis
+        pass
+    
+    async def generate_embeddings(
+        self, 
+        text: str,
+        model: str = "voyage-large--instruct"
+    ) -> List[float]:
+        """
+        Generate embeddings for text.
+        
+        Args:
+            text: Input text
+            model: Embedding model (using Voyage AI as recommended by Anthropic)
+            
+        Returns:
+            Embedding vector
+        
+        TODO: Implement embeddings via Voyage AI:
+        ```python
+        import voyageai
+        
+        vo = voyageai.Client()
+        result = vo.embed([text], model=model, input_type="document")
+        
+        return result.embeddings[0]
+        ```
+        
+        Use case: Semantic search, similarity matching for brand kits.
+        
+        Note: Anthropic recommends Voyage AI for embeddings as they don't provide
+        their own embedding models. Voyage AI is optimized for use with Claude.
+        """
+        # TODO: Implement embeddings
+        pass
+
+
+# Create singleton instance
 anthropic_service = AnthropicService()
