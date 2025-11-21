@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     output_dir: str = "./output"
     environment: str = "development"
     
+    # Logging configuration
+    log_level: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    log_to_file: bool = False  # Enable file logging in production
+    log_file: str = "./logs/scale66.log"  # Log file path
+    log_file_max_bytes: int = 10485760  # 10MB max file size
+    log_file_backup_count: int = 5  # Keep 5 backup files
+    
     # Supabase configuration
     supabase_url: Optional[str] = None
     supabase_key: Optional[str] = None  # Anon key (respects RLS)

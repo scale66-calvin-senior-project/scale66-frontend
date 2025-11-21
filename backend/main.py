@@ -34,9 +34,10 @@ import uvicorn
 # Import API routers
 from app.api.v1 import brand_kit, campaigns, content, posts, social, payment
 from app.core.config import settings
+from app.core.logging import setup_logging
 
-
-logging.basicConfig(level=logging.INFO)
+# Initialize centralized logging
+setup_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(

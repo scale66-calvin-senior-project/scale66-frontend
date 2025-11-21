@@ -151,47 +151,4 @@ class BaseAgent:
         # TODO: Add error tracking/monitoring
         pass
     
-    async def _retry_with_backoff(
-        self, 
-        func, 
-        max_retries: int = 3,
-        initial_delay: float = 1.0
-    ) -> Any:
-        """
-        Retry function with exponential backoff.
-        
-        Args:
-            func: Async function to retry
-            max_retries: Maximum number of retry attempts
-            initial_delay: Initial delay in seconds
-            
-        Returns:
-            Result from successful function call
-            
-        Raises:
-            Exception: If all retries fail
-        
-        TODO: Implement exponential backoff:
-        1. Try calling function
-        2. If fails, wait with exponential backoff (1s, 2s, 4s, etc.)
-        3. Retry up to max_retries times
-        4. Log each retry attempt
-        5. Raise last exception if all fail
-        
-        Example:
-        ```python
-        import asyncio
-        
-        for attempt in range(max_retries):
-            try:
-                return await func()
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    raise
-                delay = initial_delay * (2 ** attempt)
-                await asyncio.sleep(delay)
-        ```
-        """
-        # TODO: Implement retry logic
-        pass
-
+   
