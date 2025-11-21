@@ -8,7 +8,7 @@ Main Components:
     2. settings instance - Singleton configuration object used throughout application
 
 Connections:
-    - Used by: All services (OpenAIService, GeminiService) and agents for configuration
+    - Used by: All services (AnthropicService, GeminiService) and agents for configuration
     - Loads from: .env file or environment variables
     - Provides: API keys, model names, host/port, output directory
 """
@@ -20,22 +20,58 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    # Application settings
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     debug: bool = True
     output_dir: str = "./output"
-    openai_api_key: Optional[str] = None
+    environment: str = "development"
+    
+    # Supabase configuration
+    supabase_url: Optional[str] = None
+    supabase_key: Optional[str] = None  # Anon key (respects RLS)
+    supabase_service_key: Optional[str] = None  # Service role key (bypasses RLS)
+    supabase_jwt_secret: Optional[str] = None  # For JWT verification
+    
+    # AI Services
+    anthropic_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
-    openai_model: str = "gpt-3.5-turbo"
+    anthropic_model: str = "claude-sonnet-4-5"
     gemini_model: str = "gemini-2.5-flash-image"
+    
+    # Email service (Resend)
     resend_api_key: Optional[str] = None
     resend_audience_id: Optional[str] = None
+    
+    # Social Media APIs
+    instagram_client_id: Optional[str] = None
+    instagram_client_secret: Optional[str] = None
+    tiktok_client_key: Optional[str] = None
+    tiktok_client_secret: Optional[str] = None
+    
+    # Stripe payment processing
+    stripe_secret_key: Optional[str] = None
+    stripe_webhook_secret: Optional[str] = None
+    
+    # CORS origins (comma-separated in .env)
+    cors_origins: str = "http://localhost:3000"
+    
+    # Optional: Background jobs
+    redis_url: Optional[str] = None
+    celery_broker_url: Optional[str] = None
+    
+    # Optional: Monitoring
+    sentry_dsn: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
+    
+    def get_cors_origins(self) -> list[str]:
+        """Parse CORS origins from comma-separated string."""
+        return [origin.strip() for origin in self.cors_origins.split(",")]
 
 
 settings = Settings()

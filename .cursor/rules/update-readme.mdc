@@ -1,0 +1,12 @@
+---
+alwaysApply: false
+---
+
+Go through the entire codebase, looking carefully at the changes made.
+Then, update the README.md files for the:
+
+1. backend/
+2. frontend/
+3. global README.md
+
+Do not add unecessary information. Make minimal changes in the already present README strucure. Remove/replace any incorrect or outdated information.
