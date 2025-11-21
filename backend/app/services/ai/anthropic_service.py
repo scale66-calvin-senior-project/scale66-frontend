@@ -4,127 +4,115 @@ Anthropic Service - Anthropic API integration.
 Provides:
 - Text generation using Claude models
 - Vision analysis using Claude Vision
-- Embeddings generation (via Voyage AI or similar)
 
 Used by agents for LLM calls and text generation.
 """
 
 import logging
+import base64
+import httpx
 from typing import Optional, List
-
+from anthropic import Anthropic, AsyncAnthropic
 from app.core.config import settings
 
 
 logger = logging.getLogger(__name__)
 
+class AnthropicServiceError(Exception):
+    """Base exception for Anthropic service errors."""
+    pass
 
 class AnthropicService:
     """
     Anthropic service for text generation and vision analysis.
-    
-    Available Models (as of 2025):
-    - claude-sonnet-4-5: Smartest model for complex agents, coding, and advanced tasks
-    - claude-haiku-4-5: Fastest model with near-frontier intelligence
-    - claude-opus-4-1: Exceptional for specialized tasks requiring advanced reasoning
-    
-    Default: claude-sonnet-4-5 (configured in settings)
-    
-    TODO: Implement Anthropic API integration
+    Default Model: claude-sonnet-4-5 (configured in settings)
     """
+
+    _instance: Optional['AnthropicService'] = None
+    _client: Optional[AsyncAnthropic] = None
+
+    def __new__(cls):
+        """Singleton instance creation."""
+        if cls.instance is None:
+            cls.instance = super().__new__(cls)
+        return cls.instance
     
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self):
         """
-        Initialize Anthropic service.
-        
-        Args:
-            api_key: Optional Anthropic API key (uses settings if not provided)
-        
-        TODO: Initialize Anthropic client:
-        ```python
-        from anthropic import AsyncAnthropic
-        
-        self.api_key = api_key or settings.anthropic_api_key
-        if not self.api_key:
-            raise ValueError("Anthropic API key not provided")
-        
-        self.client = AsyncAnthropic(api_key=self.api_key)
-        self.model = settings.anthropic_model
-        ```
+        Initialization of the Anthropic service.
         """
-        # TODO: Initialize Anthropic client
-        pass
+
+        if self._client is None:
+            try: 
+                self._client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+            except Exception as e:
+                logger.error(f"Failed to initialize Anthropic client: {e}")
+                raise AnthropicServiceError(f"Failed to initialize Anthropic client: {e}")
+                
     
     async def generate_text(
         self, 
         prompt: str,
-        max_tokens: int = 1000,
+        max_tokens: int = 4096,
         temperature: float = 0.7,
-        model: Optional[str] = None
     ) -> str:
         """
-        Generate text using Anthropic Claude models.
+        Generate text using Anthropic's Claude Sonnet 4.5 model.
         
         Args:
-            prompt: Text prompt
+            prompt: The prompt to send to the LLM
             max_tokens: Maximum tokens to generate
-            temperature: Sampling temperature (0.0 to 1.0)
-            model: Optional model override (defaults to settings.anthropic_model)
+            temperature: Sampling temperature
+            system_prompt: Optional system prompt to set the behavior of the model
             
         Returns:
-            Generated text
-        
-        TODO: Implement text generation:
-        ```python
-        model = model or self.model
-        
-        response = await self.client.messages.create(
-            model=model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        
-        return response.content[0].text.strip()
-        ```
+            Generated text as a string
         """
-        # TODO: Implement text generation
-        pass
+        try:
+            logger.info(f"Generating text with model: {settings.anthropic_model}")
+
+            response = await self._client.messages.create(
+                model=settings.anthropic_model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            response_text = response.content[0].text.strip()
+            logger.info(f"Generated text: {response_text}")
+
+            return response_text
     
+
     async def analyze_image(
         self, 
         image_url: str,
         prompt: str,
-        detail: str = "auto"
+        max_tokens: int = 4096,
     ) -> str:
         """
-        Analyze image using Claude Vision.
+        Analyze image using Anthropic's Claude Vision model.
         
         Args:
-            image_url: URL to image
-            prompt: Analysis prompt
-            detail: Detail level ("low", "high", "auto")
-            
+            image_url: The URL of the image to analyze
+            prompt: The prompt to send to the LLM
+            max_tokens: The maximum number of tokens to generate
+
         Returns:
-            Analysis result
-        
-        TODO: Implement vision analysis:
-        ```python
-        import httpx
-        import base64
-        
-        # Download image and convert to base64
-        async with httpx.AsyncClient() as client:
-            response = await client.get(image_url)
-            image_data = base64.standard_b64encode(response.content).decode("utf-8")
-        
-        response = await self.client.messages.create(
-            model=self.model,
-            max_tokens=1000,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
+            Analysis result as a string
+        """
+        try:
+            logger.info(f"Analyzing image: {image_url}")
+            image_data = base64.standard_b64encode(httpx.get(image_url).content).decode("utf-8")
+
+            response = await self._client.messages.create(
+                model=settings.anthropic_model,
+                max_tokens=max_tokens,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
                             "type": "image",
                             "source": {
                                 "type": "base64",
@@ -141,97 +129,12 @@ class AnthropicService:
             ],
         )
         
-        return response.content[0].text
-        ```
-        
-        Use case: Finalizer agent analyzes images to decide text positioning.
-        """
-        # TODO: Implement vision analysis
-        pass
-    
-    async def analyze_image_base64(
-        self, 
-        image_base64: str,
-        prompt: str,
-        detail: str = "auto"
-    ) -> str:
-        """
-        Analyze image from base64 data using Claude Vision.
-        
-        Args:
-            image_base64: Base64 encoded image
-            prompt: Analysis prompt
-            detail: Detail level
-            
-        Returns:
-            Analysis result
-        
-        TODO: Implement base64 vision analysis:
-        ```python
-        response = await self.client.messages.create(
-            model=self.model,
-            max_tokens=1000,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": "image/jpeg",
-                                "data": image_base64,
-                            },
-                        },
-                        {
-                            "type": "text",
-                            "text": prompt
-                        }
-                    ],
-                }
-            ],
-        )
-        
-        return response.content[0].text
-        ```
-        """
-        # TODO: Implement base64 vision analysis
-        pass
-    
-    async def generate_embeddings(
-        self, 
-        text: str,
-        model: str = "voyage-large-2-instruct"
-    ) -> List[float]:
-        """
-        Generate embeddings for text.
-        
-        Args:
-            text: Input text
-            model: Embedding model (using Voyage AI as recommended by Anthropic)
-            
-        Returns:
-            Embedding vector
-        
-        TODO: Implement embeddings via Voyage AI:
-        ```python
-        import voyageai
-        
-        vo = voyageai.Client()
-        result = vo.embed([text], model=model, input_type="document")
-        
-        return result.embeddings[0]
-        ```
-        
-        Use case: Semantic search, similarity matching for brand kits.
-        
-        Note: Anthropic recommends Voyage AI for embeddings as they don't provide
-        their own embedding models. Voyage AI is optimized for use with Claude.
-        """
-        # TODO: Implement embeddings
-        pass
+            response_text = response.content[0].text.strip()
+            logger.info(f"Analyzed image: {response_text}")
+            return response_text
 
-
-# Create singleton instance
+        except Exception as e:
+            logger.error(f"Failed to analyze image: {e}")
+            raise AnthropicServiceError(f"Failed to analyze image: {e}")
+    
 anthropic_service = AnthropicService()
-

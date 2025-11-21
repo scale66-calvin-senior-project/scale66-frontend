@@ -1,12 +1,5 @@
 """
 Gemini Service - Google Gemini API integration.
-
-Provides:
-- Text generation using Gemini models
-- Image generation using Gemini vision models
-- Vision analysis for image understanding
-
-Used by agents for LLM calls and image generation.
 """
 
 import logging
@@ -14,153 +7,91 @@ from typing import Optional
 
 from app.core.config import settings
 
-
 logger = logging.getLogger(__name__)
 
+
+class GeminiServiceError(Exception):
+    """Base exception for Gemini service errors."""
+    pass
 
 class GeminiService:
     """
     Google Gemini service for text and image generation.
-    
-    TODO: Implement Gemini API integration
+    Default Model: gemini-2.5-flash-image (configured in settings)
     """
-    
-    def __init__(self, api_key: Optional[str] = None):
+
+    _instance: Optional['GeminiService'] = None
+    _client: None
+
+    def __new__(cls):
+        """Singleton instance creation."""
+        if cls.instance is None:
+            cls.instance = super().__new__(cls)
+        return cls.instance
+
+    def __init__(self): 
         """
         Initialize Gemini service.
-        
-        Args:
-            api_key: Optional Gemini API key (uses settings if not provided)
-        
-        TODO: Initialize Gemini client:
-        ```python
-        import google.generativeai as genai
-        
-        self.api_key = api_key or settings.gemini_api_key
-        if not self.api_key:
-            raise ValueError("Gemini API key not provided")
-        
-        genai.configure(api_key=self.api_key)
-        self.model_name = settings.gemini_model
-        ```
         """
-        # TODO: Initialize Gemini client
-        pass
-    
-    async def generate_text(
-        self, 
-        prompt: str, 
-        max_tokens: int = 1000,
-        temperature: float = 0.7
-    ) -> str:
-        """
-        Generate text using Gemini.
-        
-        Args:
-            prompt: Text prompt
-            max_tokens: Maximum tokens to generate
-            temperature: Sampling temperature (0.0 to 1.0)
-            
-        Returns:
-            Generated text
-        
-        TODO: Implement text generation:
-        ```python
-        import google.generativeai as genai
-        
-        model = genai.GenerativeModel(self.model_name)
-        
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
-                max_output_tokens=max_tokens,
-                temperature=temperature
-            )
-        )
-        
-        return response.text
-        ```
-        """
-        # TODO: Implement text generation
-        pass
-    
+        if self._client is None:
+            try:
+                genai.configure(api_key=settings.gemini_api_key)
+                self._client = genai.GenerativeModel(settings.gemini_model)
+                logger.info(f"Initialized Gemini client with model: {settings.gemini_model}")
+            except Exception as e:
+                logger.error(f"Failed to initialize Gemini client: {e}")
+                raise GeminiServiceError(f"Failed to initialize Gemini client: {e}")
+
     async def generate_image(
         self, 
         prompt: str,
-        output_path: Optional[str] = None
-    ) -> bytes:
+        aspect_ratio: str = "16:9",
+        image_size: str = "4K",
+    ) -> str:
         """
         Generate image using Gemini image model.
         
         Args:
             prompt: Image generation prompt
-            output_path: Optional path to save image
-            
+            num_images: Number of images to generate
+        
         Returns:
-            Image bytes
-        
-        TODO: Implement image generation:
-        ```python
-        import google.generativeai as genai
-        
-        # Use Gemini image generation model
-        model = genai.GenerativeModel('gemini-pro-vision')
-        
-        response = model.generate_content([prompt])
-        
-        # Extract image bytes from response
-        image_bytes = response.candidates[0].content.parts[0].inline_data.data
-        
-        if output_path:
-            with open(output_path, 'wb') as f:
-                f.write(image_bytes)
-        
-        return image_bytes
-        ```
-        
-        NOTE: This is the primary image generation service for the platform.
-        For text generation, use Anthropic Claude instead.
+            Image URL
         """
-        # TODO: Implement image generation
-        pass
-    
-    async def analyze_image(
-        self, 
-        image_path: str,
-        prompt: str
-    ) -> str:
-        """
-        Analyze image using Gemini vision model.
-        
-        Args:
-            image_path: Path to image file
-            prompt: Analysis prompt
-            
-        Returns:
-            Analysis result
-        
-        TODO: Implement image analysis:
-        ```python
-        import google.generativeai as genai
-        from PIL import Image
-        
-        # Load image
-        image = Image.open(image_path)
-        
-        # Use Gemini vision model
-        model = genai.GenerativeModel('gemini-pro-vision')
-        
-        response = model.generate_content([prompt, image])
-        
-        return response.text
-        ```
-        
-        Use case: Finalizer agent analyzes images to decide text positioning.
-        """
-        # TODO: Implement image analysis
-        pass
+        try:
+            logger.info(f"Generating image with prompt: {prompt}")
+            response = self._client.models.generate_content(
+                contents=[prompt], 
+                model=settings.gemini_model,
+                config=types.GenerateContentConfig(
+                    image_config=types.ImageConfig(
+                        aspect_ratio=aspect_ratio,
+                        image_size=image_size,
+                    )
+                )
+            )
 
+            logger.info(f"Generated image with prompt: {prompt}")
+
+            image_parts = image_parts[0].as_image()
+
+            if not image_parts:
+                logger.error("No image parts found in response")
+                raise GeminiServiceError("No image parts found in response")
+
+            image = image_parts[0].as_image()
+            buffered = io.BytesIO()
+            image.save(buffered, format="PNG")
+            
+            img_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+            
+            logger.info(f"Converted image to base64: {img_base64}")
+
+            return img_base64
+
+        except Exception as e:
+            logger.error(f"Failed to generate image: {e}")
+            raise GeminiServiceError(f"Failed to generate image: {e}")
 
 # Create singleton instance
 gemini_service = GeminiService()
-

@@ -1,10 +1,5 @@
 """
 Storage Service - Image storage for carousel content.
-
-Supports multiple storage backends:
-- Supabase Storage (recommended for MVP)
-- AWS S3
-- Cloudinary
 """
 
 import logging

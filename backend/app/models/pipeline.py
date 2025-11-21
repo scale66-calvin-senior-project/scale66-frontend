@@ -4,16 +4,7 @@ AI Pipeline Models - Pydantic schemas for internal AI agent communication.
 
 from typing import Optional, List
 from pydantic import BaseModel, Field
-
-# =============== Common Models ===============
-
-class BrandKit(BaseModel):
-    """Schema for a brand kit."""
-    brand_name: str
-    brand_niche: str
-    brand_style: str
-    customer_pain_points: List[str]
-    product_service_desc: str
+from app.models.brand_kit import BrandKit
 
 # =============== Step 1: Orchestrator Input ===============
 
