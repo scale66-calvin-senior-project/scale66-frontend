@@ -18,13 +18,12 @@ export default function Hero() {
   return (
     <section className={styles.hero}>
       <h1 className={styles.title}>
-        Market your product
+        Stop wasting hours
         <br />
-        without the hassle
+        on social media
       </h1>
       <p className={styles.subtitle}>
-        Scale66 lets you distribute your idea and 10x your
-        engagement. No marketing experience necessary.
+        Scale66 creates content that actually converts. Get 10x more engagement while you focus on your business.
       </p>
 
       <div className={styles.inputRow}>
@@ -54,7 +53,7 @@ export default function Hero() {
         <button className={styles.chip}>Is the content good?</button>
       </div>
 
-      <div className={styles.trusted}>Trusted by my mom.</div>
+      <div className={styles.trusted}>✓ Used by 50+ businesses • 30-day money-back guarantee • Cancel anytime</div>
     </section>
   );
 }

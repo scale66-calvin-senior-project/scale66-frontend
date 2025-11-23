@@ -5,49 +5,46 @@ import styles from "./Pricing.module.css";
 export default function Pricing() {
   const plans = [
     {
-      name: "Starter",
-      price: "$49",
-      period: "per month",
-      description: "Perfect for small businesses getting started",
-      features: [
-        "50 AI-generated posts per month",
-        "2 social platforms",
-        "Basic trend analysis",
-        "Email support",
-        "Content calendar"
-      ],
-      popular: false
-    },
-    {
-      name: "Growth",
-      price: "$199", 
-      period: "per month",
-      description: "Ideal for growing businesses",
-      features: [
-        "200 AI-generated posts per month",
-        "5 social platforms",
-        "Advanced trend analysis",
-        "Priority support",
-        "Custom brand voice training",
-        "Analytics dashboard",
-        "Content approval workflow"
-      ],
-      popular: true
-    },
-    {
       name: "Agency",
       price: "$499",
       period: "per month", 
       description: "For agencies and enterprise businesses",
       features: [
-        "Unlimited AI-generated posts",
-        "All social platforms",
+        "Unlimited carousels",
+        "Post to Instagram & TikTok automatically",
         "Real-time trend monitoring",
-        "Dedicated account manager",
+        "Dedicated account manager & support",
         "Advanced brand customization",
-        "Team collaboration tools",
-        "API access",
-        "White-label options"
+        "Custom AI training",
+      ],
+      popular: false
+    },
+    {
+      name: "Growth",
+      price: "$299", 
+      period: "per month",
+      description: "Ideal for growing businesses",
+      features: [
+        "200 carousels per month",
+        "Post to Instagram & TikTok automatically",
+        "Advanced trend analysis",
+        "Priority support",
+        "Custom brand identity training",
+        "Content approval workflow"
+      ],
+      popular: true
+    },
+    {
+      name: "Starter",
+      price: "$99",
+      period: "per month",
+      description: "Perfect for small businesses getting started",
+      features: [
+        "50 carousels per month",
+        "Post to Instagram & TikTok automatically",
+        "Trend analysis to keep content fresh",
+        "Email support with 24hr response",
+        "Content calendar & scheduling"
       ],
       popular: false
     }
@@ -58,9 +55,10 @@ export default function Pricing() {
       <div className={styles.container}>
         <div className={styles.header}>
           <span className={styles.label}>Pricing</span>
-          <h2 className={styles.title}>Pricing Plans Built For You</h2>
+          <h2 className={styles.title}>Less Than a Coffee Per Day</h2>
           <p className={styles.subtitle}>
-            Choose the plan that fits your business needs. No hidden fees, cancel anytime.
+          A freelance designer charges $500+ for 10 carousels. Get unlimited for $49/month. 
+          Save $4,500+ per year while getting better results.
           </p>
         </div>
 
@@ -91,14 +89,14 @@ export default function Pricing() {
               </ul>
 
               <Link href="/waitlist" className={styles.planButton}>
-                Get Started
+                Try for Free
               </Link>
             </div>
           ))}
         </div>
 
         <div className={styles.guarantee}>
-          <p>💡 <strong>30-day money-back guarantee</strong> - Try risk-free!</p>
+          <p><strong>30-day money-back guarantee</strong> - Try risk-free!</p>
         </div>
       </div>
     </section>
