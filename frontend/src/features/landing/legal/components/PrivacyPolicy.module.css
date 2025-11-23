@@ -1,7 +1,7 @@
 .main {
   padding-top: 80px;
   min-height: 100vh;
-  background: #121212;
+  background: transparent;
 }
 
 .container {
@@ -13,21 +13,21 @@
 .title {
   font-size: 48px;
   font-weight: 700;
-  color: #FFFFFF;
+  color: #515151;
   margin-bottom: 24px;
   text-align: center;
 }
 
 .lastUpdated {
   font-size: 16px;
-  color: #EBEBEB;
+  color: rgba(81, 81, 81, 0.7);
   margin-bottom: 48px;
   text-align: center;
 }
 
 .content {
   line-height: 1.6;
-  color: #C0C0C0;
+  color: rgba(81, 81, 81, 0.8);
 }
 
 .section {
@@ -37,20 +37,21 @@
 .sectionTitle {
   font-size: 24px;
   font-weight: 600;
-  color: #FFFFFF;
+  color: #515151;
   margin-bottom: 16px;
 }
 
 .subTitle {
   font-size: 18px;
   font-weight: 600;
-  color: #FFFFFF;
+  color: #515151;
   margin-bottom: 12px;
 }
 
 .paragraph {
   margin-bottom: 16px;
   line-height: 1.6;
+  color: rgba(81, 81, 81, 0.75);
 }
 
 .list {

@@ -1,6 +1,6 @@
 .results {
   padding: 120px 0;
-  background: linear-gradient(180deg, rgba(18,18,18,0.98), rgba(18,18,18,0.95));
+  background: transparent;
 }
 
 .container {
@@ -19,12 +19,12 @@
   display: inline-block;
   font-size: 14px;
   font-weight: 600;
-  color: #66C587;
+  color: rgba(81, 81, 81, 0.8);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 16px;
   padding: 8px 16px;
-  background: rgba(102, 197, 135, 0.1);
+  background: rgba(194, 231, 255, 0.3);
   border-radius: 20px;
 }
 
@@ -33,12 +33,13 @@
   line-height: 1.1;
   letter-spacing: -0.02em;
   margin-bottom: 16px;
-  color: #FFFFFF;
+  color: #515151;
+  font-weight: 700;
 }
 
 .subtitle {
   font-size: 20px;
-  color: #EBEBEB;
+  color: rgba(81, 81, 81, 0.75);
   max-width: 600px;
   margin: 0 auto;
   line-height: 1.5;
@@ -54,27 +55,27 @@
 .stat {
   padding: 32px 24px;
   border-radius: 20px;
-  background: rgba(30, 30, 30, 0.7);
-  border: 1px solid rgba(60, 60, 60, 0.8);
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.9) inset,
-    0 -1px 0 rgba(255,255,255,0.5) inset,
-    0 8px 24px rgba(0,0,0,0.03),
-    0 16px 48px rgba(102,197,135,0.06);
-  backdrop-filter: blur(15px) saturate(130%);
-  -webkit-backdrop-filter: blur(15px) saturate(130%);
+    0 1px 0 rgba(255,255,255,0.6) inset,
+    0 -1px 0 rgba(255,255,255,0.4) inset,
+    0 8px 24px rgba(0,0,0,0.08),
+    0 16px 48px rgba(194, 231, 255, 0.08);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
 }
 
 .statNumber {
   font-size: 36px;
   font-weight: 700;
-  color: #FFFFFF;
+  color: #515151;
   margin-bottom: 8px;
 }
 
 .statLabel {
   font-size: 14px;
-  color: #EBEBEB;
+  color: rgba(81, 81, 81, 0.7);
   font-weight: 500;
 }
 
@@ -87,15 +88,15 @@
 .testimonial {
   padding: 32px;
   border-radius: 24px;
-  background: rgba(30, 30, 30, 0.8);
-  border: 1px solid rgba(60, 60, 60, 0.9);
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.95) inset,
-    0 -1px 0 rgba(255,255,255,0.6) inset,
-    0 12px 34px rgba(0,0,0,0.04),
-    0 20px 60px rgba(102,197,135,0.08);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
+    0 1px 0 rgba(255,255,255,0.6) inset,
+    0 -1px 0 rgba(255,255,255,0.4) inset,
+    0 8px 32px rgba(0,0,0,0.08),
+    0 20px 60px rgba(194, 231, 255, 0.1);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
   text-align: left;
   transition: transform 0.2s ease, box-shadow 0.3s ease;
 }
@@ -103,10 +104,11 @@
 .testimonial:hover {
   transform: translateY(-2px);
   box-shadow:
-    0 1px 0 rgba(255,255,255,1) inset,
-    0 -1px 0 rgba(255,255,255,0.8) inset,
-    0 16px 40px rgba(0,0,0,0.06),
-    0 28px 80px rgba(102,197,135,0.12);
+    0 1px 0 rgba(255,255,255,0.7) inset,
+    0 -1px 0 rgba(255,255,255,0.5) inset,
+    0 16px 40px rgba(0,0,0,0.1),
+    0 28px 80px rgba(194, 231, 255, 0.15);
+  background: rgba(255, 255, 255, 0.45);
 }
 
 .testimonialHeader {
@@ -120,14 +122,14 @@
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: rgba(102, 197, 135, 0.1);
+  background: rgba(194, 231, 255, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  color: #66C587;
-  border: 1px solid rgba(102, 197, 135, 0.2);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  color: rgba(81, 81, 81, 0.8);
+  border: 1px solid rgba(194, 231, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
 }
 
 .testimonialInfo {
@@ -137,29 +139,29 @@
 .name {
   font-size: 16px;
   font-weight: 600;
-  color: #FFFFFF;
+  color: #515151;
   margin-bottom: 4px;
 }
 
 .business {
   font-size: 14px;
-  color: #EBEBEB;
+  color: rgba(81, 81, 81, 0.7);
 }
 
 .result {
   font-size: 14px;
   font-weight: 600;
-  color: #66C587;
-  background: rgba(102, 197, 135, 0.1);
+  color: rgba(81, 81, 81, 0.8);
+  background: rgba(194, 231, 255, 0.3);
   padding: 6px 12px;
   border-radius: 8px;
-  border: 1px solid rgba(102, 197, 135, 0.2);
+  border: 1px solid rgba(194, 231, 255, 0.4);
 }
 
 .quote {
   font-size: 16px;
   line-height: 1.6;
-  color: #EBEBEB;
+  color: rgba(81, 81, 81, 0.75);
   margin: 0;
   font-style: italic;
 }
@@ -172,7 +174,7 @@
 .ctaHeading {
   font-size: 24px;
   font-weight: 600;
-  color: #FFFFFF;
+  color: #515151;
   margin-bottom: 24px;
   line-height: 1.3;
 }
@@ -182,28 +184,29 @@
   padding: 16px 32px;
   font-size: 18px;
   font-weight: 600;
-  color: #FFFFFF;
+  color: #515151;
   text-decoration: none;
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(40,40,40,0.95), rgba(30,30,30,0.85));
-  border: 1px solid rgba(60,60,60,0.9);
+  background: rgba(255, 241, 240, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow:
-    0 1px 0 rgba(255,255,255,1) inset,
-    0 -1px 0 rgba(255,255,255,0.7) inset,
-    0 8px 24px rgba(0,0,0,0.06),
-    0 16px 40px rgba(102,197,135,0.12);
-  backdrop-filter: blur(10px) saturate(120%);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
+    0 1px 0 rgba(255,255,255,0.6) inset,
+    0 -1px 0 rgba(255,255,255,0.4) inset,
+    0 8px 24px rgba(0,0,0,0.08),
+    0 16px 40px rgba(255, 241, 240, 0.12);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .ctaButton:hover {
   transform: translateY(-2px);
   box-shadow:
-    0 1px 0 rgba(255,255,255,1) inset,
-    0 -1px 0 rgba(255,255,255,0.8) inset,
-    0 12px 32px rgba(0,0,0,0.08),
-    0 24px 56px rgba(102,197,135,0.16);
+    0 1px 0 rgba(255,255,255,0.7) inset,
+    0 -1px 0 rgba(255,255,255,0.5) inset,
+    0 12px 32px rgba(0,0,0,0.1),
+    0 24px 56px rgba(255, 241, 240, 0.18);
+  background: rgba(255, 241, 240, 0.5);
 }
 
 @media (max-width: 768px) {

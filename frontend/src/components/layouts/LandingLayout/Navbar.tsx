@@ -12,7 +12,7 @@ export default function Navbar() {
       </Link>
       <ul className={styles.links} role="menubar" aria-label="Navigation">
         <li className={styles.hasMenu} role="none">
-          <Link role="menuitem" href="/#features">Product</Link>
+          <span role="menuitem" className={styles.menuTrigger}>Product</span>
           <div className={styles.dropdown} role="menu" aria-label="Product">
             <Link role="menuitem" href="/#features">Features</Link>
             <Link role="menuitem" href="/#results">Results</Link>
@@ -20,7 +20,7 @@ export default function Navbar() {
         </li>
         <li role="none"><Link role="menuitem" href="/#pricing">Pricing</Link></li>
         <li className={styles.hasMenu} role="none">
-          <Link role="menuitem" href="/#faq">Resources</Link>
+          <span role="menuitem" className={styles.menuTrigger}>Resources</span>
           <div className={styles.dropdown} role="menu" aria-label="Learn">
             <Link role="menuitem" href="/#faq">FAQs</Link>
             <Link role="menuitem" href="/support">Support</Link>

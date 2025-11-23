@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  background: linear-gradient(180deg, rgba(18,18,18,0.95), rgba(18,18,18,0.98));
+  background: transparent;
 }
 
 .main {
