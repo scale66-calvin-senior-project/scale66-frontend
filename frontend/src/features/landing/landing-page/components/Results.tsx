@@ -8,8 +8,8 @@ export default function Results() {
     {
       name: "Sarah Chen",
       business: "Local Coffee Shop",
-      result: "300% increase in social engagement",
-      quote: "Scale66 completely transformed our social media presence. The AI understood our cozy café vibe perfectly and created content that resonates with our community.",
+      result: "3.2x more engagement, 40% increase in foot traffic",
+      quote: "We went from posting inconsistently to having 30 carousels ready in one day. Our Instagram engagement tripled, and we're seeing more customers mention our posts when they visit.",
       avatar: <FaUser />
     },
     {
@@ -29,10 +29,10 @@ export default function Results() {
   ];
 
   const stats = [
-    { number: "500+", label: "Happy Businesses" },
-    { number: "2.3M", label: "Content Created" },
-    { number: "89%", label: "Growth Rate" },
-    { number: "24/7", label: "AI Assistant" }
+    { number: "10x", label: "Engagement Increase" },
+    { number: "10hrs", label: "Saved Per Week" },
+    { number: "89%", label: "See Results in First Month" },
+    { number: "4.8/5", label: "Average User Rating" }
   ];
 
   return (

@@ -1,6 +1,6 @@
 .faq {
   padding: 120px 0;
-  background: linear-gradient(180deg, rgba(18,18,18,0.98), rgba(18,18,18,0.95));
+  background: transparent;
 }
 
 .container {
@@ -15,12 +15,13 @@
   line-height: 1.1;
   letter-spacing: -0.02em;
   margin-bottom: 16px;
-  color: #FFFFFF;
+  color: #515151;
+  font-weight: 700;
 }
 
 .subtitle {
   font-size: 20px;
-  color: #EBEBEB;
+  color: rgba(81, 81, 81, 0.75);
   margin: 0 auto 64px;
   line-height: 1.5;
 }
@@ -33,25 +34,26 @@
 .faqItem {
   margin-bottom: 16px;
   border-radius: 20px;
-  background: rgba(30, 30, 30, 0.8);
-  border: 1px solid rgba(60, 60, 60, 0.9);
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.95) inset,
-    0 -1px 0 rgba(255,255,255,0.6) inset,
-    0 8px 24px rgba(0,0,0,0.03),
-    0 16px 48px rgba(95,219,219,0.06);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
+    0 1px 0 rgba(255,255,255,0.6) inset,
+    0 -1px 0 rgba(255,255,255,0.4) inset,
+    0 8px 24px rgba(0,0,0,0.08),
+    0 16px 48px rgba(194, 231, 255, 0.08);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
   overflow: hidden;
   transition: box-shadow 0.2s ease;
 }
 
 .faqItem:hover {
   box-shadow:
-    0 1px 0 rgba(255,255,255,1) inset,
-    0 -1px 0 rgba(255,255,255,0.8) inset,
-    0 12px 32px rgba(0,0,0,0.04),
-    0 20px 60px rgba(95,219,219,0.08);
+    0 1px 0 rgba(255,255,255,0.7) inset,
+    0 -1px 0 rgba(255,255,255,0.5) inset,
+    0 12px 32px rgba(0,0,0,0.1),
+    0 20px 60px rgba(194, 231, 255, 0.12);
+  background: rgba(255, 255, 255, 0.45);
 }
 
 .faqQuestion {
@@ -62,7 +64,7 @@
   text-align: left;
   font-size: 18px;
   font-weight: 600;
-  color: #FFFFFF;
+  color: #515151;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -72,13 +74,13 @@
 }
 
 .faqQuestion:hover {
-  color: #66C587;
+  color: rgba(81, 81, 81, 0.9);
 }
 
 .icon {
   font-size: 24px;
   font-weight: 300;
-  color: #66C587;
+  color: rgba(81, 81, 81, 0.8);
   transition: transform 0.2s ease;
   display: flex;
   align-items: center;
@@ -86,7 +88,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(102, 197, 135, 0.1);
+  background: rgba(194, 231, 255, 0.3);
 }
 
 .icon.open {
@@ -108,27 +110,27 @@
   margin: 0;
   font-size: 16px;
   line-height: 1.6;
-  color: #EBEBEB;
+  color: rgba(81, 81, 81, 0.75);
 }
 
 .cta {
   text-align: center;
   padding: 48px 32px;
   border-radius: 24px;
-  background: rgba(25, 25, 25, 0.7);
-  border: 1px solid rgba(60, 60, 60, 0.8);
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.9) inset,
-    0 -1px 0 rgba(255,255,255,0.5) inset,
-    0 8px 24px rgba(0,0,0,0.03),
-    0 16px 48px rgba(95,219,219,0.06);
-  backdrop-filter: blur(15px) saturate(130%);
-  -webkit-backdrop-filter: blur(15px) saturate(130%);
+    0 1px 0 rgba(255,255,255,0.6) inset,
+    0 -1px 0 rgba(255,255,255,0.4) inset,
+    0 8px 24px rgba(0,0,0,0.08),
+    0 16px 48px rgba(194, 231, 255, 0.08);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
 }
 
 .ctaText {
   font-size: 18px;
-  color: #EBEBEB;
+  color: rgba(81, 81, 81, 0.75);
   margin: 0 0 24px;
   font-weight: 500;
 }
@@ -138,28 +140,29 @@
   padding: 16px 32px;
   font-size: 16px;
   font-weight: 600;
-  color: #FFFFFF;
+  color: #515151;
   text-decoration: none;
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(40,40,40,0.95), rgba(30,30,30,0.85));
-  border: 1px solid rgba(60,60,60,0.9);
+  background: rgba(255, 241, 240, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow:
-    0 1px 0 rgba(255,255,255,1) inset,
-    0 -1px 0 rgba(255,255,255,0.7) inset,
-    0 8px 24px rgba(0,0,0,0.06),
-    0 16px 40px rgba(95,219,219,0.12);
-  backdrop-filter: blur(10px) saturate(120%);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
+    0 1px 0 rgba(255,255,255,0.6) inset,
+    0 -1px 0 rgba(255,255,255,0.4) inset,
+    0 8px 24px rgba(0,0,0,0.08),
+    0 16px 40px rgba(255, 241, 240, 0.12);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .ctaButton:hover {
   transform: translateY(-2px);
   box-shadow:
-    0 1px 0 rgba(255,255,255,1) inset,
-    0 -1px 0 rgba(255,255,255,0.8) inset,
-    0 12px 32px rgba(0,0,0,0.08),
-    0 24px 56px rgba(95,219,219,0.16);
+    0 1px 0 rgba(255,255,255,0.7) inset,
+    0 -1px 0 rgba(255,255,255,0.5) inset,
+    0 12px 32px rgba(0,0,0,0.1),
+    0 24px 56px rgba(255, 241, 240, 0.18);
+  background: rgba(255, 241, 240, 0.5);
 }
 
 @media (max-width: 768px) {

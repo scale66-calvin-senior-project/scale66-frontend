@@ -2,8 +2,17 @@
 @import '../styles/variables.css';
 @import '../styles/utilities.css';
 
+/* SF Pro Font - Apple's system font */
+@font-face {
+  font-family: 'SF Pro';
+  src: local('SF Pro Display'), local('SF Pro Text'), local('-apple-system');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
 html {
   scroll-behavior: smooth;
+  overscroll-behavior-y: none;
 }
 
 html,
@@ -13,11 +22,13 @@ body {
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: #515151;
+  background: linear-gradient(135deg, #ffffff 0%, #EDCEFF 25%, #C2E7FF 50%, #EDCEFF 75%, #ffffff 100%);
+  background-attachment: fixed;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
 }
 
 * {
@@ -32,5 +43,5 @@ a {
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }

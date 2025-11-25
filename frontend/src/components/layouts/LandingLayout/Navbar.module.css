@@ -12,23 +12,16 @@
   max-width: 1100px;
   width: calc(100% - 120px);
   border-radius: 999px;
-  backdrop-filter: blur(60px) saturate(200%);
-  -webkit-backdrop-filter: blur(60px) saturate(200%);
-  background: rgba(30, 30, 30, 0.95);
-  border: 1px solid rgba(60, 60, 60, 0.95);
+  backdrop-filter: blur(80px) saturate(200%);
+  -webkit-backdrop-filter: blur(80px) saturate(200%);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
-    0 1px 0 rgba(255,255,255,1) inset,
-    0 -1px 0 rgba(255,255,255,0.7) inset,
-    0 8px 30px rgba(0, 0, 0, 0.05),
-    0 18px 48px rgba(102, 197, 135, 0.12);
+    0 1px 0 rgba(255,255,255,0.6) inset,
+    0 -1px 0 rgba(255,255,255,0.4) inset,
+    0 8px 30px rgba(0, 0, 0, 0.08),
+    0 18px 48px rgba(194, 231, 255, 0.12);
   z-index: 1000;
-}
-
-@media (prefers-color-scheme: dark) {
-  .navbar {
-    background: rgba(30, 30, 30, 0.95);
-    border-color: rgba(60, 60, 60, 0.9);
-  }
 }
 
 .brand {
@@ -36,7 +29,7 @@
   align-items: center;
   gap: 12px;
   font-weight: 700;
-  color: #FFFFFF;
+  color: #515151;
   text-decoration: none;
 }
 
@@ -52,14 +45,22 @@
   position: relative;
 }
 
-.links a {
-  opacity: 0.8;
-  color: #EBEBEB;
+.links a,
+.links .menuTrigger {
+  opacity: 0.75;
+  color: #515151;
+  cursor: pointer;
 }
 
-.links a:hover {
+.links a:hover,
+.links .menuTrigger:hover {
   opacity: 1;
   font-weight: 550;
+  color: #515151;
+}
+
+.menuTrigger {
+  display: inline-block;
 }
 
 .hasMenu {
@@ -77,26 +78,26 @@
   max-width: 240px;
   padding: 12px;
   border-radius: 16px;
-  backdrop-filter: blur(28px) saturate(170%);
-  -webkit-backdrop-filter: blur(28px) saturate(170%);
-  background: rgba(30, 30, 30, 0.97);
-  border: 1px solid rgba(60, 60, 60, 1);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow:
-    0 1px 0 rgba(255,255,255,1) inset,
-    0 -1px 0 rgba(255,255,255,0.6) inset,
+    0 1px 0 rgba(255,255,255,0.6) inset,
+    0 -1px 0 rgba(255,255,255,0.4) inset,
     0 12px 30px rgba(0,0,0,0.1),
-    0 18px 42px rgba(102,197,135,0.18);
+    0 18px 42px rgba(194, 231, 255, 0.15);
 }
 
 .dropdown a {
   display: block;
   padding: 10px 12px;
   border-radius: 12px;
-  color: #FFFFFF;
+  color: #515151;
 }
 
 .dropdown a:hover {
-  background: linear-gradient(180deg, rgba(40,40,40,0.95), rgba(30,30,30,0.75));
+  background: rgba(255, 241, 240, 0.4);
 }
 
 .hasMenu:hover .dropdown {
@@ -123,18 +124,17 @@
   padding: 0 22px;
   border-radius: 999px;
   font-weight: 550;
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   min-width: 184px;
-  background: #66C587;
-  backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  background: rgba(194, 231, 255, 0.35);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.9) inset,
-    0 -1px 0 rgba(255,255,255,0.6) inset,
+    0 1px 0 rgba(255,255,255,0.6) inset,
+    0 -1px 0 rgba(255,255,255,0.4) inset,
     0 8px 20px rgba(0,0,0,0.08),
-    0 14px 36px rgba(102,197,135,0.28),
-    0 0 0 1px rgba(255,255,255,0.2) inset;
-  color: #ffffff;
+    0 14px 36px rgba(194, 231, 255, 0.12);
+  color: #515151;
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -144,12 +144,11 @@
 .cta:hover {
   cursor: pointer;
   box-shadow:
-    0 1px 0 rgba(255,255,255,1) inset,
-    0 -1px 0 rgba(255,255,255,0.85) inset,
-    0 12px 26px rgba(0,0,0,0.09),
-    0 24px 48px rgba(102,197,135,0.38),
-    0 0 0 1px rgba(255,255,255,0.25) inset;
-  background: linear-gradient(180deg, rgba(138, 202, 182, 0.95), rgba(102, 197, 135, 0.85));
+    0 1px 0 rgba(255,255,255,0.7) inset,
+    0 -1px 0 rgba(255,255,255,0.5) inset,
+    0 12px 26px rgba(0,0,0,0.1),
+    0 24px 48px rgba(194, 231, 255, 0.18);
+  background: rgba(194, 231, 255, 0.5);
 }
 
 .cta:active {
@@ -157,16 +156,8 @@
   box-shadow:
     0 1px 0 rgba(255,255,255,0.95) inset,
     0 -1px 0 rgba(255,255,255,0.6) inset,
-    0 6px 16px rgba(0,0,0,0.12),
-    0 14px 28px rgba(102,197,135,0.3);
-}
-
-@media (prefers-color-scheme: dark) {
-  .cta {
-    border-color: rgba(255, 255, 255, 0.35);
-    background: linear-gradient(180deg, rgba(138, 202, 182, 0.6), rgba(102, 197, 135, 0.55));
-    color: #ffffff;
-  }
+    0 6px 16px rgba(0,0,0,0.08),
+    0 14px 28px rgba(194, 231, 255, 0.2);
 }
 
 @media (max-width: 768px) {

@@ -6,23 +6,23 @@ import styles from "./Features.module.css";
 export default function Features() {
   const features = [
     {
-      title: "Plug in Your Brand Easily",
-      description: "Simply chat with our AI and describe your business. No complex setup or technical knowledge required.",
+      title: "Get Professional Content in 5 Minutes",
+      description: "Describe your product once. Our advanced AI creates Instagram-ready carousels with images, text, and your brand identity - no design skills needed.",
       icon: <FaPlug />
     },
     {
-      title: "AI Learns Your Business",
-      description: "Our intelligent system understands your brand voice, values, and target audience through natural conversation.",
+      title: "Content That Actually Converts",
+      description: "Every carousel is optimized for engagement using proven formats. See 10x more likes, comments, and saves than your current posts.",
       icon: <FaBrain />
     },
-    {
-      title: "Content Based on Trends",
-      description: "AI creates engaging content that combines current trends with your unique business identity and messaging.",
+      {
+      title: "Trendy On-Brand Content",
+      description: "AI combines viral trends with your unique voice. Your content feels fresh and relevant without losing your brand identity.",
       icon: <FaChartLine />
     },
     {
-      title: "Growth with No Hassle",
-      description: "Watch your engagement grow automatically while you focus on what matters most - running your business.",
+      title: "Save 10+ Hours Per Week",
+      description: "Stop spending entire days on content creation. Get a month's worth of posts in one afternoon, then focus on what actually grows your business.",
       icon: <FaRocket />
     }
   ];
@@ -51,7 +51,7 @@ export default function Features() {
         </div>
 
         <div className={styles.cta}>
-          <h3 className={styles.ctaHeading}>Ready to Transform Your Marketing?</h3>
+          <h3 className={styles.ctaHeading}>Ready to Transform Your Business?</h3>
           <Link href="/waitlist" className={styles.ctaButton}>
             Get Started Now
           </Link>

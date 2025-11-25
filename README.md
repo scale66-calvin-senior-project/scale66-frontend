@@ -1,53 +1,59 @@
 # Scale66
 
-**The AI-powered marketing platform for software startups** — designed to help you turn attention into paying customers through organic, authentic, and data-driven content.
+AI-powered marketing platform for software startups. Turn attention into paying customers through AI-generated social media content.
 
 ## Overview
 
 Scale66 helps small software founders:
 
-- Build an online brand that actually converts
-- Automate social content distribution across platforms
-- Understand what content drives customer growth
+- Build an online brand that converts
+- Automate social content distribution
+- Understand what content drives growth
 
 ## Tech Stack
 
-### Backend
+### Backend (FastAPI)
 
-- **Framework:** FastAPI (Python 3.11+)
+- **Framework:** FastAPI + Uvicorn
 - **Package Manager:** uv
-- **Database/Auth:** Supabase (PostgreSQL)
+- **Database:** Supabase (PostgreSQL + Auth + Storage)
 - **AI Services:**
-  - Anthropic Claude (text + vision) - IMPLEMENTED
-  - Google Imagen 4 (image generation) - IMPLEMENTED
+  - Anthropic Claude Sonnet 4.5 (text + vision) - IMPLEMENTED
+  - Google Imagen 4.0 (image generation) - IMPLEMENTED
+- **Image Processing:** Pillow
 - **Payment:** Stripe
 - **Email:** Resend
-- **Image Processing:** Pillow
 
-### Frontend
+### Frontend (Next.js)
 
-- **Framework:** Next.js 15 (App Router) with React 19
+- **Framework:** Next.js 15 (App Router with Turbopack)
 - **Language:** TypeScript (Strict Mode)
 - **Styling:** CSS Modules
-- **Auth/Database:** Supabase
-- **HTTP Client:** Axios
+- **Authentication:** Supabase Auth (JWT tokens)
+- **Backend API:** Axios with automatic JWT injection
 - **Package Manager:** npm
 
 ### Infrastructure
 
-- **CI/CD:** GitHub Actions
-- **Branch Strategy:** dev (development) → main (production)
-
----
+- **Version Control:** Git with GitHub
+- **Branch Strategy:** `dev` (development) → `main` (production)
+- **CI/CD:** GitHub Actions (automated testing and deployment)
 
 ## Getting Started
+
+### Prerequisites
+
+- Python 3.11+ (for backend)
+- Node.js 18+ (for frontend)
+- Supabase account (for database and auth)
+- API keys for Anthropic and Google Gemini
 
 ### Backend Setup
 
 ```bash
 cd backend
 
-# Install uv (if not installed)
+# Install uv package manager
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Install dependencies
@@ -55,11 +61,12 @@ uv sync
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your API keys
+# Add your API keys to .env
 
 # Run development server
 uv run uvicorn main:app --reload
-# Server runs at http://localhost:8000
+# Runs at http://localhost:8000
+# API docs at http://localhost:8000/docs
 ```
 
 ### Frontend Setup
@@ -72,16 +79,16 @@ npm install
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your Supabase credentials
+# Add Supabase credentials and backend API URL
 
 # Run development server
 npm run dev
-# Server runs at http://localhost:3000
+# Runs at http://localhost:3000
 ```
 
 ### Running Both Services
 
-For local development, run both backend and frontend in separate terminals:
+Run in separate terminals:
 
 ```bash
 # Terminal 1 - Backend
@@ -91,83 +98,155 @@ cd backend && uv run uvicorn main:app --reload
 cd frontend && npm run dev
 ```
 
----
-
 ## Project Structure
 
 ```
 scale66/
-├── backend/          # FastAPI backend (Python)
+├── backend/                    # FastAPI backend (Python)
 │   ├── app/
-│   │   ├── agents/   # AI pipeline agents (6-step sequential process)
-│   │   ├── api/      # API endpoints (v1)
-│   │   ├── core/     # Configuration & security
-│   │   ├── crud/     # Database operations
-│   │   ├── models/   # Pydantic schemas (fully defined with pipeline models)
-│   │   ├── services/ # External integrations (AI, payment, email, storage)
-│   │   └── utils/    # Utility functions
-│   └── main.py       # Application entry point
+│   │   ├── agents/                # AI pipeline (6-step sequential)
+│   │   ├── api/v1/                # REST API endpoints
+│   │   ├── core/                  # Config, security, database
+│   │   ├── crud/                  # Database operations
+│   │   ├── models/                # Pydantic schemas
+│   │   ├── services/              # External integrations
+│   │   └── utils/                 # Utility functions
+│   └── main.py                # Application entry point
 │
-├── frontend/         # Next.js frontend (TypeScript)
+├── frontend/                   # Next.js frontend (TypeScript)
 │   └── src/
-│       ├── app/      # Next.js App Router (pages & layouts)
-│       ├── components/ # Reusable components
-│       ├── features/ # Feature-based modules
-│       ├── hooks/    # Custom React hooks
-│       ├── services/ # API service layer
-│       ├── lib/      # Third-party integrations
-│       └── types/    # TypeScript types
+│       ├── app/                   # App Router (pages & layouts)
+│       ├── components/            # UI components
+│       ├── features/              # Feature modules
+│       ├── services/              # API service layer
+│       ├── lib/                   # Supabase, Stripe
+│       └── types/                 # TypeScript types
 │
-└── README.md         # This file
+└── README.md                   # This file
 ```
 
-For detailed architecture documentation:
+**Detailed Documentation:**
 
-- Backend: See `backend/README.md`
-- Frontend: See `frontend/README.md`
+- Backend: See [`backend/README.md`](backend/README.md)
+- Frontend: See [`frontend/README.md`](frontend/README.md)
 
----
+## Key Features
 
-## Branch Workflow
+### AI Pipeline (Backend)
 
-- **`dev`** → development environment (preview deployments)
-- **`main`** → production environment (live deployments)
+6-step sequential process for carousel generation:
 
-**Typical flow:**
+1. **Orchestrator** - Coordinates entire pipeline
+2. **Format Decider** - Selects optimal carousel format
+3. **Story Generator** - Creates hook, script, and slides
+4. **Image Generator** - Generates images via Imagen 4
+5. **Text Generator** - Creates on-screen text with styling
+6. **Finalizer** - Overlays text on images
+
+**Models Used:**
+
+- Claude Sonnet 4.5 for text generation
+- Claude Vision for image analysis
+- Imagen 4.0 for image generation
+
+### Feature-Based Architecture (Frontend)
+
+Each feature is self-contained:
+
+- Auth - Authentication via Supabase
+- Dashboard - Campaign overview
+- Canvas - AI content generation (CORE)
+- Brand Kit - Brand profile management
+- Campaigns - Campaign management
+- Posting - Social media publishing
+
+**Key Principle:** Supabase handles authentication only. All other operations go through backend API.
+
+## Development Workflow
+
+**Branch Strategy:**
+
+- `dev` - Development environment (preview deployments)
+- `main` - Production environment (live deployments)
+
+**Typical Flow:**
 
 ```bash
+# Create feature branch
 git checkout dev
-git add .
-git commit -m "New feature"
-git push origin dev
+git checkout -b feature/your-feature-name
 
-# After testing, merge to main
-git checkout main
-git merge dev
-git push origin main
+# Make changes and commit
+git add .
+git commit -m "Add your feature"
+
+# Push and create PR to dev
+git push origin feature/your-feature-name
+
+# After review, merge to dev
+# After testing in dev, merge to main for production
 ```
 
----
+**Branch Naming:**
 
-## CI/CD Setup
-
-- Every push to `dev` triggers preview deployments
-- Every push to `main` updates production
-
----
+- Features:
+  `{frontend}/feature/[name]`
+  `{backend}/[name]`
+- Fixes: `{backend,frontend}/fix/[name]`
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch from `dev`
-3. Make your changes
+3. Make your changes following project conventions
 4. Open a Pull Request to `dev`
-5. After review and approval, merge to `dev`
-6. Once stable, `dev` can be merged into `main` for production
+5. Address review feedback
+6. Merge after approval
 
-### Pull Request Reviews
+**Pull Request Requirements:**
 
-- Every Pull Request must be reviewed and approved by at least one collaborator
-- Automated checks must pass before merging
-- Code should follow project conventions (see backend/frontend README files)
-- Features should be well-tested before merging to `main`
+- At least one reviewer approval
+- All automated checks passing
+- Follows project coding conventions
+- Includes tests where applicable
+
+## Environment Setup
+
+**Required API Keys:**
+
+- Supabase (database + auth)
+- Anthropic Claude API
+- Google Gemini API
+- Stripe (payment processing)
+- Resend (email)
+
+**Optional:**
+
+- Instagram API credentials
+- TikTok API credentials
+
+See `.env.example` files in backend and frontend directories.
+
+## Implementation Status
+
+**Backend:**
+
+- Core infrastructure: Complete
+- AI services: Implemented
+- Pydantic models: Complete
+- AI pipeline: In progress
+- API endpoints: In progress
+
+**Frontend:**
+
+- Project structure: Complete
+- Landing pages: Complete
+- Component library: Complete
+- API service layer: Complete
+- Feature implementation: In progress
+
+## Documentation
+
+- [Backend Documentation](backend/README.md) - FastAPI, AI pipeline, database
+- [Frontend Documentation](frontend/README.md) - Next.js, components, features
+- API Documentation: http://localhost:8000/docs (when backend running)
