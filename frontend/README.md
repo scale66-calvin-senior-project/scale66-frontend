@@ -660,6 +660,9 @@ npm install
 # Run dev server
 npm run dev
 
+#cp the .env.example file
+cp .env.example .env
+
 # Build for production
 npm run build
 npm start

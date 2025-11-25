@@ -41,11 +41,11 @@ backend/
     ├── agents/               # AI pipeline (6-step sequential process)
     │   ├── base_agent.py            # Base class with error handling
     │   ├── orchestrator.py          # Pipeline coordinator
-    │   ├── carousel_format_decider.py # Format selection
-    │   ├── story_generator.py       # Content creation
-    │   ├── image_generator.py       # Image generation via Imagen 4
-    │   ├── text_generator.py        # Text overlay generation
-    │   └── finalizer.py             # Final composition
+    │   ├── carousel_format_decider.py # Format selection - IMPLEMENTED
+    │   ├── story_generator.py       # Story/narrative generation - IMPLEMENTED
+    │   ├── image_generator.py       # Image generation via Imagen 4 - IMPLEMENTED
+    │   ├── text_generator.py        # Text overlay generation - IMPLEMENTED
+    │   └── finalizer.py             # Image composition & upload - IMPLEMENTED
     │
     ├── api/                  # REST API endpoints
     │   ├── deps.py                  # Dependency injection
@@ -100,95 +100,92 @@ backend/
 
 ## Architecture Overview
 
-### AI Pipeline
+### AI Pipeline - IMPLEMENTED
 
-**6-step sequential process for carousel generation:**
+**6-step sequential carousel generation:**
 
-1. **Orchestrator** - Coordinates entire pipeline and manages state
-2. **Format Decider** - Selects optimal carousel format and structure
-3. **Story Generator** - Creates hook, script, and splits content into slides
-4. **Image Generator** - Generates AI images for slides using Imagen 4
-5. **Text Generator** - Creates on-screen text with styling
-6. **Finalizer** - Overlays text on images using Claude Vision + Pillow
+1. **Orchestrator** - Coordinates pipeline and manages state flow
+2. **Format Decider** - Analyzes content request and selects optimal carousel format (12 format types)
+3. **Story Generator** - Creates compelling hook and body slide narratives aligned to format
+4. **Image Generator** - Generates AI images for each slide using Imagen 4 (9:16 aspect ratio)
+5. **Text Generator** - Uses Claude Vision to analyze images and generate text overlays with styling
+6. **Finalizer** - Overlays text on images using Pillow and uploads to Supabase Storage
 
 **AI Models:**
-- Claude Sonnet 4.5 (text generation and complex reasoning)
+
+- Claude Sonnet 4.5 (format decisions, story generation, text generation)
 - Claude Vision (image analysis for text placement)
 - Imagen 4.0 (image generation)
 
-**Data Flow:**
-- Fully typed with Pydantic schemas in `models/pipeline.py`
-- Sequential execution with dependencies (each step receives output from previous)
-- Base agent class provides error handling and service access
-
-**Implementation Status:** Agent structure defined, core logic in progress
+**Implementation Status:** All 5 agents fully implemented
 
 ### API Endpoints
 
 Base URL: `http://localhost:8000/api/v1`
 
 **Key Endpoints:**
+
 - `/content/generate` - Trigger AI carousel generation (CORE)
 - `/content/status/{job_id}` - Check generation status
 - `/brand-kit` - Brand kit CRUD operations
 - `/campaigns` - Campaign management
-- `/posts` - Post management and publishing
+- `/posts` - Post management
 - `/social/connect/{platform}` - Social media OAuth
 - `/payment/create-checkout-session` - Stripe checkout
-- `/payment/webhook` - Stripe webhook handler
 
 **Authentication:**
+
 - Frontend handles auth via Supabase Auth
-- Backend validates JWT tokens from Supabase
+- Backend validates JWT tokens
 - All protected endpoints use `get_current_user()` dependency
 
 **Documentation:**
+
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
-**Implementation Status:** Route structure defined, handlers in progress
+**Implementation Status:** Route structure defined, integration in progress
 
 ### Core Configuration
 
 **config.py** - Application settings
+
 - Environment variable validation via Pydantic
 - API keys: Anthropic, Gemini, Supabase, Stripe, Resend
-- Model configuration: Claude Sonnet 4.5, Imagen 4.0
-- Logging and server settings
+- Model configuration and logging settings
 
 **logging.py** - Centralized logging
-- Application-wide logging configuration
+
+- Application-wide configuration
 - Environment-aware (development/production)
 - Console and file output with rotation
 
 **security.py** - Authentication
+
 - JWT token validation (Supabase-issued)
-- Bearer token extraction
 - User authentication dependency
 
 **supabase.py** - Database client
+
 - RLS-aware client for user operations
 - Admin client for system operations
-- FastAPI dependencies for route injection
-- Singleton pattern for efficiency
+- FastAPI dependencies with singleton pattern
 
-**Implementation Status:** Fully implemented and operational
+**Implementation Status:** Fully operational
 
 ### CRUD Operations
 
 **Purpose:** Abstract database operations into reusable methods
 
 **Pattern:**
+
 - Base CRUD class with generic operations (create, read, update, delete)
 - Entity-specific implementations for complex queries
 - Respects Row Level Security policies
 
 **Entities:**
-- Brand Kit - Brand profile and settings
-- Campaign - Campaign management
-- Post - Generated content and variations
-- User - User profile and preferences
-- Session - User session tracking
+
+- Brand Kit, Campaign, Post, User, Session
 
 **Implementation Status:** Structure defined, operations in progress
 
@@ -197,58 +194,49 @@ Base URL: `http://localhost:8000/api/v1`
 **Purpose:** Type-safe request/response validation and serialization
 
 **Model Types:**
+
 - Entity models (User, BrandKit, Campaign, Post)
 - API request/response schemas (Create, Update, Response)
-- Pipeline schemas (6-step agent input/output models)
+- Pipeline schemas (6-step agent I/O models)
 - Common schemas (MessageResponse, ErrorResponse, enums)
 
-**Pipeline Schemas:**
-1. OrchestratorInput
-2. CarouselFormatDeciderInput/Output
-3. StoryGeneratorInput/Output
-4. ImageGeneratorInput/Output
-5. TextGeneratorInput/Output
-6. FinalizerInput/Output
-
 **Benefits:**
+
 - Automatic validation and type checking
 - OpenAPI documentation generation
-- Type safety across the application
+- Type safety across application
 
 **Implementation Status:** Fully defined and validated
 
 ### Services
 
-**AI Services (IMPLEMENTED):**
+**AI Services - IMPLEMENTED:**
+
 - **Anthropic Service** - Claude API integration
-  - Text generation with Claude Sonnet 4.5
-  - Image analysis with Claude Vision
-  - Configurable parameters (temperature, max_tokens)
-  - Singleton pattern with async client
-  
+  - Text generation (Claude Sonnet 4.5)
+  - Image analysis (Claude Vision)
+  - Async client with error handling
 - **Gemini Service** - Imagen 4 integration
-  - Image generation with configurable aspect ratio (1:1, 3:4, 4:3, 9:16, 16:9)
+  - Image generation with aspect ratio control
   - Size options (1K, 2K)
   - Base64 encoded output
-  - Error handling and logging
 
-**Other Services (Structure Defined):**
-- Email Service - Resend API for transactional emails
-- Image Overlay Service - Pillow-based text overlays
-- Social Media Service - Instagram/TikTok OAuth and posting
-- Storage Service - Supabase Storage/S3 file management
-- Stripe Service - Payment processing and webhooks
+**Other Services:**
+
+- Email Service - Resend API (structure defined)
+- Social Media Service - Instagram/TikTok OAuth (structure defined)
+- Storage Service - Supabase Storage (structure defined)
+- Stripe Service - Payment processing (structure defined)
 
 ### Utilities
 
 **Purpose:** Pure helper functions for common operations
 
 **Modules:**
-- file_handlers.py - File upload/download validation
-- formatters.py - Date formatting and JSON transformations
-- validators.py - Input validation (email, URLs, colors)
 
-**Pattern:** Stateless functions with no business logic
+- file_handlers.py - File upload/download validation
+- formatters.py - Date formatting and transformations
+- validators.py - Input validation (email, URLs, colors)
 
 ## Environment Variables
 
@@ -288,20 +276,15 @@ Copy `.env.example` and configure with your API keys.
 **Supabase Configuration:**
 
 1. Create project at https://supabase.com
-2. Set up database schema via SQL Editor or Dashboard
-3. Configure authentication providers
-4. Enable Row Level Security on all tables
-5. Create storage buckets for images and brand assets
+2. Set up database schema via SQL Editor
+3. Enable Row Level Security on all tables
+4. Create storage bucket: `carousel-slides` (public)
+5. Configure authentication providers
 6. Copy credentials to `.env` file
 
 **Required Tables:**
-- users - User profiles and settings
-- brand_kits - Brand configurations
-- campaigns - Campaign management
-- posts - Generated content
-- post_variations - Content variations
-- social_media_accounts - OAuth connections
-- payment_transactions - Billing records
+
+- users, brand_kits, campaigns, posts, social_media_accounts, payment_transactions
 
 ## Development
 
@@ -333,21 +316,16 @@ uv run python main.py
 ## Implementation Status
 
 **Complete:**
+
 - Core infrastructure (config, logging, security, database)
-- Supabase client with RLS support
-- AI services (Anthropic Claude + Imagen 4)
+- AI services (Anthropic Claude + Google Imagen 4)
 - Pydantic models and schemas (all entities + pipeline)
+- AI pipeline agents (all 5 agents fully implemented)
 - Base agent class with error handling
 
 **In Progress:**
-- AI pipeline agents (6-step sequential process)
-- API endpoint handlers
-- CRUD operations
-- External service integrations (email, storage, payments, social media)
 
-**Architecture Ready:**
-- FastAPI application structure
-- Dependency injection system
-- JWT authentication flow
-- Error handling and logging
-- Type-safe data models
+- Orchestrator implementation (pipeline coordination)
+- API endpoint handlers (agent integration)
+- CRUD operations
+- External service integrations (email, social, payments)
