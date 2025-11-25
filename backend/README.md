@@ -1,370 +1,353 @@
-# **Scale66 Backend Documentation**
-
-## 1. File Structure
-
-```
-backend/
-├── main.py                                    # FastAPI app entry point, CORS, routers
-├── pyproject.toml                            # Python dependencies (uv package manager)
-├── uv.lock                                   # Locked dependency versions
-├── .python-version                           # Python version specification (3.13)
-├── pyrightconfig.json                        # Pyright type checker configuration
-├── .gitignore                                # Git ignore patterns
-│
-├── app/
-│   ├── __init__.py                           # App package initialization
-│   │
-│   ├── agents/                               # AI Pipeline Agents (6-step sequential process)
-│   │   ├── __init__.py                       # Agents package
-│   │   ├── base_agent.py                     # Base class: error handling, LLM calls, retry logic
-│   │   ├── orchestrator.py                   # Step 1: Pipeline coordinator, manages all agents
-│   │   ├── carousel_format_decider.py        # Step 2: Decides carousel format/structure
-│   │   ├── story_generator.py                # Step 3: Creates hook, script, slides
-│   │   ├── image_generator.py                # Step 4: Generates carousel images (Gemini)
-│   │   ├── text_generator.py                 # Step 5: Generates on-screen text
-│   │   └── finalizer.py                      # Step 6: Combines text + images into final carousel
-│   │
-│   ├── api/                                  # FastAPI Routes
-│   │   ├── __init__.py                       # API package
-│   │   ├── deps.py                           # Dependency injection (JWT validation, Supabase client)
-│   │   └── v1/                               # API version 1
-│   │       ├── __init__.py                   # V1 routes package
-│   │       ├── brand_kit.py                  # Brand kit CRUD endpoints
-│   │       ├── campaigns.py                  # Campaign management endpoints
-│   │       ├── content.py                    # Main AI generation endpoint (triggers pipeline)
-│   │       ├── posts.py                      # Generated content management
-│   │       ├── social.py                     # Social media integration (Instagram, TikTok)
-│   │       └── payment.py                    # Stripe payment processing
-│   │
-│   ├── core/                                 # Core Configuration
-│   │   ├── __init__.py                       # Core package
-│   │   ├── config.py                         # Settings (API keys, model names, env vars)
-│   │   ├── security.py                       # JWT token validation (Supabase-issued tokens)
-│   │   └── supabase.py                       # Supabase client initialization
-│   │
-│   ├── crud/                                 # Database Operations
-│   │   ├── __init__.py                       # CRUD package
-│   │   ├── base.py                           # Base CRUD class (create, read, update, delete)
-│   │   ├── brand_kit.py                      # Brand kit database operations
-│   │   ├── campaign.py                       # Campaign database operations
-│   │   ├── post.py                           # Post database operations
-│   │   ├── session.py                        # User session management
-│   │   └── user.py                           # User database operations
-│   │
-│   ├── models/                               # Pydantic Schemas
-│   │   ├── __init__.py                       # Models package
-│   │   ├── brand_kit.py                      # Brand kit schemas (create, update, response)
-│   │   ├── campaign.py                       # Campaign schemas
-│   │   ├── post.py                           # Post schemas
-│   │   ├── user.py                           # User schemas
-│   │   ├── social.py                         # Social media integration schemas
-│   │   ├── payment.py                        # Stripe payment schemas
-│   │   ├── content.py                        # Content generation request/response schemas
-│   │   ├── common.py                         # Shared/common schemas
-│   │   └── pipeline.py                       # AI pipeline internal schemas (agent communication)
-│   │
-│   ├── services/                             # External Integrations
-│   │   ├── __init__.py                       # Services package
-│   │   ├── ai/                               # AI Services
-│   │   │   ├── __init__.py                   # AI services package
-│   │   │   ├── anthropic_service.py          # Anthropic Claude API (Sonnet 4.5, Haiku 4.5, Opus 4.1)
-│   │   │   └── gemini_service.py             # Google Gemini API (gemini-2.5-flash-image)
-│   │   ├── email_service.py                  # Resend email API
-│   │   ├── image_overlay_service.py          # Image composition (text on images with Pillow)
-│   │   ├── social_media_service.py           # Instagram/TikTok posting APIs
-│   │   ├── storage_service.py                # File upload (Supabase Storage/S3)
-│   │   └── stripe_service.py                 # Stripe payment processing
-│   │
-│   └── utils/                                # Utility Functions
-│       ├── __init__.py                       # Utils package
-│       ├── file_handlers.py                  # File upload/download helpers
-│       ├── formatters.py                     # Data formatting utilities
-│       └── validators.py                     # Input validation functions
-│
-└── .venv/                                    # Virtual environment (created by uv)
-```
-
----
-
-## 2. Major Folders
-
-### **agents/**
-
-**6-step sequential AI pipeline for carousel content generation**
-
-- **Purpose:** Orchestrate multi-agent AI workflow to generate branded carousel content
-- **Architecture:** Base agent class with 5 specialized agents executing in strict sequence
-- **Flow:**
-  1. **Orchestrator** - Coordinates entire pipeline, manages state
-  2. **Format Decider** - Selects optimal carousel format (educational, problem-solution, etc.)
-  3. **Story Generator** - Creates hook → script → splits into slides
-  4. **Image Generator** - Generates AI images for all slides (Google Gemini)
-  5. **Text Generator** - Creates on-screen text with styling
-  6. **Finalizer** - Overlays text on images using Claude Vision + Pillow
-- **Key Feature:** Sequential execution with dependencies (TextGenerator requires ImageGenerator output)
-- **AI Models:**
-  - Claude Sonnet 4.5 (complex reasoning, story generation)
-  - Claude Haiku 4.5 (fast, simple tasks)
-  - Claude Opus 4.1 (highest quality, final output)
-  - Claude Vision (image analysis for text placement)
-  - Google Gemini (image generation)
-- **Status:** Architecture defined, implementation pending
-
-### **api/**
-
-**FastAPI REST endpoints**
-
-- **Purpose:** HTTP API layer exposing backend functionality
-- **Structure:** Versioned API (v1) with route modules organized by feature
-- **Auth:** JWT validation (tokens issued by Supabase Auth on frontend)
-- **Key Endpoints:**
-  - `/api/v1/content/generate` - **CORE** - Main AI pipeline trigger
-  - `/api/v1/brand-kit` - Brand kit CRUD operations
-  - `/api/v1/campaigns` - Campaign management
-  - `/api/v1/posts` - Generated content management
-  - `/api/v1/social/connect` - Social media OAuth
-  - `/api/v1/payment/checkout` - Stripe integration
-- **Dependencies (`deps.py`):**
-  - `get_current_user()` - Validates JWT token, extracts user info
-  - `get_supabase_client()` - Provides Supabase client instance
-- **Important:** No auth endpoints (signup/login) - handled by frontend directly with Supabase Auth
-
-### **core/**
-
-**Configuration and security**
-
-- **Purpose:** Centralized settings and security primitives
-- **Files:**
-  - **config.py** - Environment variables, API keys, model selection
-    - `Settings` class with environment validation
-    - API keys: Anthropic, Gemini, Supabase, Stripe, Resend
-    - Model configuration: Claude models, Gemini models
-  - **security.py** - JWT verification (Supabase-issued tokens only)
-    - `verify_supabase_jwt()` - Validates JWT tokens from frontend
-    - `extract_token_from_header()` - Extracts Bearer token
-    - No password hashing or token creation (handled by Supabase Auth)
-  - **supabase.py** - Supabase client initialization - **Implemented**
-    - `get_supabase_client()` - Client with anon key (respects RLS)
-    - `get_supabase_admin_client()` - Client with service role key (bypasses RLS)
-    - `get_supabase_dep()` - FastAPI dependency for RLS-aware operations
-    - `get_supabase_admin_dep()` - FastAPI dependency for admin operations
-    - Singleton pattern with `@lru_cache()` for efficient reuse
-    - Used for database operations only (not auth)
-
-### **crud/**
-
-**Database operations layer**
-
-- **Purpose:** Abstract Supabase queries into reusable operations
-- **Pattern:** Base CRUD class with entity-specific implementations
-- **Operations:** create, get, get_multi, update, delete
-- **RLS:** Respects Supabase Row Level Security policies
-- **Files:**
-  - `base.py` - Generic CRUD operations
-  - `brand_kit.py` - Brand kit specific queries
-  - `campaign.py` - Campaign specific queries
-  - `post.py` - Post management queries
-  - `user.py` - User data queries (profile, settings)
-  - `session.py` - Session management queries
-
-### **models/**
-
-**Pydantic schemas**
-
-- **Purpose:** Request/response validation and serialization
-- **Types:**
-  - **Entity models** - User, BrandKit, Campaign, Post
-  - **API request/response models** - Create, Update, Response schemas
-  - **Pipeline internal models** - Agent communication (pipeline.py)
-- **Benefits:** Type safety, automatic validation, OpenAPI docs generation
-- **Organization:** One file per feature for clarity
-
-### **services/**
-
-**External API integrations**
-
-- **AI Services:**
-  - **Anthropic** - Claude Sonnet 4.5, Haiku 4.5, Opus 4.1 (text generation, vision)
-  - **Gemini** - Google Gemini 2.5 Flash (image generation)
-- **Social Media:**
-  - Instagram Graph API (OAuth, posting)
-  - TikTok Content Posting API (OAuth, posting)
-- **Payments:** Stripe
-  - Checkout sessions
-  - Webhooks
-  - Subscription management
-- **Storage:** Supabase Storage (images, assets) or AWS S3
-- **Email:** Resend API (transactional emails, waitlist)
-- **Image Processing:** Pillow (PIL) for text overlay on generated images
-
-### **utils/**
-
-**Helper functions**
-
-- **file_handlers.py** - Upload validation, Supabase storage wrappers
-- **formatters.py** - Date formatting, JSON transformations
-- **validators.py** - Custom validation logic (email, URLs, brand colors)
-- **Pattern:** Pure utility functions, no business logic
-
----
-
----
-
 # Scale66 Backend
 
-AI-powered carousel content generation platform built with FastAPI, Supabase, and AI agents.
+AI-powered carousel content generation platform built with FastAPI and Supabase.
 
 ## Tech Stack
 
 - **Framework:** FastAPI + Uvicorn
-- **Package Manager:** uv (fast, modern Python package management)
+- **Package Manager:** uv (modern Python package management)
 - **Database:** Supabase (PostgreSQL + Auth + Storage)
-- **AI Services:** Anthropic (Claude) + Google Gemini
-  - **Text Generation:** Claude Sonnet 4.5 (smartest model for complex tasks)
-  - **Image Generation:** Google Gemini (gemini-2.5-flash-image)
-- **Image Processing:** Pillow
+- **AI Services:**
+  - Anthropic Claude (text generation + vision) - IMPLEMENTED
+  - Google Imagen 4 (image generation) - IMPLEMENTED
+- **Image Processing:** Pillow (PIL)
 - **Payment:** Stripe
 - **Email:** Resend
-- **Authentication:** Supabase Auth (frontend) + JWT validation (backend)
+- **Authentication:** Supabase Auth JWT validation
 
-## Quick Start with UV
+## Quick Start
 
 ```bash
-# Install uv (if not installed)
+# Install uv if not already installed
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Setup and run
 cd backend
 uv sync                          # Install dependencies
 cp .env.example .env            # Configure environment
-uv run python main.py           # Start server (http://localhost:8000)
+uv run uvicorn main:app --reload # Start server (http://localhost:8000)
 ```
 
-## AI Pipeline
+## File Structure
 
-**6-step carousel generation flow:**
+```
+backend/
+├── main.py                    # FastAPI application entry point
+├── pyproject.toml            # Python dependencies and project config
+├── uv.lock                   # Dependency lock file
+├── pyrightconfig.json        # Type checking configuration
+│
+└── app/
+    ├── agents/               # AI pipeline (6-step sequential process)
+    │   ├── base_agent.py            # Base class with error handling
+    │   ├── orchestrator.py          # Pipeline coordinator
+    │   ├── carousel_format_decider.py # Format selection
+    │   ├── story_generator.py       # Content creation
+    │   ├── image_generator.py       # Image generation via Imagen 4
+    │   ├── text_generator.py        # Text overlay generation
+    │   └── finalizer.py             # Final composition
+    │
+    ├── api/                  # REST API endpoints
+    │   ├── deps.py                  # Dependency injection
+    │   └── v1/                      # API version 1
+    │       ├── brand_kit.py         # Brand kit CRUD
+    │       ├── campaigns.py         # Campaign management
+    │       ├── content.py           # AI content generation
+    │       ├── posts.py             # Post management
+    │       ├── social.py            # Social media integration
+    │       └── payment.py           # Stripe integration
+    │
+    ├── core/                 # Core configuration
+    │   ├── config.py                # Environment settings
+    │   ├── logging.py               # Logging configuration
+    │   ├── security.py              # JWT validation
+    │   └── supabase.py              # Supabase client
+    │
+    ├── crud/                 # Database operations
+    │   ├── base.py                  # Base CRUD class
+    │   ├── brand_kit.py             # Brand kit operations
+    │   ├── campaign.py              # Campaign operations
+    │   ├── post.py                  # Post operations
+    │   ├── session.py               # Session management
+    │   └── user.py                  # User operations
+    │
+    ├── models/               # Pydantic schemas
+    │   ├── brand_kit.py             # Brand kit schemas
+    │   ├── campaign.py              # Campaign schemas
+    │   ├── post.py                  # Post schemas
+    │   ├── user.py                  # User schemas
+    │   ├── social.py                # Social media schemas
+    │   ├── payment.py               # Payment schemas
+    │   ├── content.py               # Content generation schemas
+    │   ├── common.py                # Shared schemas and enums
+    │   └── pipeline.py              # AI pipeline schemas
+    │
+    ├── services/             # External integrations
+    │   ├── ai/
+    │   │   ├── anthropic_service.py # Claude API integration
+    │   │   └── gemini_service.py    # Imagen 4 integration
+    │   ├── email_service.py         # Resend email
+    │   ├── image_overlay_service.py # Image composition
+    │   ├── social_media_service.py  # Social platform APIs
+    │   ├── storage_service.py       # File storage
+    │   └── stripe_service.py        # Payment processing
+    │
+    └── utils/                # Utility functions
+        ├── file_handlers.py         # File operations
+        ├── formatters.py            # Data formatting
+        └── validators.py            # Input validation
+```
 
-1. **Orchestrator** - Coordinates entire pipeline
-2. **Format Decider** - Selects optimal carousel format (educational, problem-solution, etc.)
-3. **Story Generator** - Creates hook → script → splits into slides
-4. **Image Generator** - Generates AI images for all slides
+## Architecture Overview
+
+### AI Pipeline
+
+**6-step sequential process for carousel generation:**
+
+1. **Orchestrator** - Coordinates entire pipeline and manages state
+2. **Format Decider** - Selects optimal carousel format and structure
+3. **Story Generator** - Creates hook, script, and splits content into slides
+4. **Image Generator** - Generates AI images for slides using Imagen 4
 5. **Text Generator** - Creates on-screen text with styling
-6. **Finalizer** - Overlays text on images (Claude Vision + Pillow)
+6. **Finalizer** - Overlays text on images using Claude Vision + Pillow
 
-**Output:** Ready-to-post carousel slides
+**AI Models:**
+- Claude Sonnet 4.5 (text generation and complex reasoning)
+- Claude Vision (image analysis for text placement)
+- Imagen 4.0 (image generation)
 
-## API Endpoints
+**Data Flow:**
+- Fully typed with Pydantic schemas in `models/pipeline.py`
+- Sequential execution with dependencies (each step receives output from previous)
+- Base agent class provides error handling and service access
+
+**Implementation Status:** Agent structure defined, core logic in progress
+
+### API Endpoints
 
 Base URL: `http://localhost:8000/api/v1`
 
-### Core Endpoints
+**Key Endpoints:**
+- `/content/generate` - Trigger AI carousel generation (CORE)
+- `/content/status/{job_id}` - Check generation status
+- `/brand-kit` - Brand kit CRUD operations
+- `/campaigns` - Campaign management
+- `/posts` - Post management and publishing
+- `/social/connect/{platform}` - Social media OAuth
+- `/payment/create-checkout-session` - Stripe checkout
+- `/payment/webhook` - Stripe webhook handler
 
-```
-Brand Kit:   POST,GET,PUT,DELETE /brand-kit
-Campaigns:   GET,POST /campaigns, GET,PUT,DELETE /campaigns/{id}
-Content:     POST /content/generate, GET /content/status/{job_id}  [CORE]
-Posts:       GET,POST /posts, GET,PUT,DELETE /posts/{id}, POST /posts/{id}/publish
-Social:      GET /social/connect/{platform}, GET /social/accounts
-Payment:     POST /payment/create-checkout-session, POST /payment/webhook
-Health:      GET /health
-```
+**Authentication:**
+- Frontend handles auth via Supabase Auth
+- Backend validates JWT tokens from Supabase
+- All protected endpoints use `get_current_user()` dependency
 
-**Note:** Auth (signup/login) is handled by frontend → Supabase Auth directly. Backend validates JWT tokens.
+**Documentation:**
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
 
-**API Docs:** http://localhost:8000/docs (Swagger) | http://localhost:8000/redoc (ReDoc)
+**Implementation Status:** Route structure defined, handlers in progress
+
+### Core Configuration
+
+**config.py** - Application settings
+- Environment variable validation via Pydantic
+- API keys: Anthropic, Gemini, Supabase, Stripe, Resend
+- Model configuration: Claude Sonnet 4.5, Imagen 4.0
+- Logging and server settings
+
+**logging.py** - Centralized logging
+- Application-wide logging configuration
+- Environment-aware (development/production)
+- Console and file output with rotation
+
+**security.py** - Authentication
+- JWT token validation (Supabase-issued)
+- Bearer token extraction
+- User authentication dependency
+
+**supabase.py** - Database client
+- RLS-aware client for user operations
+- Admin client for system operations
+- FastAPI dependencies for route injection
+- Singleton pattern for efficiency
+
+**Implementation Status:** Fully implemented and operational
+
+### CRUD Operations
+
+**Purpose:** Abstract database operations into reusable methods
+
+**Pattern:**
+- Base CRUD class with generic operations (create, read, update, delete)
+- Entity-specific implementations for complex queries
+- Respects Row Level Security policies
+
+**Entities:**
+- Brand Kit - Brand profile and settings
+- Campaign - Campaign management
+- Post - Generated content and variations
+- User - User profile and preferences
+- Session - User session tracking
+
+**Implementation Status:** Structure defined, operations in progress
+
+### Pydantic Models
+
+**Purpose:** Type-safe request/response validation and serialization
+
+**Model Types:**
+- Entity models (User, BrandKit, Campaign, Post)
+- API request/response schemas (Create, Update, Response)
+- Pipeline schemas (6-step agent input/output models)
+- Common schemas (MessageResponse, ErrorResponse, enums)
+
+**Pipeline Schemas:**
+1. OrchestratorInput
+2. CarouselFormatDeciderInput/Output
+3. StoryGeneratorInput/Output
+4. ImageGeneratorInput/Output
+5. TextGeneratorInput/Output
+6. FinalizerInput/Output
+
+**Benefits:**
+- Automatic validation and type checking
+- OpenAPI documentation generation
+- Type safety across the application
+
+**Implementation Status:** Fully defined and validated
+
+### Services
+
+**AI Services (IMPLEMENTED):**
+- **Anthropic Service** - Claude API integration
+  - Text generation with Claude Sonnet 4.5
+  - Image analysis with Claude Vision
+  - Configurable parameters (temperature, max_tokens)
+  - Singleton pattern with async client
+  
+- **Gemini Service** - Imagen 4 integration
+  - Image generation with configurable aspect ratio (1:1, 3:4, 4:3, 9:16, 16:9)
+  - Size options (1K, 2K)
+  - Base64 encoded output
+  - Error handling and logging
+
+**Other Services (Structure Defined):**
+- Email Service - Resend API for transactional emails
+- Image Overlay Service - Pillow-based text overlays
+- Social Media Service - Instagram/TikTok OAuth and posting
+- Storage Service - Supabase Storage/S3 file management
+- Stripe Service - Payment processing and webhooks
+
+### Utilities
+
+**Purpose:** Pure helper functions for common operations
+
+**Modules:**
+- file_handlers.py - File upload/download validation
+- formatters.py - Date formatting and JSON transformations
+- validators.py - Input validation (email, URLs, colors)
+
+**Pattern:** Stateless functions with no business logic
 
 ## Environment Variables
+
+Required environment variables:
 
 ```env
 # Supabase
 SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-supabase-anon-key
-SUPABASE_SERVICE_KEY=your-supabase-service-role-key
+SUPABASE_KEY=your-anon-key
+SUPABASE_SERVICE_KEY=your-service-role-key
 SUPABASE_JWT_SECRET=your-jwt-secret
 
-# AI Services
-ANTHROPIC_API_KEY=sk-...
-VOYAGE_API_KEY=...
+# AI Services (Required for core functionality)
+ANTHROPIC_API_KEY=sk-ant-...
 GEMINI_API_KEY=...
 
-# Email
+# Optional Services
 RESEND_API_KEY=re_...
-RESEND_AUDIENCE_ID=...
-
-# Social Media
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
 INSTAGRAM_CLIENT_ID=...
 INSTAGRAM_CLIENT_SECRET=...
 TIKTOK_CLIENT_KEY=...
 TIKTOK_CLIENT_SECRET=...
 
-# Stripe
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-
-# App Settings
+# Application
 API_HOST=0.0.0.0
 API_PORT=8000
 DEBUG=True
+LOG_LEVEL=INFO
 ```
 
-See `.env.example` for complete list.
+Copy `.env.example` and configure with your API keys.
 
 ## Database Setup
 
-**Using Supabase:**
+**Supabase Configuration:**
 
-1. Create a project at https://supabase.com
-2. Set up your database schema through Supabase Dashboard or SQL Editor
-3. Copy your project credentials to `.env`:
-   - `SUPABASE_URL` - Your project URL
-   - `SUPABASE_KEY` - Anonymous/public key
-   - `SUPABASE_SERVICE_KEY` - Service role key
-   - `SUPABASE_JWT_SECRET` - JWT secret for token validation
+1. Create project at https://supabase.com
+2. Set up database schema via SQL Editor or Dashboard
+3. Configure authentication providers
+4. Enable Row Level Security on all tables
+5. Create storage buckets for images and brand assets
+6. Copy credentials to `.env` file
 
-**Required Database Tables:**
-
-- `users` - User profiles and settings
-- `brand_kits` - Brand identity configurations
-- `campaigns` - Campaign management
-- `posts` - Generated content posts
-- `post_variations` - Post variations and A/B tests
-- `chat_history` - AI conversation history
-- `social_media_accounts` - Connected social accounts
-- `payment_transactions` - Payment and subscription records
-
-**Additional Setup:**
-
-- Enable Row Level Security (RLS) on all tables
-- Create storage buckets for carousel images and brand assets
-- Configure authentication providers in Supabase Dashboard
+**Required Tables:**
+- users - User profiles and settings
+- brand_kits - Brand configurations
+- campaigns - Campaign management
+- posts - Generated content
+- post_variations - Content variations
+- social_media_accounts - OAuth connections
+- payment_transactions - Billing records
 
 ## Development
 
-### Adding Dependencies
+**Managing Dependencies:**
 
 ```bash
-uv add package-name              # Add dependency
-uv add --optional dev pytest-mock # Add to optional group
-uv sync                          # Sync environment
+uv add package-name           # Add new dependency
+uv add --dev package-name     # Add development dependency
+uv sync                       # Sync virtual environment
+uv lock                       # Update lock file
 ```
 
-### Running the Server
+**Running the Server:**
 
 ```bash
-# Development (auto-reload)
-uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+# Development with auto-reload
+uv run uvicorn main:app --reload
 
 # Production
 uv run python main.py
 ```
 
+**API Documentation:**
+
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+- OpenAPI JSON: http://localhost:8000/openapi.json
+
 ## Implementation Status
 
-**Current Status:** Structure complete, core infrastructure implemented
+**Complete:**
+- Core infrastructure (config, logging, security, database)
+- Supabase client with RLS support
+- AI services (Anthropic Claude + Imagen 4)
+- Pydantic models and schemas (all entities + pipeline)
+- Base agent class with error handling
 
-All files contain:
+**In Progress:**
+- AI pipeline agents (6-step sequential process)
+- API endpoint handlers
+- CRUD operations
+- External service integrations (email, storage, payments, social media)
 
-- Class/function signatures with type hints
-- Comprehensive docstrings
-- Supabase client initialization (**IMPLEMENTED**)
-- Implementation in progress
+**Architecture Ready:**
+- FastAPI application structure
+- Dependency injection system
+- JWT authentication flow
+- Error handling and logging
+- Type-safe data models

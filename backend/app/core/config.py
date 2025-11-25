@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     output_dir: str = "./output"
     environment: str = "development"
     
+    # Logging configuration
+    log_level: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    log_to_file: bool = False  # Enable file logging in production
+    log_file: str = "./logs/scale66.log"  # Log file path
+    log_file_max_bytes: int = 10485760  # 10MB max file size
+    log_file_backup_count: int = 5  # Keep 5 backup files
+    
     # Supabase configuration
     supabase_url: Optional[str] = None
     supabase_key: Optional[str] = None  # Anon key (respects RLS)
@@ -55,13 +62,6 @@ class Settings(BaseSettings):
     
     # CORS origins (comma-separated in .env)
     cors_origins: str = "http://localhost:3000"
-    
-    # Optional: Background jobs
-    redis_url: Optional[str] = None
-    celery_broker_url: Optional[str] = None
-    
-    # Optional: Monitoring
-    sentry_dsn: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

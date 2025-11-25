@@ -6,38 +6,38 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     # Core FastAPI dependencies
-    "fastapi>=0.104.0",
-    "uvicorn[standard]>=0.24.0",
-    "pydantic>=2.5.0",
-    "pydantic-settings>=2.0.0",
-    "pydantic[email]>=2.5.0",
-    "python-multipart",
-    "python-dotenv",
-    "aiofiles",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "pydantic[email]>=2.10.0",
+    "python-multipart>=0.0.12",
+    "python-dotenv>=1.0.0",
+    "aiofiles>=24.1.0",
     
     # Web requests
-    "requests",
-    "httpx",
+    "requests>=2.32.0",
+    "httpx>=0.28.0",
     
     # Supabase (Database, Auth, Storage)
-    "supabase>=2.0.0",
+    "supabase>=2.10.0",
     
     # JWT verification and authentication
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.4",
     
     # AI/ML APIs
-    "anthropic>=0.18.0",
-    "google-generativeai>=0.3.0",
+    "anthropic>=0.39.0",
+    "google-genai>=1.0.0",
     
     # Email service
-    "resend",
+    "resend>=2.5.0",
     
     # Payment processing
-    "stripe>=7.0.0",
+    "stripe>=11.0.0",
     
     # Image processing (for Finalizer agent)
-    "Pillow>=10.0.0",
+    "Pillow>=11.0.0",
     
     # Utilities
     "python-magic>=0.4.27",

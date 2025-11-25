@@ -739,9 +739,3 @@ Payment:     POST /payment/create-checkout-session, POST /payment/webhook
 - Path aliases used
 - Service layer for API calls
 - Proper interfaces and types
-
-## Implementation Roadmap
-
-**Core:** Auth (Supabase + OAuth) → Onboarding (6-step wizard) → Brand Kit → Canvas (AI chat interface - CORE FEATURE) → Dashboard → Campaigns → Payment (Stripe)
-
-**Additional:** Posting (Instagram/TikTok) → Settings → Testing

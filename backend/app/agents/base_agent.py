@@ -1,197 +1,171 @@
 """
-Base Agent - Base class for all AI agents.
+Base Agent - Abstract base class for all AI agents in the pipeline.
 
-Provides common functionality:
-- Error handling
-- Logging
-- Retry logic
-- Rate limiting
-- LLM call wrapper
+Provides:
+- Service access (Anthropic, Gemini)
+- Execution orchestration (validate → execute → track time)
+- Error handling and logging
+- Consistent output format (BasePipelineStep)
 """
 
 import logging
-from typing import Optional, Any
+import time
+from abc import ABC, abstractmethod
+from typing import Any, TypeVar, Generic
+
+from app.services.ai import anthropic_service, gemini_service
+from app.models.common import BasePipelineStep
 
 
-logger = logging.getLogger(__name__)
+# Type variable for input/output schemas
+InputT = TypeVar('InputT')
+OutputT = TypeVar('OutputT', bound=BasePipelineStep)
 
 
-class BaseAgent:
+class AgentError(Exception):
+    """Base exception for agent errors."""
+    pass
+
+
+class ValidationError(AgentError):
+    """Raised when input validation fails."""
+    pass
+
+
+class ExecutionError(AgentError):
+    """Raised when agent execution fails."""
+    pass
+
+
+class BaseAgent(ABC, Generic[InputT, OutputT]):
     """
-    Base class for all AI agents in the pipeline.
+    Abstract base class for all AI agents.
     
-    Provides common functionality that all agents need:
-    - Standardized error handling
-    - Logging of agent steps
-    - Retry logic for LLM calls
-    - Rate limiting
-    - Common LLM call interface
-    
-    TODO: Implement base functionality:
-    1. Set up logging configuration
-    2. Implement retry logic with exponential backoff
-    3. Add rate limiting to prevent API quota issues
-    4. Create unified LLM call interface
-    5. Add error handling with meaningful error messages
+    Usage:
+        class MyAgent(BaseAgent[MyInput, MyOutput]):
+            async def _validate_input(self, input_data: MyInput) -> None:
+                if not input_data.required_field:
+                    raise ValidationError("Missing required field")
+            
+            async def _execute(self, input_data: MyInput) -> MyOutput:
+                result = await self.anthropic.generate_text(...)
+                return MyOutput(step_name="my_agent", success=True, result=result)
     """
     
     def __init__(self):
-        """
-        Initialize base agent.
-        
-        TODO: Initialize common resources:
-        - Logger instance
-        - Retry configuration
-        - Rate limiter
-        - Error tracking
-        """
+        """Initialize agent with services and logger."""
+        self.anthropic = anthropic_service
+        self.gemini = gemini_service
         self.logger = logging.getLogger(self.__class__.__name__)
-        # TODO: Initialize rate limiter
-        # TODO: Set retry configuration
-        pass
+        self.agent_name = self.__class__.__name__
     
-    async def _call_llm(
-        self, 
-        prompt: str, 
-        model: str = "claude-sonnet-4-5",
-        temperature: float = 0.7,
-        max_tokens: Optional[int] = None
-    ) -> str:
+    @abstractmethod
+    async def _validate_input(self, input_data: InputT) -> None:
         """
-        Call LLM with error handling and retry logic.
+        Validate input data before execution.
         
         Args:
-            prompt: The prompt to send to the LLM
-            model: Model name (e.g., "claude-sonnet-4-5", "claude-haiku-4-5", "gemini-2.5-flash")
-            temperature: Sampling temperature (0.0 to 1.0)
-            max_tokens: Maximum tokens to generate
-            
-        Returns:
-            LLM response text
+            input_data: Typed input schema for this agent
             
         Raises:
-            Exception: If all retries fail
-        
-        TODO: Implement LLM call wrapper:
-        1. Detect model type (Anthropic vs Gemini)
-        2. Call appropriate service (AnthropicService or GeminiService)
-        3. Add retry logic (exponential backoff)
-        4. Log request/response for debugging
-        5. Handle rate limit errors
-        6. Return response text
-        
-        Example:
-        ```python
-        from app.services.ai.anthropic_service import AnthropicService
-        from app.services.ai.gemini_service import GeminiService
-        
-        if "claude" in model:
-            service = AnthropicService()
-            response = await service.generate_text(prompt, max_tokens, temperature, model)
-        elif "gemini" in model:
-            service = GeminiService()
-            response = await service.generate_text(prompt, max_tokens, temperature, model)
-        
-        return response
-        ```
+            ValidationError: If input is invalid
         """
-        # TODO: Implement LLM call with retry logic
-        self.logger.info(f"Calling LLM with model: {model}")
-        # TODO: Add actual implementation
         pass
     
-    async def _log_step(self, step_name: str, data: dict):
+    @abstractmethod
+    async def _execute(self, input_data: InputT) -> OutputT:
         """
-        Log agent execution step for debugging and monitoring.
+        Execute agent-specific logic.
         
         Args:
-            step_name: Name of the step being executed
-            data: Data to log (input/output, metadata, etc.)
-        
-        TODO: Implement step logging:
-        1. Log to console for development
-        2. Save to database for production monitoring
-        3. Include timestamp, agent name, step name
-        4. Store input/output for debugging
-        5. Consider structured logging (JSON format)
-        
-        Example:
-        ```python
-        log_entry = {
-            "timestamp": datetime.now().isoformat(),
-            "agent": self.__class__.__name__,
-            "step": step_name,
-            "data": data
-        }
-        self.logger.info(f"Step: {step_name}", extra=log_entry)
-        ```
-        """
-        # TODO: Implement structured logging
-        self.logger.info(f"Executing step: {step_name}")
-        pass
-    
-    async def _handle_error(self, error: Exception, context: dict) -> None:
-        """
-        Handle errors with context for debugging.
-        
-        Args:
-            error: The exception that occurred
-            context: Context information (agent, step, input data)
-        
-        TODO: Implement error handling:
-        1. Log error with full context
-        2. Save error to database for monitoring
-        3. Send alerts for critical errors
-        4. Provide user-friendly error messages
-        """
-        self.logger.error(
-            f"Error in {context.get('agent')}.{context.get('step')}: {str(error)}",
-            exc_info=True
-        )
-        # TODO: Add error tracking/monitoring
-        pass
-    
-    async def _retry_with_backoff(
-        self, 
-        func, 
-        max_retries: int = 3,
-        initial_delay: float = 1.0
-    ) -> Any:
-        """
-        Retry function with exponential backoff.
-        
-        Args:
-            func: Async function to retry
-            max_retries: Maximum number of retry attempts
-            initial_delay: Initial delay in seconds
+            input_data: Validated input data
             
         Returns:
-            Result from successful function call
+            Typed output schema (extends BasePipelineStep)
             
         Raises:
-            Exception: If all retries fail
-        
-        TODO: Implement exponential backoff:
-        1. Try calling function
-        2. If fails, wait with exponential backoff (1s, 2s, 4s, etc.)
-        3. Retry up to max_retries times
-        4. Log each retry attempt
-        5. Raise last exception if all fail
-        
-        Example:
-        ```python
-        import asyncio
-        
-        for attempt in range(max_retries):
-            try:
-                return await func()
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    raise
-                delay = initial_delay * (2 ** attempt)
-                await asyncio.sleep(delay)
-        ```
+            ExecutionError: If execution fails
         """
-        # TODO: Implement retry logic
         pass
-
+    
+    async def run(self, input_data: InputT) -> OutputT:
+        """
+        Public interface - orchestrates agent execution.
+        
+        Flow:
+        1. Validate input
+        2. Execute agent logic
+        3. Track execution time
+        4. Handle errors gracefully
+        5. Return typed output
+        
+        Args:
+            input_data: Input data for this agent
+            
+        Returns:
+            Agent output with execution metadata
+            
+        Raises:
+            AgentError: If validation or execution fails
+        """
+        start_time = time.time()
+        
+        try:
+            self.logger.info(f"{self.agent_name} - Starting execution")
+            
+            # Step 1: Validate input
+            await self._validate_input(input_data)
+            self.logger.debug(f"{self.agent_name} - Input validation passed")
+            
+            # Step 2: Execute agent logic
+            output = await self._execute(input_data)
+            
+            # Step 3: Track execution time
+            execution_time = int((time.time() - start_time) * 1000)
+            output.execution_time = execution_time
+            
+            self.logger.info(
+                f"{self.agent_name} - Execution completed successfully "
+                f"({execution_time}ms)"
+            )
+            
+            return output
+            
+        except ValidationError as e:
+            execution_time_ms = int((time.time() - start_time) * 1000)
+            error_msg = f"Input validation failed: {str(e)}"
+            self.logger.error(f"{self.agent_name} - {error_msg}")
+            
+            # Return failed output for pipeline continuity
+            return self._create_error_output(error_msg, execution_time_ms)
+            
+        except ExecutionError as e:
+            execution_time_ms = int((time.time() - start_time) * 1000)
+            error_msg = f"Execution failed: {str(e)}"
+            self.logger.error(f"{self.agent_name} - {error_msg}", exc_info=True)
+            
+            return self._create_error_output(error_msg, execution_time_ms)
+            
+        except Exception as e:
+            execution_time_ms = int((time.time() - start_time) * 1000)
+            error_msg = f"Unexpected error: {str(e)}"
+            self.logger.error(f"{self.agent_name} - {error_msg}", exc_info=True)
+            
+            return self._create_error_output(error_msg, execution_time_ms)
+    
+    def _create_error_output(self, error_message: str, execution_time_ms: int) -> OutputT:
+        """
+        Create error output when execution fails.
+        
+        Subclasses can override this to provide custom error outputs.
+        
+        Args:
+            error_message: Error description
+            execution_time_ms: Time taken before failure
+            
+        Returns:
+            Error output with failed status
+        """
+        # This is a fallback - agents should override if needed
+        # For MVP, we'll raise the error to halt the pipeline
+        raise ExecutionError(error_message)

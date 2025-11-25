@@ -17,9 +17,12 @@ Scale66 helps small software founders:
 - **Framework:** FastAPI (Python 3.11+)
 - **Package Manager:** uv
 - **Database/Auth:** Supabase (PostgreSQL)
-- **AI Services:** Anthropic (Claude), Google Gemini
+- **AI Services:**
+  - Anthropic Claude (text + vision) - IMPLEMENTED
+  - Google Imagen 4 (image generation) - IMPLEMENTED
 - **Payment:** Stripe
 - **Email:** Resend
+- **Image Processing:** Pillow
 
 ### Frontend
 
@@ -96,12 +99,12 @@ cd frontend && npm run dev
 scale66/
 ├── backend/          # FastAPI backend (Python)
 │   ├── app/
-│   │   ├── agents/   # AI pipeline agents
+│   │   ├── agents/   # AI pipeline agents (6-step sequential process)
 │   │   ├── api/      # API endpoints (v1)
 │   │   ├── core/     # Configuration & security
 │   │   ├── crud/     # Database operations
-│   │   ├── models/   # Pydantic schemas
-│   │   ├── services/ # External integrations (AI, payment, email)
+│   │   ├── models/   # Pydantic schemas (fully defined with pipeline models)
+│   │   ├── services/ # External integrations (AI, payment, email, storage)
 │   │   └── utils/    # Utility functions
 │   └── main.py       # Application entry point
 │
@@ -150,7 +153,6 @@ git push origin main
 
 - Every push to `dev` triggers preview deployments
 - Every push to `main` updates production
-- GitHub Actions handles build & test checks automatically
 
 ---
 
