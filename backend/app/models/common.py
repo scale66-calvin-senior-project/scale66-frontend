@@ -4,6 +4,9 @@ Common Models - Shared response schemas used across the API.
 
 from typing import Optional
 from pydantic import BaseModel
+from enum import Enum
+from datetime import datetime
+
 
 # =============== Responses ============
 
@@ -53,4 +56,4 @@ class BasePipelineStep(BaseModel):
     step_name: str
     success: bool
     error_message: Optional[str] = None
-    execution_time: Optional[float] = None
+    execution_time: Optional[int] = None
