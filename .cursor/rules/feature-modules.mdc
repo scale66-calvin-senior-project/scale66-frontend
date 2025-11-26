@@ -1,0 +1,438 @@
+---
+description: Feature module organization and barrel export patterns for frontend
+globs: frontend/src/features/**/*
+alwaysApply: false
+---
+
+# Feature Module Pattern
+
+Feature-based organization for frontend code with consistent structure and barrel exports.
+
+## Feature Directory Structure
+
+Each feature MUST follow this structure:
+
+```
+feature-name/
+├── components/                 # Feature-specific components
+│   ├── ComponentName/
+│   │   ├── ComponentName.tsx
+│   │   ├── ComponentName.module.css
+│   │   └── index.ts
+│   └── index.ts               # Barrel export
+├── hooks/                      # Feature-specific hooks
+│   ├── useFeatureName.ts
+│   ├── useFeatureAction.ts
+│   └── index.ts               # Barrel export
+├── services/                   # Feature API services
+│   ├── feature-name.service.ts
+│   └── index.ts               # Barrel export
+├── types/                      # Feature type definitions
+│   ├── feature-name.types.ts
+│   └── index.ts               # Barrel export
+└── index.ts                   # Main feature barrel export
+```
+
+## Barrel Exports
+
+### Main Feature Export
+
+Each feature's `index.ts` MUST export all sub-modules:
+
+```typescript
+// features/auth/index.ts
+export * from './components';
+export * from './hooks';
+export * from './services';
+export * from './types';
+```
+
+### Sub-module Exports
+
+Each sub-directory MUST have its own barrel export:
+
+```typescript
+// features/auth/components/index.ts
+export { LoginForm } from './LoginForm';
+export { SignupForm } from './SignupForm';
+export { SocialAuthButtons } from './SocialAuthButtons';
+export { AuthToggle } from './AuthToggle';
+
+// Export types too
+export type { LoginFormProps } from './LoginForm';
+export type { SignupFormProps } from './SignupForm';
+```
+
+```typescript
+// features/auth/hooks/index.ts
+export { useAuth } from './useAuth';
+export { useLogin } from './useLogin';
+export { useSignup } from './useSignup';
+```
+
+```typescript
+// features/auth/services/index.ts
+export { authService } from './auth.service';
+export type { AuthService } from './auth.service';
+```
+
+```typescript
+// features/auth/types/index.ts
+export type {
+  User,
+  AuthState,
+  LoginCredentials,
+  SignupCredentials,
+  AuthError
+} from './auth.types';
+```
+
+## Feature Import Patterns
+
+### CORRECT Imports
+
+```typescript
+// Import from feature barrel
+import { LoginForm, useAuth, authService, User } from '@/features/auth';
+
+// Import from sub-module barrel
+import { LoginForm, SignupForm } from '@/features/auth/components';
+import { useAuth, useLogin } from '@/features/auth/hooks';
+```
+
+### INCORRECT Imports
+
+```typescript
+// DON'T import from individual files
+import { LoginForm } from '@/features/auth/components/LoginForm/LoginForm';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+```
+
+## Service Structure
+
+Each feature service handles API calls for that feature:
+
+```typescript
+// features/auth/services/auth.service.ts
+import { apiClient } from '@/services/api/client';
+import type { User, LoginCredentials, SignupCredentials } from '../types';
+
+class AuthService {
+  async login(credentials: LoginCredentials): Promise<User> {
+    const response = await apiClient.post('/auth/login', credentials);
+    return response.data;
+  }
+  
+  async signup(credentials: SignupCredentials): Promise<User> {
+    const response = await apiClient.post('/auth/signup', credentials);
+    return response.data;
+  }
+  
+  async logout(): Promise<void> {
+    await apiClient.post('/auth/logout');
+  }
+  
+  async getCurrentUser(): Promise<User> {
+    const response = await apiClient.get('/auth/me');
+    return response.data;
+  }
+}
+
+export const authService = new AuthService();
+export type { AuthService };
+```
+
+## Custom Hooks Structure
+
+Feature-specific hooks encapsulate business logic:
+
+```typescript
+// features/auth/hooks/useAuth.ts
+import { useState, useEffect } from 'react';
+import { authService } from '../services';
+import type { User, AuthError } from '../types';
+
+export const useAuth = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<AuthError | null>(null);
+  
+  useEffect(() => {
+    loadUser();
+  }, []);
+  
+  const loadUser = async () => {
+    try {
+      const currentUser = await authService.getCurrentUser();
+      setUser(currentUser);
+    } catch (err) {
+      setError(err as AuthError);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const login = async (credentials: LoginCredentials) => {
+    setIsLoading(true);
+    try {
+      const user = await authService.login(credentials);
+      setUser(user);
+      return user;
+    } catch (err) {
+      setError(err as AuthError);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const logout = async () => {
+    await authService.logout();
+    setUser(null);
+  };
+  
+  return {
+    user,
+    isLoading,
+    error,
+    login,
+    logout,
+    isAuthenticated: !!user,
+  };
+};
+```
+
+## Type Definitions
+
+Feature types define data structures and interfaces:
+
+```typescript
+// features/auth/types/auth.types.ts
+
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+  avatar?: string;
+  createdAt: string;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface SignupCredentials {
+  email: string;
+  password: string;
+  name?: string;
+}
+
+export interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: AuthError | null;
+}
+
+export interface AuthError {
+  code: string;
+  message: string;
+  field?: string;
+}
+
+export type AuthProvider = 'google' | 'github' | 'twitter';
+```
+
+## Feature Components
+
+Components specific to a feature stay within that feature:
+
+```typescript
+// features/auth/components/LoginForm/LoginForm.tsx
+import React, { useState } from 'react';
+import { Button, Input } from '@/components/ui';
+import { useLogin } from '../../hooks';
+import type { LoginCredentials } from '../../types';
+import styles from './LoginForm.module.css';
+
+export interface LoginFormProps {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}
+
+export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onError }) => {
+  const { login, isLoading, error } = useLogin();
+  const [credentials, setCredentials] = useState<LoginCredentials>({
+    email: '',
+    password: '',
+  });
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await login(credentials);
+      onSuccess?.();
+    } catch (err) {
+      onError?.(err as Error);
+    }
+  };
+  
+  return (
+    <form onSubmit={handleSubmit} className={styles.form}>
+      <Input
+        type="email"
+        label="Email"
+        value={credentials.email}
+        onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
+        error={error?.field === 'email' ? error.message : undefined}
+      />
+      <Input
+        type="password"
+        label="Password"
+        value={credentials.password}
+        onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+        error={error?.field === 'password' ? error.message : undefined}
+      />
+      <Button type="submit" isLoading={isLoading}>
+        Log In
+      </Button>
+    </form>
+  );
+};
+```
+
+## Feature Categories
+
+### App Features
+
+Main application features (in `features/` directory):
+
+- `auth/` - Authentication and user management
+- `brand-kit/` - Brand kit management
+- `campaigns/` - Campaign management
+- `canvas/` - Canvas editor
+- `dashboard/` - Dashboard
+- `onboarding/` - User onboarding
+- `payment/` - Payment processing
+- `posting/` - Post management
+- `settings/` - User settings
+
+### Landing Features
+
+Landing page features (in `features/landing/`):
+
+- `landing-page/` - Home page sections
+- `blog/` - Blog components
+- `legal/` - Legal page components
+- `support/` - Support components
+- `waitlist/` - Waitlist components
+
+## Cross-Feature Communication
+
+### Through Context
+
+```typescript
+// context/AuthContext.tsx
+import { createContext } from 'react';
+import { useAuth } from '@/features/auth';
+
+export const AuthContext = createContext<ReturnType<typeof useAuth> | null>(null);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const auth = useAuth();
+  
+  return (
+    <AuthContext.Provider value={auth}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+```
+
+### Through Shared Services
+
+```typescript
+// features/campaigns/hooks/useCampaigns.ts
+import { useAuth } from '@/features/auth';  // ✓ OK to import from other features
+import { campaignService } from '../services';
+
+export const useCampaigns = () => {
+  const { user } = useAuth();
+  
+  const loadCampaigns = async () => {
+    if (!user) return [];
+    return await campaignService.list(user.id);
+  };
+  
+  // ...
+};
+```
+
+## Best Practices
+
+1. **Keep Features Independent**: Minimize dependencies between features
+2. **Use Barrel Exports**: Always use index.ts for clean imports
+3. **Co-locate Code**: Keep related code within the same feature
+4. **Shared Code**: Move truly shared code to `components/`, `hooks/`, or `utils/`
+5. **Type Safety**: Define types in the feature's types directory
+6. **Single Responsibility**: Each feature handles one domain
+
+## When to Create a New Feature
+
+Create a new feature when:
+- It represents a distinct domain or user flow
+- It has its own data models and API endpoints
+- It can be developed/tested independently
+- It has 3+ related components or hooks
+
+DON'T create a feature for:
+- Single-use components (put in relevant page directory)
+- Utility functions (put in `utils/`)
+- Shared UI components (put in `components/ui/`)
+- Global state management (put in `context/`)
+
+## Example: Complete Feature
+
+```
+features/brand-kit/
+├── components/
+│   ├── BrandKitForm/
+│   │   ├── BrandKitForm.tsx
+│   │   ├── BrandKitForm.module.css
+│   │   └── index.ts
+│   ├── ColorPicker/
+│   │   ├── ColorPicker.tsx
+│   │   ├── ColorPicker.module.css
+│   │   └── index.ts
+│   └── index.ts                # export * from './BrandKitForm'; ...
+├── hooks/
+│   ├── useBrandKit.ts          # CRUD operations
+│   ├── useColorScheme.ts       # Color management
+│   └── index.ts                # export * from './useBrandKit'; ...
+├── services/
+│   ├── brand-kit.service.ts    # API calls
+│   └── index.ts                # export { brandKitService }
+├── types/
+│   ├── brand-kit.types.ts      # BrandKit, ColorScheme, etc.
+│   └── index.ts                # export * from './brand-kit.types'
+└── index.ts                    # export * from './components'; ...
+```
+
+Usage in pages:
+
+```typescript
+// app/(app)/brand-kit/page.tsx
+import { BrandKitForm, useBrandKit } from '@/features/brand-kit';
+
+export default function BrandKitPage() {
+  const { brandKit, isLoading, update } = useBrandKit();
+  
+  return (
+    <div>
+      <h1>Brand Kit</h1>
+      <BrandKitForm brandKit={brandKit} onSubmit={update} />
+    </div>
+  );
+}
+```
