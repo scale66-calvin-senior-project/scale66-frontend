@@ -1,0 +1,171 @@
+---
+description: How to add or edit Cursor rules in our project
+globs:
+alwaysApply: false
+---
+
+# Cursor Rules Location
+
+How to add new cursor rules to the project
+
+1. Always place rule files in PROJECT_ROOT/.cursor/rules/ organized by category:
+
+   ```
+   .cursor/rules/
+   ├── backend/
+   │   ├── api/              # API endpoint patterns
+   │   ├── database/         # Database and Supabase patterns
+   │   ├── agents/           # AI agent patterns
+   │   └── patterns/         # Design patterns (singleton, etc.)
+   ├── frontend/
+   │   ├── architecture/     # App architecture patterns
+   │   ├── components/       # Component patterns
+   │   ├── hooks/            # Custom hooks patterns
+   │   └── services/         # Service layer patterns
+   └── meta/                 # Project-wide and meta rules
+   ```
+
+2. Follow the naming convention:
+
+   - Use kebab-case for filenames
+   - Always use .mdc extension
+   - Make names descriptive of the rule's purpose
+   - Place in the most appropriate category folder
+
+3. Choose the correct folder:
+
+   - **backend/api/** - FastAPI endpoints, middleware, routing, websockets
+   - **backend/database/** - Supabase, migrations, RLS policies, CRUD operations
+   - **backend/agents/** - AI agent patterns, orchestration, pipeline
+   - **backend/patterns/** - Singleton, dependency injection, repository patterns
+   - **frontend/architecture/** - Feature modules, state management, routing
+   - **frontend/components/** - Component structure, styling, testing
+   - **frontend/hooks/** - Custom hooks patterns and guidelines
+   - **frontend/services/** - API clients, external service integrations
+   - **meta/** - Project structure, cursor rules, self-improvement, documentation
+
+4. Never place rule files:
+
+   - In the project root
+   - Directly in .cursor/rules/ (use subdirectories)
+   - In any other location
+
+5. Cursor rules have the following structure:
+
+````
+---
+description: Short description of the rule's purpose
+globs: optional/path/pattern/**/*
+alwaysApply: false
+---
+# Rule Title
+
+Main content explaining the rule with markdown formatting.
+
+1. Step-by-step instructions
+2. Code examples
+3. Guidelines
+
+Example:
+
+```typescript
+// Good example
+function goodExample() {
+  // Implementation following guidelines
+}
+
+// Bad example
+function badExample() {
+  // Implementation not following guidelines
+}
+````
+
+## Anticipated Future Rules
+
+As the project grows, consider adding rules for these common patterns:
+
+### Backend Rules
+
+**backend/api/**
+
+- middleware.mdc - Request/response middleware patterns
+- websockets.mdc - WebSocket connection handling
+- rate-limiting.mdc - API rate limiting patterns
+- validation.mdc - Request validation patterns
+
+**backend/database/**
+
+- migrations.mdc - Database migration best practices
+- rls-policies.mdc - Row Level Security policy patterns
+- queries.mdc - Complex query optimization
+- transactions.mdc - Transaction handling patterns
+
+**backend/agents/**
+
+- orchestration.mdc - Multi-agent coordination
+- error-handling.mdc - Agent error recovery
+- prompt-engineering.mdc - Prompt design patterns
+- caching.mdc - Agent response caching
+
+**backend/patterns/**
+
+- dependency-injection.mdc - DI container patterns
+- repository.mdc - Repository pattern for data access
+- factory.mdc - Factory pattern for object creation
+- observer.mdc - Event/observer patterns
+
+### Frontend Rules
+
+**frontend/architecture/**
+
+- state-management.mdc - Global state patterns (Context, Zustand, etc.)
+- routing.mdc - Next.js routing and navigation
+- data-fetching.mdc - Server/client data fetching
+- error-boundaries.mdc - Error handling architecture
+
+**frontend/components/**
+
+- testing.mdc - Component testing patterns
+- styling.mdc - CSS Modules, Tailwind patterns
+- accessibility.mdc - ARIA and a11y guidelines
+- performance.mdc - Component optimization
+
+**frontend/hooks/**
+
+- custom-hooks.mdc - Custom hook creation patterns
+- data-hooks.mdc - Data fetching hooks
+- form-hooks.mdc - Form management hooks
+- lifecycle-hooks.mdc - Component lifecycle patterns
+
+**frontend/services/**
+
+- api-client.mdc - HTTP client configuration
+- websocket-client.mdc - Real-time connection patterns
+- authentication.mdc - Auth flow patterns
+- error-handling.mdc - Service error handling
+
+### Meta Rules
+
+- testing.mdc - Testing strategy and patterns
+- deployment.mdc - CI/CD and deployment patterns
+- security.mdc - Security best practices
+- performance.mdc - Performance optimization
+- monitoring.mdc - Logging and monitoring patterns
+- documentation.mdc - Code documentation standards
+
+## When to Create a New Rule
+
+Create a new rule when:
+
+1. A pattern is used in 3+ files
+2. The pattern could prevent common bugs
+3. There's a specific best practice to enforce
+4. External documentation needs to be referenced
+5. The pattern improves code quality/consistency
+
+Don't create rules for:
+
+1. One-off implementations
+2. Obvious language features
+3. Overly specific edge cases
+4. Patterns that change frequently
