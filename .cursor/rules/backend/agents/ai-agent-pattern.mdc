@@ -6,7 +6,7 @@ alwaysApply: false
 
 # AI Agent Pattern
 
-All AI agents in the pipeline MUST extend the `BaseAgent[InputT, OutputT]` generic class and follow this structure.
+All AI agents MUST extend `BaseAgent[InputT, OutputT]`.
 
 ## Agent Structure
 
@@ -17,38 +17,36 @@ from app.models.pipeline import YourAgentInput, YourAgentOutput
 class YourAgent(BaseAgent[YourAgentInput, YourAgentOutput]):
     """
     Brief description of agent purpose.
-
+    
     Input: YourAgentInput (list key fields)
     Output: YourAgentOutput (list key fields)
     """
-
+    
     def __init__(self):
         super().__init__(agent_name="your_agent_name")
-
+    
     async def _validate_input(self, input_data: YourAgentInput) -> None:
         """Validate input data before execution."""
-        # Validation logic here
         # Raise ValidationError if validation fails
-
+    
     async def _execute(self, input_data: YourAgentInput) -> YourAgentOutput:
         """Execute agent logic."""
-        # Implementation here
         # Raise ExecutionError if execution fails
 ```
 
 ## Singleton Pattern
 
-Agents that are reused should implement the singleton pattern:
-
 ```python
 class YourAgent(BaseAgent[YourAgentInput, YourAgentOutput]):
     _instance: Optional['YourAgent'] = None
-
+    
     def __new__(cls):
-        """Singleton instance creation."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
+
+# Create singleton instance at module level
+your_agent = YourAgent()
 ```
 
 ## Error Handling
@@ -56,7 +54,6 @@ class YourAgent(BaseAgent[YourAgentInput, YourAgentOutput]):
 - Use `ValidationError` for input validation failures
 - Use `ExecutionError` for execution failures
 - Always log errors before raising
-- Return error output instead of raising when possible (for pipeline continuity)
 
 ```python
 try:
@@ -68,10 +65,9 @@ except Exception as e:
 
 ## Logging
 
-- Log at INFO level for major steps
-- Log at DEBUG level for detailed information
-- Include agent name in log messages (handled by BaseAgent)
-- Log execution time (handled by BaseAgent.run())
+- INFO for major steps
+- DEBUG for detailed information
+- Include agent name (handled by BaseAgent)
 
 ```python
 self.logger.info(f"Step 1/5: Processing data")
@@ -80,24 +76,17 @@ self.logger.debug(f"Processing {len(items)} items")
 
 ## Agent Execution
 
-NEVER call `_validate_input()` or `_execute()` directly. Always use the public `run()` method:
+ALWAYS use public `run()` method, NEVER call `_validate_input()` or `_execute()` directly:
 
 ```python
 # CORRECT
 result = await agent.run(input_data)
 
-# INCORRECT
-result = await agent._execute(input_data)  # Skips validation and error handling
+# INCORRECT - Skips validation and error handling
+result = await agent._execute(input_data)
 ```
 
 ## Pipeline Integration
-
-When orchestrating multiple agents:
-
-1. Pass output from one agent as input to the next
-2. Check `success` field before proceeding
-3. Propagate errors gracefully
-4. Log pipeline progress
 
 ```python
 # Step 1
@@ -110,7 +99,6 @@ story_result = await story_generator.run(
     StoryGeneratorInput(
         format_type=format_result.format_type,
         num_slides=format_result.num_slides,
-        # ... other fields
     )
 )
 ```
@@ -119,66 +107,12 @@ story_result = await story_generator.run(
 
 - Always use Pydantic models for input/output
 - Define models in `app/models/pipeline.py`
-- Use generic types correctly: `BaseAgent[InputType, OutputType]`
+- Use correct generic types: `BaseAgent[InputType, OutputType]`
 
-## Documentation
+## Documentation Requirements
 
 Each agent file MUST include:
-
 - Module docstring describing purpose
 - Input/Output specification
-- Position in pipeline (e.g., "Step 3 of AI Pipeline")
+- Position in pipeline
 - Connection to other agents
-
-## Example: Complete Agent
-
-```python
-"""
-Story Generator Agent - Step 3 of AI Pipeline
-
-Generates compelling hook and body slide narratives.
-
-Input: StoryGeneratorInput (format_type, num_slides, brand_kit, user_prompt)
-Output: StoryGeneratorOutput (hook_slide_story, body_slides_story)
-"""
-
-import logging
-from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
-from app.models.pipeline import StoryGeneratorInput, StoryGeneratorOutput
-
-logger = logging.getLogger(__name__)
-
-class StoryGenerator(BaseAgent[StoryGeneratorInput, StoryGeneratorOutput]):
-    _instance: Optional['StoryGenerator'] = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def __init__(self):
-        super().__init__(agent_name="story_generator")
-
-    async def _validate_input(self, input_data: StoryGeneratorInput) -> None:
-        if not input_data.user_prompt:
-            raise ValidationError("user_prompt is required")
-
-        if input_data.num_slides < 3 or input_data.num_slides > 10:
-            raise ValidationError("num_slides must be between 3 and 10")
-
-    async def _execute(self, input_data: StoryGeneratorInput) -> StoryGeneratorOutput:
-        try:
-            # Agent logic here
-            return StoryGeneratorOutput(
-                step_name="story_generator",
-                success=True,
-                hook_slide_story="...",
-                body_slides_story=["..."]
-            )
-        except Exception as e:
-            logger.error(f"Story generation failed: {e}")
-            raise ExecutionError(f"Story generation failed: {e}")
-
-# Create singleton instance
-story_generator = StoryGenerator()
-```

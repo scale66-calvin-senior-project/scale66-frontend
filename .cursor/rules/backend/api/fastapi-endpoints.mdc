@@ -6,11 +6,7 @@ alwaysApply: false
 
 # FastAPI Endpoint Patterns
 
-Consistent patterns for building RESTful API endpoints with FastAPI.
-
 ## Router Setup
-
-Each API module MUST include router configuration with prefix and tags:
 
 ```python
 from fastapi import APIRouter
@@ -19,8 +15,6 @@ router = APIRouter(prefix="/resource-name", tags=["resource_name"])
 ```
 
 ## Dependency Injection
-
-Use standardized dependencies from `app.api.deps`:
 
 ```python
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -33,65 +27,44 @@ async def list_items(
     supabase: Client = Depends(get_supabase_client)
 ):
     # Implementation
-    pass
 ```
 
 ### Available Dependencies
 
-1. **get_current_user** - Validates JWT token and returns user object
-
-   - Use for all authenticated endpoints
-   - Returns user dict with id, email, etc.
-   - Raises 401 if token is invalid
-
-2. **get_supabase_client** - Supabase client with anon key (respects RLS)
-
-   - Use for user-facing operations
-   - Respects Row Level Security policies
-
-3. **get_supabase_admin** - Supabase client with service role (bypasses RLS)
-
-   - WARNING: Bypasses Row Level Security
-   - Use only for admin/system operations
-   - Document why admin access is needed
-
-4. **verify_subscription** - Check if user has active subscription
-   - Use for premium features
-   - Raises 403 if subscription is inactive
+1. **get_current_user** - Validates JWT, returns user dict, raises 401 if invalid
+2. **get_supabase_client** - Anon key client (respects RLS)
+3. **get_supabase_admin** - Service role (bypasses RLS) - document why needed
+4. **verify_subscription** - Check active subscription, raises 403 if inactive
 
 ## Request/Response Models
-
-Define Pydantic models for all requests and responses:
 
 ```python
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
-# Request Models
+# Create
 class ResourceCreate(BaseModel):
     name: str
     description: Optional[str] = None
-    # Required fields without defaults
 
+# Update (all optional for partial updates)
 class ResourceUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
-    # All fields optional for partial updates
 
-# Response Models
+# Response
 class ResourceResponse(BaseModel):
     id: str
     name: str
     description: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-    # Include all fields returned to client
 ```
 
-## Endpoint Structure
+## CRUD Endpoint Patterns
 
-### CREATE Endpoint
+### CREATE
 
 ```python
 @router.post("/", response_model=ResourceResponse, status_code=status.HTTP_201_CREATED)
@@ -100,82 +73,42 @@ async def create_resource(
     current_user: dict = Depends(get_current_user),
     supabase: Client = Depends(get_supabase_client)
 ):
-    """
-    Create new resource.
-
-    Args:
-        resource: Resource data
-        current_user: Authenticated user
-        supabase: Supabase client
-
-    Returns:
-        Created resource
-
-    Raises:
-        HTTPException: 400 if validation fails
-    """
-    user_id = current_user["id"]
-
-    # Insert data
-    result = supabase.table('resources') \
-        .insert({
-            "user_id": user_id,
-            "name": resource.name,
-            "description": resource.description
-        }) \
-        .execute()
-
+    """Create new resource."""
+    result = supabase.table('resources').insert({
+        "user_id": current_user["id"],
+        **resource.model_dump()
+    }).execute()
+    
     if not result.data:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to create resource"
-        )
-
+        raise HTTPException(status_code=400, detail="Failed to create")
+    
     return result.data[0]
 ```
 
-### LIST Endpoint
+### LIST
 
 ```python
-from typing import List
-
 @router.get("/", response_model=List[ResourceResponse])
 async def list_resources(
-    status: Optional[str] = None,  # Query parameters
+    status: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
     current_user: dict = Depends(get_current_user),
     supabase: Client = Depends(get_supabase_client)
 ):
-    """
-    List resources with optional filters.
-
-    Args:
-        status: Filter by status
-        limit: Maximum results to return
-        offset: Pagination offset
-        current_user: Authenticated user
-        supabase: Supabase client
-
-    Returns:
-        List of resources
-    """
-    user_id = current_user["id"]
-
+    """List resources with optional filters."""
     query = supabase.table('resources') \
         .select('*') \
-        .eq('user_id', user_id) \
-        .limit(limit) \
-        .offset(offset)
-
+        .eq('user_id', current_user["id"]) \
+        .limit(limit).offset(offset)
+    
     if status:
         query = query.eq('status', status)
-
-    result = query.execute()
-    return result.data
+    
+    return query.execute().data
 ```
 
-### GET Endpoint
+### GET
 
 ```python
 @router.get("/{resource_id}", response_model=ResourceResponse)
@@ -184,39 +117,20 @@ async def get_resource(
     current_user: dict = Depends(get_current_user),
     supabase: Client = Depends(get_supabase_client)
 ):
-    """
-    Get specific resource by ID.
-
-    Args:
-        resource_id: Resource UUID
-        current_user: Authenticated user
-        supabase: Supabase client
-
-    Returns:
-        Resource details
-
-    Raises:
-        HTTPException: 404 if resource not found or doesn't belong to user
-    """
-    user_id = current_user["id"]
-
+    """Get specific resource by ID."""
     result = supabase.table('resources') \
         .select('*') \
         .eq('id', resource_id) \
-        .eq('user_id', user_id) \
-        .single() \
-        .execute()
-
+        .eq('user_id', current_user["id"]) \
+        .single().execute()
+    
     if not result.data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resource not found"
-        )
-
+        raise HTTPException(status_code=404, detail="Resource not found")
+    
     return result.data
 ```
 
-### UPDATE Endpoint
+### UPDATE
 
 ```python
 @router.put("/{resource_id}", response_model=ResourceResponse)
@@ -226,42 +140,22 @@ async def update_resource(
     current_user: dict = Depends(get_current_user),
     supabase: Client = Depends(get_supabase_client)
 ):
-    """
-    Update resource.
-
-    Args:
-        resource_id: Resource UUID
-        resource: Updated resource data
-        current_user: Authenticated user
-        supabase: Supabase client
-
-    Returns:
-        Updated resource
-
-    Raises:
-        HTTPException: 404 if resource not found
-    """
-    user_id = current_user["id"]
-
-    # Build update dict with only provided fields
+    """Update resource."""
     update_data = resource.model_dump(exclude_unset=True)
-
+    
     result = supabase.table('resources') \
         .update(update_data) \
         .eq('id', resource_id) \
-        .eq('user_id', user_id) \
+        .eq('user_id', current_user["id"]) \
         .execute()
-
+    
     if not result.data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resource not found"
-        )
-
+        raise HTTPException(status_code=404, detail="Resource not found")
+    
     return result.data[0]
 ```
 
-### DELETE Endpoint
+### DELETE
 
 ```python
 @router.delete("/{resource_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -270,71 +164,30 @@ async def delete_resource(
     current_user: dict = Depends(get_current_user),
     supabase: Client = Depends(get_supabase_client)
 ):
-    """
-    Delete resource.
-
-    Args:
-        resource_id: Resource UUID
-        current_user: Authenticated user
-        supabase: Supabase client
-
-    Raises:
-        HTTPException: 404 if resource not found
-    """
-    user_id = current_user["id"]
-
+    """Delete resource."""
     result = supabase.table('resources') \
         .delete() \
         .eq('id', resource_id) \
-        .eq('user_id', user_id) \
+        .eq('user_id', current_user["id"]) \
         .execute()
-
+    
     if not result.data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resource not found"
-        )
+        raise HTTPException(status_code=404, detail="Resource not found")
 ```
 
-## Error Handling
+## HTTP Status Codes
 
-Use appropriate HTTP status codes:
-
-- `200 OK` - Successful GET, PUT, PATCH
-- `201 CREATED` - Successful POST
-- `204 NO_CONTENT` - Successful DELETE
+- `200 OK` - GET, PUT, PATCH success
+- `201 CREATED` - POST success
+- `204 NO_CONTENT` - DELETE success
 - `400 BAD_REQUEST` - Validation errors
-- `401 UNAUTHORIZED` - Authentication required
+- `401 UNAUTHORIZED` - Auth required
 - `403 FORBIDDEN` - Insufficient permissions
 - `404 NOT_FOUND` - Resource not found
 - `409 CONFLICT` - Resource already exists
 - `500 INTERNAL_SERVER_ERROR` - Server errors
 
-```python
-from fastapi import HTTPException, status
-
-# Bad request
-raise HTTPException(
-    status_code=status.HTTP_400_BAD_REQUEST,
-    detail="Validation error message"
-)
-
-# Not found
-raise HTTPException(
-    status_code=status.HTTP_404_NOT_FOUND,
-    detail="Resource not found"
-)
-
-# Forbidden
-raise HTTPException(
-    status_code=status.HTTP_403_FORBIDDEN,
-    detail="Insufficient permissions"
-)
-```
-
 ## Background Tasks
-
-Use FastAPI's BackgroundTasks for async operations:
 
 ```python
 from fastapi import BackgroundTasks
@@ -346,37 +199,28 @@ async def generate_content(
     current_user: dict = Depends(get_current_user)
 ):
     """Generate content asynchronously."""
-
     async def run_generation():
         # Long-running operation
         pass
-
+    
     background_tasks.add_task(run_generation)
-
     return {"job_id": "...", "status": "started"}
 ```
 
 ## Security
 
-1. ALWAYS check user ownership before returning/modifying resources
-2. Use `.eq('user_id', user_id)` in Supabase queries
-3. Document why admin client is used if bypassing RLS
-4. Validate all input data with Pydantic models
-5. Never expose internal error details to clients
+1. ALWAYS check user ownership: `.eq('user_id', user_id)`
+2. Document why admin client used if bypassing RLS
+3. Validate all input with Pydantic models
+4. Never expose internal error details
 
 ## Documentation
 
 Each endpoint MUST include:
-
 - Docstring with description
-- Args documentation
-- Returns documentation
-- Raises documentation for HTTPExceptions
+- Args, Returns, Raises documentation
 
-## Module Docstring
-
-Each API module MUST include a module docstring:
-
+Module docstring example:
 ```python
 """
 Resource Management Endpoints - CRUD operations for resources.
@@ -384,6 +228,5 @@ Resource Management Endpoints - CRUD operations for resources.
 Resources represent [description]:
 - Key feature 1
 - Key feature 2
-- Key feature 3
 """
 ```

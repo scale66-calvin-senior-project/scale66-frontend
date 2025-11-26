@@ -6,71 +6,37 @@ alwaysApply: false
 
 # Supabase Integration Patterns
 
-Guidelines for using Supabase client in the backend for database operations and authentication.
-
 ## Client Types
-
-The application uses TWO types of Supabase clients:
 
 ### 1. Anon Client (RLS Enabled)
 
 ```python
 from app.core.supabase import get_supabase_client
 
-# Respects Row Level Security policies
-client = get_supabase_client()
+client = get_supabase_client()  # Respects Row Level Security
 ```
 
-**Use when:**
-
-- User-facing operations
-- Operations that should respect RLS
-- Standard CRUD operations
-- Most endpoint operations
-
-**Characteristics:**
-
-- Uses anon/public key
-- Respects RLS policies
-- Users can only access their own data (when RLS is configured)
-- Safer for general use
+**Use for:** User-facing operations, standard CRUD, most endpoints
+**Characteristics:** Uses anon key, respects RLS policies, safer for general use
 
 ### 2. Admin Client (RLS Bypassed)
 
 ```python
 from app.core.supabase import get_supabase_admin_client
 
-# WARNING: Bypasses Row Level Security
-client = get_supabase_admin_client()
+client = get_supabase_admin_client()  # WARNING: Bypasses RLS
 ```
 
-**Use when:**
-
-- System-level operations
-- Admin operations
-- Background jobs
-- Operations requiring access to all data
-- Creating users programmatically
-
-**Characteristics:**
-
-- Uses service role key
-- Bypasses ALL RLS policies
-- Full database access
-- Requires careful usage
-
-**IMPORTANT:** Always document WHY admin client is needed when using it.
+**Use for:** System operations, admin tasks, background jobs, creating users
+**Characteristics:** Uses service role key, bypasses ALL RLS, requires careful usage
+**CRITICAL:** Always document WHY admin client is needed
 
 ## Dependency Injection in FastAPI
 
-### Standard Client (RLS)
-
 ```python
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 from supabase import Client
 from app.api.deps import get_supabase_client, get_current_user
-
-router = APIRouter()
 
 @router.get("/items")
 async def list_items(
@@ -78,131 +44,69 @@ async def list_items(
     supabase: Client = Depends(get_supabase_client)
 ):
     """List items for current user (respects RLS)."""
-    user_id = current_user["id"]
-
-    result = supabase.table('items') \
+    return supabase.table('items') \
         .select('*') \
-        .eq('user_id', user_id) \
-        .execute()
-
-    return result.data
-```
-
-### Admin Client
-
-```python
-from app.api.deps import get_supabase_admin
-
-@router.post("/admin/create-user")
-async def create_user_system(
-    user_data: dict,
-    supabase: Client = Depends(get_supabase_admin)  # Admin client
-):
-    """
-    Create user using admin client.
-
-    NOTE: Using admin client because:
-    - Need to create user records programmatically
-    - User doesn't exist yet (can't use RLS)
-    - System operation, not user-facing
-    """
-    result = supabase.table('users') \
-        .insert(user_data) \
-        .execute()
-
-    return result.data
+        .eq('user_id', current_user["id"]) \
+        .execute().data
 ```
 
 ## Query Patterns
 
-### Select Queries
+### Select
 
 ```python
-# Select all columns
-result = supabase.table('posts') \
-    .select('*') \
-    .execute()
+# All columns
+supabase.table('posts').select('*').execute()
 
-# Select specific columns
-result = supabase.table('posts') \
-    .select('id, title, created_at') \
-    .execute()
+# Specific columns
+supabase.table('posts').select('id, title, created_at').execute()
 
-# Select with joins
-result = supabase.table('posts') \
-    .select('*, campaigns(name), brand_kits(brand_name)') \
-    .execute()
+# With joins
+supabase.table('posts').select('*, campaigns(name), brand_kits(brand_name)').execute()
 ```
 
 ### Filtering
 
 ```python
-# Equality filter
-result = supabase.table('posts') \
-    .select('*') \
-    .eq('user_id', user_id) \
-    .execute()
+# Equality
+.eq('user_id', user_id)
+.eq('status', 'published')
 
-# Multiple filters
-result = supabase.table('posts') \
-    .select('*') \
-    .eq('user_id', user_id) \
-    .eq('status', 'published') \
-    .execute()
-
-# Greater than / Less than
-result = supabase.table('posts') \
-    .select('*') \
-    .gt('created_at', '2024-01-01') \
-    .execute()
+# Comparison
+.gt('created_at', '2024-01-01')
+.lt('created_at', '2024-12-31')
 
 # IN filter
-result = supabase.table('posts') \
-    .select('*') \
-    .in_('status', ['draft', 'published']) \
-    .execute()
+.in_('status', ['draft', 'published'])
 
 # LIKE filter
-result = supabase.table('posts') \
-    .select('*') \
-    .like('title', '%carousel%') \
-    .execute()
+.like('title', '%carousel%')
 ```
 
 ### Ordering and Pagination
 
 ```python
-# Order by
-result = supabase.table('posts') \
-    .select('*') \
-    .order('created_at', desc=True) \
-    .execute()
+# Order
+.order('created_at', desc=True)
 
-# Pagination with limit and offset
-result = supabase.table('posts') \
-    .select('*') \
-    .limit(10) \
-    .offset(20) \
-    .execute()
+# Limit/Offset
+.limit(10).offset(20)
 
-# Range-based pagination
-result = supabase.table('posts') \
-    .select('*') \
-    .range(0, 9) \
-    .execute()  # Returns first 10 items
+# Range
+.range(0, 9)  # First 10 items
 ```
 
 ### Single Record
 
 ```python
-# Get single record (raises error if not found or multiple found)
+# Get single (raises error if not found or multiple found)
 result = supabase.table('posts') \
     .select('*') \
     .eq('id', post_id) \
     .single() \
     .execute()
 
-# Safe single (returns None if not found)
+# Maybe single (returns None if not found)
 result = supabase.table('posts') \
     .select('*') \
     .eq('id', post_id) \
@@ -210,63 +114,49 @@ result = supabase.table('posts') \
     .execute()
 
 if result.data:
-    # Record found
     post = result.data
 ```
 
-### Insert Queries
+### Insert
 
 ```python
-# Insert single record
-result = supabase.table('posts') \
-    .insert({
-        'user_id': user_id,
-        'title': 'My Post',
-        'content': 'Post content',
-        'status': 'draft'
-    }) \
-    .execute()
+# Single
+result = supabase.table('posts').insert({
+    'user_id': user_id,
+    'title': 'My Post',
+    'status': 'draft'
+}).execute()
 
-created_post = result.data[0]
+created = result.data[0]
 
-# Insert multiple records
-result = supabase.table('posts') \
-    .insert([
-        {'user_id': user_id, 'title': 'Post 1'},
-        {'user_id': user_id, 'title': 'Post 2'},
-    ]) \
-    .execute()
+# Multiple
+result = supabase.table('posts').insert([
+    {'user_id': user_id, 'title': 'Post 1'},
+    {'user_id': user_id, 'title': 'Post 2'},
+]).execute()
 ```
 
-### Update Queries
+### Update
 
 ```python
-# Update with filters
 result = supabase.table('posts') \
     .update({'status': 'published'}) \
     .eq('id', post_id) \
     .eq('user_id', user_id) \
     .execute()
-
-# Update multiple records
-result = supabase.table('posts') \
-    .update({'status': 'archived'}) \
-    .eq('user_id', user_id) \
-    .lt('created_at', '2024-01-01') \
-    .execute()
 ```
 
-### Delete Queries
+### Delete
 
 ```python
-# Delete with filters
+# Hard delete
 result = supabase.table('posts') \
     .delete() \
     .eq('id', post_id) \
     .eq('user_id', user_id) \
     .execute()
 
-# Soft delete (update instead)
+# Soft delete (recommended)
 result = supabase.table('posts') \
     .update({'deleted_at': datetime.now().isoformat()}) \
     .eq('id', post_id) \
@@ -275,106 +165,43 @@ result = supabase.table('posts') \
 
 ## User Ownership Verification
 
-ALWAYS verify user ownership before returning or modifying resources:
+ALWAYS verify user ownership:
 
 ```python
-@router.get("/posts/{post_id}")
-async def get_post(
-    post_id: str,
-    current_user: dict = Depends(get_current_user),
-    supabase: Client = Depends(get_supabase_client)
-):
-    """Get post by ID - verifies ownership."""
-    user_id = current_user["id"]
-
-    # CORRECT: Filter by both id AND user_id
-    result = supabase.table('posts') \
-        .select('*') \
-        .eq('id', post_id) \
-        .eq('user_id', user_id) \
-        .single() \
-        .execute()
-
-    if not result.data:
-        raise HTTPException(
-            status_code=404,
-            detail="Post not found"
-        )
-
-    return result.data
-```
-
-**INCORRECT (Security Issue):**
-
-```python
-# DON'T DO THIS - Missing user_id check
+# CORRECT: Filter by both id AND user_id
 result = supabase.table('posts') \
     .select('*') \
     .eq('id', post_id) \
+    .eq('user_id', user_id) \
     .single() \
     .execute()
-# User can access other users' posts!
+
+if not result.data:
+    raise HTTPException(status_code=404, detail="Post not found")
+
+# INCORRECT: Missing user_id check - security issue!
+result = supabase.table('posts').select('*').eq('id', post_id).execute()
 ```
 
 ## Error Handling
 
 ```python
-from fastapi import HTTPException, status
+try:
+    result = supabase.table('posts') \
+        .select('*') \
+        .eq('id', post_id) \
+        .single() \
+        .execute()
+    
+    return result.data
 
-@router.get("/posts/{post_id}")
-async def get_post(
-    post_id: str,
-    current_user: dict = Depends(get_current_user),
-    supabase: Client = Depends(get_supabase_client)
-):
-    try:
-        result = supabase.table('posts') \
-            .select('*') \
-            .eq('id', post_id) \
-            .eq('user_id', current_user["id"]) \
-            .single() \
-            .execute()
-
-        return result.data
-
-    except Exception as e:
-        # Log the error
-        logger.error(f"Failed to fetch post {post_id}: {e}")
-
-        # Return appropriate HTTP error
-        if "not found" in str(e).lower():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Post not found"
-            )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to fetch post"
-            )
-```
-
-## Response Handling
-
-```python
-# Check if data exists
-result = supabase.table('posts').select('*').execute()
-
-if not result.data:
-    # No results found
-    return []
-
-# Access data
-posts = result.data  # List of records
-
-# Single record
-result = supabase.table('posts') \
-    .select('*') \
-    .eq('id', post_id) \
-    .single() \
-    .execute()
-
-post = result.data  # Single record (dict)
+except Exception as e:
+    logger.error(f"Failed to fetch post {post_id}: {e}")
+    
+    if "not found" in str(e).lower():
+        raise HTTPException(status_code=404, detail="Post not found")
+    else:
+        raise HTTPException(status_code=500, detail="Failed to fetch post")
 ```
 
 ## Storage Operations
@@ -382,129 +209,75 @@ post = result.data  # Single record (dict)
 ```python
 from app.core.supabase import get_supabase_client
 
-# Upload file
-def upload_file(bucket: str, path: str, file_data: bytes):
-    supabase = get_supabase_client()
+supabase = get_supabase_client()
 
-    result = supabase.storage \
-        .from_(bucket) \
-        .upload(path, file_data)
-
-    return result
+# Upload
+supabase.storage.from_(bucket).upload(path, file_data)
 
 # Get public URL
-def get_public_url(bucket: str, path: str) -> str:
-    supabase = get_supabase_client()
+url = supabase.storage.from_(bucket).get_public_url(path)
 
-    url = supabase.storage \
-        .from_(bucket) \
-        .get_public_url(path)
+# Download
+data = supabase.storage.from_(bucket).download(path)
 
-    return url
-
-# Download file
-def download_file(bucket: str, path: str) -> bytes:
-    supabase = get_supabase_client()
-
-    result = supabase.storage \
-        .from_(bucket) \
-        .download(path)
-
-    return result
-
-# Delete file
-def delete_file(bucket: str, path: str):
-    supabase = get_supabase_client()
-
-    supabase.storage \
-        .from_(bucket) \
-        .remove([path])
+# Delete
+supabase.storage.from_(bucket).remove([path])
 ```
 
 ## Authentication
-
-### Get Current User (JWT Validation)
 
 ```python
 from app.api.deps import get_current_user
 
 @router.get("/profile")
-async def get_profile(
-    current_user: dict = Depends(get_current_user)
-):
+async def get_profile(current_user: dict = Depends(get_current_user)):
     """
-    Get current user profile.
-
     current_user contains:
     - id: User UUID
     - email: User email
-    - Other user metadata from JWT
+    - Other metadata from JWT
     """
-    return {
-        "id": current_user["id"],
-        "email": current_user["email"]
-    }
+    return {"id": current_user["id"], "email": current_user["email"]}
 ```
 
 ## Best Practices
 
-1. **Always Use User Filters**: Add `.eq('user_id', user_id)` for user-owned resources
-2. **Check Response Data**: Always verify `result.data` before using it
-3. **Handle Errors**: Wrap queries in try/except blocks
-4. **Use RLS Client by Default**: Only use admin client when necessary
-5. **Document Admin Usage**: Comment why admin client is needed
-6. **Validate Input**: Use Pydantic models before database operations
-7. **Log Operations**: Log important database operations for debugging
-8. **Pagination**: Always use limit/offset for list endpoints
-9. **Select Specific Fields**: Don't select '\*' in production unless needed
-10. **Use Transactions**: For related inserts/updates, consider using transactions
+1. **User Filters:** Always add `.eq('user_id', user_id)` for user-owned resources
+2. **Check Response:** Verify `result.data` before using
+3. **Handle Errors:** Wrap queries in try/except
+4. **Use RLS Client:** Only use admin when necessary
+5. **Document Admin:** Comment why admin client needed
+6. **Validate Input:** Use Pydantic before DB operations
+7. **Pagination:** Always use limit/offset for lists
+8. **Select Fields:** Don't select '\*' in production unless needed
 
 ## Common Patterns
 
-### Fetch User's Resource
-
 ```python
-result = supabase.table('resources') \
-    .select('*') \
-    .eq('user_id', current_user["id"]) \
-    .execute()
-```
+# Fetch user's resource
+supabase.table('resources').select('*').eq('user_id', current_user["id"]).execute()
 
-### Create Resource for User
+# Create resource for user
+supabase.table('resources').insert({
+    'user_id': current_user["id"],
+    'name': data.name,
+}).execute()
 
-```python
-result = supabase.table('resources') \
-    .insert({
-        'user_id': current_user["id"],
-        'name': data.name,
-        # ... other fields
-    }) \
-    .execute()
-```
-
-### Update User's Resource
-
-```python
-result = supabase.table('resources') \
+# Update user's resource
+supabase.table('resources') \
     .update(update_data) \
     .eq('id', resource_id) \
     .eq('user_id', current_user["id"]) \
     .execute()
-```
 
-### Delete User's Resource
-
-```python
-result = supabase.table('resources') \
+# Delete user's resource
+supabase.table('resources') \
     .delete() \
     .eq('id', resource_id) \
     .eq('user_id', current_user["id"]) \
     .execute()
-```
 
-### Check Resource Exists
-
-```python
+# Check exists
 result = supabase.table('resources') \
     .select('id') \
     .eq('id', resource_id) \
@@ -513,5 +286,5 @@ result = supabase.table('resources') \
     .execute()
 
 if not result.data:
-    raise HTTPException(status_code=404, detail="Resource not found")
+    raise HTTPException(status_code=404, detail="Not found")
 ```

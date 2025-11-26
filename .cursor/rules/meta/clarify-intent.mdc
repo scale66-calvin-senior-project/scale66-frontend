@@ -1,0 +1,131 @@
+---
+description: Clarify user intent before making changes when instructions are vague or changes seem drastic
+globs:
+alwaysApply: true
+---
+
+# Clarify Intent Rule
+
+## When to Pause and Clarify
+
+Before making any changes, evaluate if either condition is met:
+
+### 1. Unclear Instructions
+
+Prompt is vague when:
+
+- Missing specific files, functions, or components to modify
+- Ambiguous terminology that could mean multiple things
+- No clear success criteria or expected outcome
+- Missing context about why the change is needed
+- Could be interpreted in multiple valid ways
+
+### 2. Drastic Changes
+
+Change seems excessive when:
+
+- Would affect multiple unrelated files or systems
+- Contradicts existing patterns or architecture (consult [preserve-patterns.mdc](mdc:.cursor/rules/meta/preserve-patterns.mdc))
+- Removes or rewrites significant working code
+- Introduces new dependencies or paradigms not used elsewhere
+- Scope seems larger than what user likely intended
+- Would require changes to database schema, APIs, or core logic
+
+**When evaluating if change contradicts patterns**, consult relevant pattern rules:
+
+- Frontend: [feature-modules.mdc](mdc:.cursor/rules/frontend/architecture/feature-modules.mdc), [frontend-components.mdc](mdc:.cursor/rules/frontend/components/frontend-components.mdc)
+- Backend: [fastapi-endpoints.mdc](mdc:.cursor/rules/backend/api/fastapi-endpoints.mdc), [supabase-integration.mdc](mdc:.cursor/rules/backend/database/supabase-integration.mdc), [singleton-pattern.mdc](mdc:.cursor/rules/backend/patterns/singleton-pattern.mdc), [ai-agent-pattern.mdc](mdc:.cursor/rules/backend/agents/ai-agent-pattern.mdc)
+
+## Required Actions
+
+If either condition is met, STOP before making changes and:
+
+### 1. Ask Clarifying Questions (3-5)
+
+Ask focused questions to understand:
+
+- **Scope:** "Which specific files/components should this affect?"
+- **Intent:** "What problem are you trying to solve?"
+- **Constraints:** "Should this follow existing patterns or introduce new ones?"
+- **Impact:** "Are you aware this will also affect [related areas]?"
+- **Alternatives:** "Would [simpler approach] achieve your goal?"
+
+### 2. Explain Impact
+
+Before proceeding, clearly state:
+
+- What files/components will be modified
+- What existing code will be changed or removed
+- What new code or patterns will be introduced
+- Potential side effects or breaking changes
+- Estimated scope (small/medium/large)
+
+## Example Scenarios
+
+### Vague Instruction
+
+User: "Make the dashboard better"
+
+Response:
+
+> Before making changes, I need to clarify your intent:
+>
+> 1. Which specific aspect needs improvement - layout, performance, data display, or UX?
+> 2. Are there specific components on the dashboard you want to focus on?
+> 3. Do you have a reference design or specific improvements in mind?
+> 4. Should this follow the existing design patterns or introduce new ones?
+>
+> This will help me make targeted improvements rather than broad changes.
+
+### Drastic Change
+
+User: "Refactor the auth system to use a different approach"
+
+Response:
+
+> This change would have significant impact. Before proceeding:
+>
+> 1. What specific issues with the current auth system are you trying to solve?
+> 2. Are you aware this would affect: AuthContext, middleware, all protected routes, and API endpoints?
+> 3. Should this be a gradual migration or complete replacement?
+> 4. Do you have a specific auth pattern/library in mind?
+> 5. Should backward compatibility be maintained during transition?
+>
+> **Estimated Impact:**
+>
+> - Files affected: 15-20+
+> - Components: Auth feature, middleware, context providers
+> - Risk: High - affects all authenticated functionality
+>
+> Please confirm scope before I proceed.
+
+## When NOT to Clarify
+
+Proceed directly when:
+
+- Instruction is specific and actionable
+- Change is isolated to clearly identified files
+- Follows established patterns in codebase
+- User has provided sufficient context
+- Scope is proportional to request
+
+## Response Format
+
+When clarifying, use this structure:
+
+```
+Before making changes, I need to clarify:
+
+1. [Question about scope/intent]
+2. [Question about specific files/components]
+3. [Question about patterns/approach]
+4. [Question about awareness of impact] (if drastic)
+5. [Question about alternatives] (if applicable)
+
+**Potential Impact:**
+- Files: [list or estimate]
+- Scope: [small/medium/large]
+- Risk: [low/medium/high]
+
+Please provide more details so I can make the right changes.
+```
