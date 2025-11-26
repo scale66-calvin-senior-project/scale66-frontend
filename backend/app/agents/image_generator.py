@@ -1,365 +1,208 @@
 """
 Image Generator Agent - Step 4 of AI Pipeline
 
-Generates images for carousel slides.
+Generates AI images for carousel slides using Google Imagen 4.
 
-Has 3 sub-components:
-1. Image Style Generator - Creates general style for carousel
-2. Hook Slide Image Generator - Creates hook image based on hook story
-3. Body Slides Image Generator - Generates images for body slides
-
-NOTE: Hook image is generated first and used by TextGenerator for style.
-Body images use hook image as reference for consistency.
+Input: ImageGeneratorInput (hook_slide_story, body_slides_story)
+Output: ImageGeneratorOutput (hook_slide_image, body_slides_images)
 """
 
-from typing import Dict, Any, List
-from .base_agent import BaseAgent
+import logging
+from typing import List
+
+from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
+from app.models.pipeline import ImageGeneratorInput, ImageGeneratorOutput
+from app.services.ai.gemini_service import GeminiServiceError
 
 
-class ImageGenerator(BaseAgent):
+logger = logging.getLogger(__name__)
+
+
+class ImageGenerator(BaseAgent[ImageGeneratorInput, ImageGeneratorOutput]):
     """
-    Image Generator Agent.
+    Generates AI images for carousel slides based on story content.
     
-    Responsibilities:
-    1. Generate Image Style - Overall aesthetic for carousel
-    2. Generate Hook Image - Image for slide 1
-    3. Generate Body Images - Images for slides 2-N (using hook as reference)
-    
-    The image generator creates all visual assets for the carousel.
-    Images should be:
-    - Visually consistent (same style)
-    - Aligned with brand colors/aesthetic
-    - Support the narrative (not just decorative)
-    - Optimized for text overlay
-    
-    Image Style Examples:
-    - "Minimalist gradient backgrounds, brand colors, clean"
-    - "Bold graphic illustrations, high contrast, modern"
-    - "Photographic, professional, subtle branding"
-    
-    TODO: Implement 3-step image generation:
-    1. Decide overall image style
-    2. Generate hook image
-    3. Generate body images (consistent with hook)
+    Uses Google Imagen 4 for high-quality image generation optimized for social media.
     """
     
-    def __init__(self):
-        """Initialize image generator agent."""
-        super().__init__()
-        pass
-    
-    async def generate(
-        self, 
-        story_data: Dict[str, Any], 
-        brand_kit_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def _validate_input(self, input_data: ImageGeneratorInput) -> None:
         """
-        Generate all images for carousel.
+        Validate input data before execution.
+        
+        Checks:
+        - Hook slide story is not empty
+        - Body slides story array is not empty and within limits
+        - All story strings are valid
         
         Args:
-            story_data: Output from story_generator (hook, script, slides)
-                {
-                    "hook": str,
-                    "script": str,
-                    "slides": list[str],
-                    "cta": str
-                }
-            brand_kit_data: Brand context (colors, style, logos, etc.)
-                {
-                    "brand_name": str,
-                    "brand_style": str,
-                    "brand_colors": list[str],
-                    "logo_url": str,
-                    "brand_images": list[str],
-                    ...
-                }
+            input_data: Image generator input schema
+            
+        Raises:
+            ValidationError: If input is invalid
+        """
+        # Validate hook_slide_story
+        if not input_data.hook_slide_story or not input_data.hook_slide_story.strip():
+            raise ValidationError("hook_slide_story cannot be empty")
+        
+        if len(input_data.hook_slide_story.strip()) < 10:
+            raise ValidationError("hook_slide_story must be at least 10 characters")
+        
+        # Validate body_slides_story
+        if not input_data.body_slides_story:
+            raise ValidationError("body_slides_story cannot be empty")
+        
+        if not isinstance(input_data.body_slides_story, list):
+            raise ValidationError("body_slides_story must be a list")
+        
+        if len(input_data.body_slides_story) < 2:
+            raise ValidationError("body_slides_story must contain at least 2 slides")
+        
+        if len(input_data.body_slides_story) > 9:
+            raise ValidationError("body_slides_story cannot contain more than 9 slides")
+        
+        # Validate each body slide
+        for i, slide in enumerate(input_data.body_slides_story):
+            if not slide or not isinstance(slide, str) or not slide.strip():
+                raise ValidationError(f"body_slides_story[{i}] is empty or invalid")
+            
+            if len(slide.strip()) < 5:
+                raise ValidationError(
+                    f"body_slides_story[{i}] must be at least 5 characters"
+                )
+        
+        self.logger.debug("Input validation passed")
+    
+    async def _execute(self, input_data: ImageGeneratorInput) -> ImageGeneratorOutput:
+        """
+        Execute image generation logic using Google Imagen 4.
+        
+        Args:
+            input_data: Validated input data
             
         Returns:
-            All image data:
-            {
-                "image_style": str,  # Style description
-                "hook_image_url": str,  # URL to hook image
-                "body_images_urls": list[str],  # URLs to body images
-                "image_metadata": dict  # Dimensions, format, etc.
-            }
+            Generated images as base64 encoded strings
+            
+        Raises:
+            ExecutionError: If image generation fails
+        """
+        try:
+            total_slides = 1 + len(input_data.body_slides_story)
+            self.logger.info(f"Generating {total_slides} images for carousel")
+            
+            # Generate hook slide image
+            self.logger.info("Generating hook slide image")
+            hook_prompt = self._create_image_prompt(
+                input_data.hook_slide_story,
+                is_hook=True
+            )
+            hook_image = await self._generate_single_image(hook_prompt)
+            
+            # Generate body slide images
+            body_images: List[str] = []
+            for i, story in enumerate(input_data.body_slides_story):
+                self.logger.info(f"Generating body slide {i+1}/{len(input_data.body_slides_story)}")
+                body_prompt = self._create_image_prompt(story, is_hook=False)
+                body_image = await self._generate_single_image(body_prompt)
+                body_images.append(body_image)
+            
+            self.logger.info(
+                f"Image generation completed successfully: "
+                f"1 hook + {len(body_images)} body images"
+            )
+            
+            return ImageGeneratorOutput(
+                hook_slide_image=hook_image,
+                body_slides_images=body_images,
+            )
+            
+        except GeminiServiceError as e:
+            raise ExecutionError(f"Image generation service error: {str(e)}")
+        except Exception as e:
+            raise ExecutionError(f"Unexpected error during image generation: {str(e)}")
+    
+    def _create_image_prompt(self, story: str, is_hook: bool) -> str:
+        """
+        Create image generation prompt based on story content.
         
-        TODO: Implement image generation:
+        Transforms narrative text into visual descriptions suitable for image generation.
         
-        STEP 1: Generate image style
-        image_style = await self._generate_image_style(brand_kit_data)
-        
-        STEP 2: Generate hook image
-        NOTE: This must complete BEFORE TextGenerator runs
-        hook_image_url = await self._generate_hook_image(
-            story_data["hook"],
-            image_style,
-            brand_kit_data
+        Args:
+            story: The story text for this slide
+            is_hook: Whether this is the hook slide (first slide)
+            
+        Returns:
+            Image generation prompt string
+        """
+        # Base prompt structure for all images
+        base_style = (
+            "Professional social media carousel image, modern and clean aesthetic, "
+            "vibrant colors, high contrast, visually striking, commercial photography style, "
+            "suitable for Instagram and TikTok, no text or words visible in the image"
         )
         
-        STEP 3: Generate body images
-        body_images = await self._generate_body_images(
-            story_data["slides"][1:],  # Skip first slide
-            hook_image_url,  # Use as reference for consistency
-            image_style,
-            brand_kit_data
+        # Create visual interpretation of the story
+        # For hook: more attention-grabbing, bold
+        # For body: supportive, illustrative
+        
+        if is_hook:
+            visual_emphasis = (
+                "Bold and attention-grabbing composition, strong focal point, "
+                "dramatic lighting, eye-catching and scroll-stopping visual"
+            )
+        else:
+            visual_emphasis = (
+                "Clear and focused composition, supportive visual elements, "
+                "professional and engaging, complements the narrative"
+            )
+        
+        # Extract visual concepts from story
+        # For MVP: create a generic but professional prompt based on story context
+        content_prompt = (
+            f"Create a visual representation that captures the essence of: {story}. "
+            f"Focus on visual metaphors and abstract concepts rather than literal text. "
+            f"The image should evoke the mood and message without using any written words."
         )
         
-        STEP 4: Generate metadata
-        metadata = {
-            "dimensions": "1080x1920",  # Instagram carousel
-            "format": "PNG",
-            "has_transparency": False
-        }
+        full_prompt = f"{content_prompt} {base_style} {visual_emphasis}"
         
-        return {
-            "image_style": image_style,
-            "hook_image_url": hook_image_url,
-            "body_images_urls": body_images,
-            "image_metadata": metadata
-        }
-        """
-        # TODO: Implement image generation
-        await self._log_step("image_generation_start", {
-            "num_slides": len(story_data.get("slides", []))
-        })
+        # Ensure prompt is within Imagen 4 limits (max 480 tokens ~ 1920 characters)
+        if len(full_prompt) > 1800:
+            self.logger.warning(f"Prompt too long ({len(full_prompt)} chars), truncating")
+            full_prompt = full_prompt[:1800]
         
-        # TODO: Generate image style
-        # TODO: Generate hook image (IMPORTANT: needed by TextGenerator)
-        # TODO: Generate body images
-        # TODO: Generate metadata
-        # TODO: Return image data
-        
-        pass
+        return full_prompt
     
-    async def _generate_image_style(
-        self, 
-        brand_kit_data: Dict[str, Any]
-    ) -> str:
+    async def _generate_single_image(self, prompt: str) -> str:
         """
-        Create general image style for entire carousel.
+        Generate a single image using Gemini service.
         
         Args:
-            brand_kit_data: Brand context
+            prompt: Image generation prompt
             
         Returns:
-            Image style description
-        
-        TODO: Implement style generation:
-        
-        The image style defines the overall aesthetic that all
-        carousel images will follow. This ensures consistency.
-        
-        1. Build prompt:
-           '''
-           Create an image style description for a carousel.
-           
-           Brand: {brand_name}
-           Niche: {brand_niche}
-           Style: {brand_style}
-           Colors: {brand_colors}
-           
-           Decide the overall image aesthetic:
-           1. Visual style (minimalist/bold/photographic/illustrated)
-           2. Color palette (based on brand colors)
-           3. Composition approach (centered/dynamic/clean)
-           4. Mood/emotion (professional/energetic/calm)
-           
-           Requirements:
-           - Must work well with text overlay
-           - Consistent across all slides
-           - Aligned with brand style
-           - Instagram-friendly (1080x1920)
-           
-           Return style description:
-           "Minimalist gradient backgrounds using brand colors (blue/white), 
-            clean composition, professional mood, subtle branding"
-           '''
-        
-        2. Call LLM
-        
-        3. Return style description
-        
-        Example returns:
-        - "Bold graphic illustrations, high contrast, modern"
-        - "Soft gradients, pastel colors, friendly aesthetic"
-        - "Dark mode, neon accents, tech-forward"
-        """
-        # TODO: Implement style generation
-        pass
-    
-    async def _generate_hook_image(
-        self, 
-        hook: str, 
-        image_style: str,
-        brand_kit_data: Dict[str, Any]
-    ) -> str:
-        """
-        Generate hook slide image.
-        
-        Args:
-            hook: Hook text from story_generator
-            image_style: Image style from _generate_image_style
-            brand_kit_data: Brand context
+            Base64 encoded image string
             
-        Returns:
-            URL to generated hook image
-        
-        TODO: Implement hook image generation:
-        
-        CRITICAL: This image is used by TextGenerator to decide text style!
-        Must complete before TextGenerator runs.
-        
-        1. Build image generation prompt:
-           '''
-           Create a hook slide image for Instagram carousel.
-           
-           Hook: "{hook}"
-           Style: {image_style}
-           Brand: {brand_name}
-           Colors: {brand_colors}
-           
-           Requirements:
-           - Eye-catching (must stop scroll)
-           - Space for text overlay in center
-           - Follows style: {image_style}
-           - Uses brand colors
-           - 1080x1920 px (Instagram carousel)
-           
-           Image should:
-           - Support the hook message
-           - Be visually striking
-           - Have clear area for text
-           - Not be too busy/complex
-           '''
-        
-        2. Call image generation API (Gemini, Midjourney, Stable Diffusion):
-           - Use Google Gemini for image generation or
-           - Stable Diffusion via Replicate or
-           - Consider using background templates + overlays
-        
-        3. Save generated image to storage (S3/Cloudinary/Supabase Storage)
-        
-        4. Return public URL to image
-        
-        Example:
-        Hook: "97% of startups fail at marketing"
-        → Image: Bold red gradient background with subtle chart graphics
+        Raises:
+            ExecutionError: If image generation fails
         """
-        # TODO: Implement hook image generation
-        # TODO: Call image generation API (DALL-E, SD, etc.)
-        # TODO: Save to storage
-        # TODO: Return URL
-        pass
-    
-    async def _generate_body_images(
-        self, 
-        slides: List[str], 
-        hook_image_url: str,
-        image_style: str,
-        brand_kit_data: Dict[str, Any]
-    ) -> List[str]:
-        """
-        Generate images for body slides using hook image as reference.
-        
-        Args:
-            slides: Slide texts from story_generator (slides 2-N)
-            hook_image_url: URL to hook image (for consistency)
-            image_style: Image style description
-            brand_kit_data: Brand context
+        try:
+            # Use 1:1 aspect ratio for Instagram/TikTok compatibility
+            # Use 2K for higher quality
+            image_base64 = await self.gemini.generate_image(
+                prompt=prompt,
+                aspect_ratio="9:16",
+                image_size="1K",
+            )
             
-        Returns:
-            List of URLs to generated images
-        
-        TODO: Implement body images generation:
-        
-        Body images should be CONSISTENT with hook image style
-        but vary slightly to maintain visual interest.
-        
-        1. For each slide, build prompt:
-           '''
-           Create a body slide image for Instagram carousel.
-           
-           Slide content: "{slide_text}"
-           Style: {image_style}
-           Reference image: [hook_image_url]
-           
-           Requirements:
-           - Consistent with reference image style
-           - Slight variation (different gradient/composition)
-           - Space for text overlay
-           - Follows brand colors: {brand_colors}
-           - 1080x1920 px
-           
-           The image should:
-           - Support the slide message
-           - Feel part of same carousel (consistent style)
-           - Not distract from text
-           '''
-        
-        2. Call image generation API for each slide
-        
-        3. Consider:
-           - Using same base template with variations
-           - Subtle changes in gradient/color
-           - Consistent layout/composition
-           - Text readability
-        
-        4. Save all images to storage
-        
-        5. Return list of URLs
-        
-        Alternative approach (faster/cheaper):
-        - Generate ONE base template
-        - Create variations using image manipulation (color shifts, etc.)
-        - Instead of generating N images, generate variations programmatically
-        """
-        # TODO: Implement body images generation
-        # Loop through slides and generate image for each
-        # Consider optimization: templates vs full generation
-        pass
-    
-    async def _save_image_to_storage(
-        self, 
-        image_data: bytes,
-        filename: str
-    ) -> str:
-        """
-        Save generated image to storage and return public URL.
-        
-        Args:
-            image_data: Image bytes
-            filename: Desired filename
+            return image_base64
             
-        Returns:
-            Public URL to stored image
-        
-        TODO: Implement image storage:
-        
-        Options:
-        1. Supabase Storage (recommended for MVP)
-        2. AWS S3
-        3. Cloudinary
-        
-        Example (Supabase Storage):
-        ```python
-        from app.core.supabase import get_supabase_client
-        
-        supabase = get_supabase_client()
-        
-        # Upload to storage
-        supabase.storage.from_('carousel-images').upload(
-            filename,
-            image_data,
-            file_options={"content-type": "image/png"}
-        )
-        
-        # Get public URL
-        url = supabase.storage.from_('carousel-images').get_public_url(filename)
-        
-        return url
-        ```
-        """
-        # TODO: Implement storage upload
-        # TODO: Use StorageService
-        pass
+        except GeminiServiceError as e:
+            self.logger.error(f"Failed to generate image: {e}")
+            raise ExecutionError(f"Image generation failed: {str(e)}")
+        except Exception as e:
+            self.logger.error(f"Unexpected error generating image: {e}")
+            raise ExecutionError(f"Unexpected image generation error: {str(e)}")
 
+
+# Create singleton instance for easy import
+image_generator = ImageGenerator()

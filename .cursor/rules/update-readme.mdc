@@ -8,6 +8,6 @@ Then, update the README.md files for the:
 2. frontend/
 3. global README.md
 
-Do not add unecessary information. Make minimal changes in the already present README strucure. Remove/replace any incorrect or outdated information. Do not create any more .md files, only update the present readme. 
+Do not add unecessary information. Do not change the exisitng structure of the readme to add more sections. Work within the existing sections and add the necessary information. Make minimal changes in the already present README strucure. Remove/replace any incorrect or outdated information. Do not create any more .md files, only update the present readme. 
 
 Once you have made changes, go through the readme and make sure that there isn't too much of a focus on the new material added, making sure that the documentation is true to the entire project. Do not focus too much on the most recent changes. Documentation should hold the items of highest priority rather than recency. 

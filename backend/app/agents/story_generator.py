@@ -1,321 +1,369 @@
 """
 Story Generator Agent - Step 3 of AI Pipeline
 
-Creates hook, script, and splits into slides.
+Generates compelling hook and body slide narratives based on format decision and brand context.
 
-Has 3 sub-components:
-1. Hook Generator - Creates compelling hook based on carousel format
-2. Script Writer - Generates full script from hook
-3. Slide Splitter - Splits script into appropriate slide count
+Input: StoryGeneratorInput (format_type, num_slides, brand_kit, user_prompt)
+Output: StoryGeneratorOutput (hook_slide_story, body_slides_story)
 """
 
-from typing import Dict, Any, List
-from .base_agent import BaseAgent
+import json
+import logging
+from typing import Dict, List
+
+from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
+from app.models.pipeline import StoryGeneratorInput, StoryGeneratorOutput
+from app.agents.carousel_format_decider import CarouselFormat
+from app.services.ai.anthropic_service import AnthropicServiceError
 
 
-class StoryGenerator(BaseAgent):
+logger = logging.getLogger(__name__)
+
+
+# Format-specific storytelling structures for each carousel type
+FORMAT_STRUCTURES: Dict[str, str] = {
+    CarouselFormat.TOP_5: "Hook: Preview the top 5 or reveal #1 with intrigue. Body: One numbered item per slide with brief explanation (50-100 chars).",
+    CarouselFormat.STORY_CASE_STUDY: "Hook: Relatable problem statement. Body: Struggle (1-2 slides) → Turning point (1 slide) → Solution (1-2 slides) → Result/transformation (1 slide).",
+    CarouselFormat.DECISION_TREE: "Hook: Should you ___? Body: Each slide asks a yes/no question that guides decision-making, building toward the solution.",
+    CarouselFormat.COMMON_MISTAKES: "Hook: 'Are you making these mistakes?' Body: Each slide presents one mistake + how to avoid it. Format: 'Mistake: X. Instead: Y.'",
+    CarouselFormat.TRANSFORMATIVE_GRID: "Hook: Promise of transformation. Body: Each slide has left/right comparison. Format: 'Before: X | After: Y' or 'Old way: X | New way: Y'.",
+    CarouselFormat.TUTORIAL: "Hook: 'How to achieve _____ without [pain point]'. Body: Sequential steps (Step 1, Step 2, etc.) with actionable instructions.",
+    CarouselFormat.UNPOPULAR_OPINION: "Hook: Controversial/counterintuitive statement. Body: Supporting arguments, examples, and reframe (build case for the opinion).",
+    CarouselFormat.THIS_VS_THAT: "Hook: Stop doing [bad habit]. Body: Repeat pattern across slides: 'Stop: X. Start: Y.' Each slide is one shift.",
+    CarouselFormat.CHECKLIST: "Hook: 'The ultimate _____ checklist'. Body: Each slide is one checklist item with brief context or action step.",
+    CarouselFormat.TIMELINE_JOURNEY: "Hook: Where you started. Body: Chronological progression showing key milestones and lessons learned along the journey.",
+    CarouselFormat.BEFORE_VS_AFTER: "Hook: The 'before' struggle. Body: Show transformation stages, proof points, and the 'after' result.",
+    CarouselFormat.MYTH_VS_REALITY: "Hook: Common belief/myth. Body: Alternate between myth slide and reality slide. Format: 'Myth: X' then 'Reality: Y'.",
+}
+
+
+class StoryGenerator(BaseAgent[StoryGeneratorInput, StoryGeneratorOutput]):
     """
-    Story Generator Agent.
+    Generates narrative content for carousel slides based on format and brand.
     
-    Responsibilities:
-    1. Generate Hook - Create attention-grabbing opening
-    2. Write Script - Develop complete narrative from hook
-    3. Split Slides - Divide script into individual slides
-    
-    The story follows the carousel format decided in step 2 and
-    creates the narrative structure for the carousel.
-    
-    Hook Examples:
-    - "97% of startups fail at marketing. Here's why."
-    - "I wasted $10K on ads before learning this..."
-    - "Your competitors are doing this. Are you?"
-    
-    TODO: Implement 3-step story generation:
-    1. Hook generation based on format
-    2. Script writing from hook
-    3. Slide splitting based on format structure
+    Uses Claude Sonnet 4.5 for creative storytelling with brand voice alignment.
     """
     
-    def __init__(self):
-        """Initialize story generator agent."""
-        super().__init__()
-        pass
-    
-    async def generate(
-        self, 
-        carousel_format: Dict[str, Any], 
-        brand_kit_data: Dict[str, Any], 
-        user_prompt: str
-    ) -> Dict[str, Any]:
+    async def _validate_input(self, input_data: StoryGeneratorInput) -> None:
         """
-        Generate complete story structure for carousel.
+        Validate input data before execution.
+        
+        Checks:
+        - Format type is valid CarouselFormat enum value
+        - Number of slides is in valid range (3-10)
+        - Brand kit is complete with required fields
+        - User prompt is not empty and has minimum length
         
         Args:
-            carousel_format: Format decision from carousel_format_decider
-                {
-                    "selected_format": str,
-                    "num_slides": int,
-                    "format_rationale": str,
-                    "content_structure": str
-                }
-            brand_kit_data: Brand context
-                {
-                    "brand_name": str,
-                    "brand_niche": str,
-                    "brand_style": str,
-                    "customer_pain_points": str,
-                    "product_service_desc": str
-                }
-            user_prompt: User's content request
+            input_data: Story generator input schema
             
-        Returns:
-            Complete story structure:
-            {
-                "hook": str,  # Compelling opening (for slide 1)
-                "script": str,  # Full carousel script
-                "slides": list[str],  # Script split per slide
-                "cta": str  # Call-to-action for last slide
-            }
+        Raises:
+            ValidationError: If input is invalid
+        """
+        # Validate format_type
+        if not input_data.format_type:
+            raise ValidationError("format_type is required")
         
-        TODO: Implement 3-step story generation:
+        valid_formats = [fmt.value for fmt in CarouselFormat]
+        if input_data.format_type not in valid_formats:
+            raise ValidationError(
+                f"Invalid format_type '{input_data.format_type}'. "
+                f"Must be one of: {', '.join(valid_formats)}"
+            )
         
-        STEP 1: Generate Hook
-        hook = await self._generate_hook(carousel_format, brand_kit_data, user_prompt)
+        # Validate num_slides
+        if input_data.num_slides < 3 or input_data.num_slides > 10:
+            raise ValidationError(
+                f"num_slides must be between 3 and 10, got {input_data.num_slides}"
+            )
         
-        STEP 2: Write Script from Hook
-        script = await self._write_script(hook, carousel_format, brand_kit_data, user_prompt)
+        # Validate user prompt
+        if not input_data.user_prompt or not input_data.user_prompt.strip():
+            raise ValidationError("user_prompt cannot be empty")
         
-        STEP 3: Split Script into Slides
-        slides = await self._split_slides(script, carousel_format)
+        if len(input_data.user_prompt.strip()) < 10:
+            raise ValidationError("user_prompt must be at least 10 characters")
         
-        STEP 4: Generate CTA
-        cta = await self._generate_cta(brand_kit_data)
+        # Validate brand kit
+        if not input_data.brand_kit:
+            raise ValidationError("brand_kit is required")
         
-        return {
-            "hook": hook,
-            "script": script,
-            "slides": slides,
-            "cta": cta
+        # Check required brand kit fields
+        required_fields = {
+            "brand_name": input_data.brand_kit.brand_name,
+            "brand_niche": input_data.brand_kit.brand_niche,
+            "brand_style": input_data.brand_kit.brand_style,
+            "product_service_desc": input_data.brand_kit.product_service_desc,
         }
-        """
-        # TODO: Implement story generation
-        await self._log_step("story_generation_start", {
-            "format": carousel_format.get("selected_format"),
-            "num_slides": carousel_format.get("num_slides")
-        })
         
-        # TODO: Generate hook
-        # TODO: Write script
-        # TODO: Split slides
-        # TODO: Generate CTA
-        # TODO: Return story data
+        for field_name, field_value in required_fields.items():
+            if not field_value or not str(field_value).strip():
+                raise ValidationError(f"brand_kit.{field_name} is required")
         
-        pass
+        self.logger.debug("Input validation passed")
     
-    async def _generate_hook(
-        self, 
-        carousel_format: Dict[str, Any],
-        brand_kit_data: Dict[str, Any],
-        user_prompt: str
-    ) -> str:
+    async def _execute(self, input_data: StoryGeneratorInput) -> StoryGeneratorOutput:
         """
-        Create compelling hook based on carousel format.
+        Execute story generation logic using Claude Sonnet 4.5.
         
         Args:
-            carousel_format: Selected format
-            brand_kit_data: Brand context
-            user_prompt: User request
+            input_data: Validated input data
             
         Returns:
-            Hook text (1-2 sentences)
-        
-        TODO: Implement hook generation:
-        
-        1. Build prompt based on format type:
-           - educational_tips: "X Ways to..."
-           - problem_solution: "Are you struggling with..."
-           - before_after: "I used to... Now I..."
-           - myth_busting: "Everyone says X. But here's the truth..."
-        
-        2. Include brand context and pain points
-        
-        3. Call LLM to generate hook
-        
-        4. Ensure hook is:
-           - Attention-grabbing
-           - Relevant to user prompt
-           - Aligned with brand voice
-           - 1-2 sentences max
-        
-        Example prompt:
-        '''
-        Create an attention-grabbing hook for a {format} carousel about {user_prompt}.
-        
-        Brand: {brand_name}
-        Niche: {brand_niche}
-        Pain Points: {customer_pain_points}
-        
-        The hook should:
-        - Grab attention in first 2 seconds
-        - Address target audience pain point
-        - Make them want to swipe
-        - Match {brand_style} tone
-        
-        Return only the hook text (1-2 sentences).
-        '''
+            Story content with hook and body slides
+            
+        Raises:
+            ExecutionError: If LLM call fails or response is invalid
         """
-        # TODO: Implement hook generation
-        pass
+        try:
+            # Build comprehensive prompt
+            system_prompt = self._build_system_prompt(input_data)
+            user_prompt = self._build_user_prompt(input_data)
+            
+            # Combine prompts for API call
+            full_prompt = f"{system_prompt}\n\n{user_prompt}"
+            
+            self.logger.info(
+                f"Generating story for format '{input_data.format_type}' "
+                f"with {input_data.num_slides} slides"
+            )
+            self.logger.debug(f"User prompt preview: {input_data.user_prompt[:100]}...")
+            
+            # Call Claude with higher temperature for creativity
+            response = await self.anthropic.generate_text(
+                prompt=full_prompt,
+                max_tokens=3000,
+                temperature=0.7,
+            )
+            
+            # Parse and validate response
+            story = self._parse_response(response, input_data.num_slides)
+            
+            self.logger.info(
+                f"Story generated successfully: hook + {len(story['body_slides_story'])} body slides"
+            )
+            
+            return StoryGeneratorOutput(
+                hook_slide_story=story["hook_slide_story"],
+                body_slides_story=story["body_slides_story"],
+            )
+            
+        except AnthropicServiceError as e:
+            raise ExecutionError(f"LLM service error: {str(e)}")
+        except json.JSONDecodeError as e:
+            raise ExecutionError(f"Failed to parse LLM response: {str(e)}")
+        except KeyError as e:
+            raise ExecutionError(f"Missing required field in response: {str(e)}")
+        except Exception as e:
+            raise ExecutionError(f"Unexpected error during execution: {str(e)}")
     
-    async def _write_script(
-        self, 
-        hook: str,
-        carousel_format: Dict[str, Any],
-        brand_kit_data: Dict[str, Any],
-        user_prompt: str
-    ) -> str:
+    def _build_system_prompt(self, input_data: StoryGeneratorInput) -> str:
         """
-        Generate full carousel script from hook.
+        Build comprehensive system prompt with format-specific guidance.
         
         Args:
-            hook: Generated hook from _generate_hook
-            carousel_format: Format details
-            brand_kit_data: Brand context
-            user_prompt: User request
+            input_data: Input data containing format type
             
         Returns:
-            Complete carousel script
-        
-        TODO: Implement script writing:
-        
-        1. Build prompt with:
-           - Hook as starting point
-           - Format structure (from format_decider)
-           - User prompt as content direction
-           - Brand context
-           - Num_slides constraint
-        
-        2. Call LLM to write script:
-           - Expand on hook
-           - Follow format structure
-           - Address user's request
-           - Include product/solution naturally
-           - End with call-to-action
-        
-        3. Ensure script:
-           - Flows naturally from hook
-           - Matches brand voice
-           - Is appropriate length for num_slides
-           - Includes educational value
-           - Ends with clear CTA
-        
-        Example prompt:
-        '''
-        Write a complete carousel script based on this hook:
-        "{hook}"
-        
-        Format: {selected_format}
-        Structure: {content_structure}
-        Number of slides: {num_slides}
-        
-        Brand Context:
-        - Brand: {brand_name}
-        - Product: {product_service_desc}
-        - Style: {brand_style}
-        
-        User Request: {user_prompt}
-        
-        Write the full script that:
-        1. Expands on the hook
-        2. Follows the {selected_format} structure
-        3. Delivers value about {user_prompt}
-        4. Naturally incorporates the product
-        5. Ends with a clear call-to-action
-        
-        Return the complete script (not split into slides yet).
-        '''
+            System prompt string
         """
-        # TODO: Implement script writing
-        pass
-    
-    async def _split_slides(
-        self, 
-        script: str, 
-        carousel_format: Dict[str, Any]
-    ) -> List[str]:
-        """
-        Split script into slides based on format.
+        # Get format-specific structure
+        format_structure = FORMAT_STRUCTURES.get(
+            input_data.format_type,
+            "Hook: Attention-grabbing opening. Body: Sequential content delivery."
+        )
         
-        Args:
-            script: Complete carousel script
-            carousel_format: Format with num_slides
-            
-        Returns:
-            List of slide texts (one per slide)
-        
-        TODO: Implement slide splitting:
-        
-        1. Use LLM to intelligently split script:
-           - Respect narrative breaks
-           - Ensure each slide is self-contained
-           - Maintain flow between slides
-           - Keep slide 1 as hook
-           - Keep last slide as CTA
-        
-        2. Ensure exactly num_slides slides
-        
-        3. Each slide should:
-           - Be readable length (not too long)
-           - Have clear message
-           - Flow to next slide
-        
-        Example prompt:
-        '''
-        Split this carousel script into exactly {num_slides} slides:
-        
-        "{script}"
-        
-        Format: {selected_format}
-        
-        Requirements:
-        - Slide 1: Hook (keep as-is from script start)
-        - Slides 2-{num_slides-1}: Main content (split intelligently)
-        - Slide {num_slides}: CTA (keep from script end)
-        
-        Split at natural narrative breaks.
-        Each slide should be 2-4 sentences max.
-        
-        Return as JSON array:
-        [
-            "Slide 1 text",
-            "Slide 2 text",
-            ...
-        ]
-        '''
-        """
-        # TODO: Implement slide splitting
-        pass
-    
-    async def _generate_cta(self, brand_kit_data: Dict[str, Any]) -> str:
-        """
-        Generate call-to-action for last slide.
-        
-        Args:
-            brand_kit_data: Brand context
-            
-        Returns:
-            CTA text
-        
-        TODO: Implement CTA generation:
-        - Consider product/service type
-        - Match brand voice
-        - Clear action (follow, visit website, try product)
-        
-        Examples:
-        - "Follow for more marketing tips"
-        - "Try it free → link in bio"
-        - "Get your custom strategy (link below)"
-        """
-        # TODO: Implement CTA generation
-        pass
+        return f"""You are an expert social media content creator specializing in viral carousel posts for Instagram and TikTok. Your role is to write compelling, scroll-stopping narratives that drive engagement and deliver value.
 
+FORMAT STRUCTURE FOR '{input_data.format_type}':
+{format_structure}
+
+STORYTELLING PRINCIPLES:
+
+1. HOOK SLIDE (First Slide):
+   - Must stop the scroll immediately (pattern interrupt, curiosity gap, bold claim)
+   - 40-80 characters ideal (must be readable in <2 seconds)
+   - Use proven hooks: "Stop scrolling if...", "The one thing...", "I went from X to Y", "Are you making this mistake?"
+   - Create curiosity gap - don't give away everything
+   - Speak directly to target audience's pain or desire
+
+2. BODY SLIDES (Remaining Slides):
+   - Each slide should standalone (users may not swipe through all)
+   - 50-100 characters per slide for optimal readability
+   - Deliver immediate value on each slide
+   - Use active voice and action-oriented language
+   - Build momentum toward conclusion/CTA
+   - Maintain narrative flow while keeping independence
+
+3. CONTENT QUALITY:
+   - Be specific, not generic (use numbers, examples, concrete details)
+   - Cut filler words ruthlessly (every word must earn its place)
+   - Use power words for emotional impact
+   - Vary sentence structure for rhythm
+   - End with actionable insight or strong conclusion
+
+4. BRAND VOICE ALIGNMENT:
+   - Embody the brand's style throughout (professional, playful, authoritative, etc.)
+   - Use industry-appropriate language
+   - Match sophistication level to target audience
+   - Maintain consistency across all slides
+
+5. SOCIAL MEDIA OPTIMIZATION:
+   - Write for scanners, not readers
+   - Front-load key information
+   - Use line breaks strategically (implied through brevity)
+   - Optimize for mobile viewing
+   - Create save-worthy or share-worthy content
+
+OUTPUT FORMAT:
+You must respond with ONLY a valid JSON object in this exact format:
+{{
+  "hook_slide_story": "<compelling first slide that stops the scroll>",
+  "body_slides_story": ["<slide 2>", "<slide 3>", "<slide 4>", ...]
+}}
+
+CRITICAL REQUIREMENTS:
+- body_slides_story array must contain exactly {input_data.num_slides - 1} slides (total carousel is {input_data.num_slides} slides including hook)
+- Each story string must be 30-150 characters
+- Do not include slide numbers in the content (e.g., don't write "Slide 1:", "Step 1:")
+- Do not include any text outside the JSON object
+- Do not use markdown code blocks"""
+    
+    def _build_user_prompt(self, input_data: StoryGeneratorInput) -> str:
+        """
+        Build user prompt with content request and brand context.
+        
+        Args:
+            input_data: Input data with format, brand, and user request
+            
+        Returns:
+            User prompt string
+        """
+        brand_kit = input_data.brand_kit
+        
+        # Calculate expected body slide count
+        body_slide_count = input_data.num_slides - 1
+        
+        # Format customer pain points as a list
+        pain_points = ", ".join(brand_kit.customer_pain_points) if brand_kit.customer_pain_points else "Not provided"
+        
+        return f"""CONTENT REQUEST:
+"{input_data.user_prompt}"
+
+CAROUSEL SPECIFICATIONS:
+- Format Type: {input_data.format_type}
+- Total Slides: {input_data.num_slides} (1 hook + {body_slide_count} body slides)
+- Required Body Slides: {body_slide_count}
+
+BRAND CONTEXT:
+- Brand Name: {brand_kit.brand_name}
+- Brand Niche: {brand_kit.brand_niche}
+- Brand Style: {brand_kit.brand_style}
+- Customer Pain Points: {pain_points}
+- Product/Service Description: {brand_kit.product_service_desc}
+
+TASK:
+Generate a complete carousel story following the '{input_data.format_type}' format structure. Create 1 hook slide and exactly {body_slide_count} body slides that work together as a cohesive narrative while each slide can stand alone.
+
+Return your story as a JSON object with the hook and an array of {body_slide_count} body slides."""
+    
+    def _parse_response(self, response: str, expected_num_slides: int) -> Dict[str, any]:
+        """
+        Parse and validate LLM response.
+        
+        Extracts JSON from response and validates story structure.
+        
+        Args:
+            response: Raw LLM response
+            expected_num_slides: Total number of slides (including hook)
+            
+        Returns:
+            Validated story dictionary
+            
+        Raises:
+            ExecutionError: If response is invalid
+        """
+        # Clean response - remove potential markdown code blocks
+        cleaned = response.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        if cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
+        
+        # Parse JSON
+        try:
+            story = json.loads(cleaned)
+        except json.JSONDecodeError:
+            # Try to extract JSON from text
+            start_idx = cleaned.find("{")
+            end_idx = cleaned.rfind("}") + 1
+            if start_idx >= 0 and end_idx > start_idx:
+                story = json.loads(cleaned[start_idx:end_idx])
+            else:
+                raise ExecutionError("No valid JSON found in response")
+        
+        # Validate required fields
+        if "hook_slide_story" not in story:
+            raise ExecutionError("Missing 'hook_slide_story' in response")
+        if "body_slides_story" not in story:
+            raise ExecutionError("Missing 'body_slides_story' in response")
+        
+        # Validate hook_slide_story
+        hook = story["hook_slide_story"]
+        if not hook or not isinstance(hook, str) or not hook.strip():
+            raise ExecutionError("hook_slide_story must be a non-empty string")
+        
+        # Check hook length
+        if len(hook.strip()) < 10:
+            self.logger.warning(f"Hook is very short ({len(hook)} chars)")
+        if len(hook.strip()) > 200:
+            self.logger.warning(
+                f"Hook is very long ({len(hook)} chars), may not be readable"
+            )
+        
+        # Validate body_slides_story
+        body_slides = story["body_slides_story"]
+        if not isinstance(body_slides, list):
+            raise ExecutionError("body_slides_story must be an array")
+        
+        expected_body_count = expected_num_slides - 1
+        actual_body_count = len(body_slides)
+        
+        if actual_body_count != expected_body_count:
+            self.logger.error(
+                f"Expected {expected_body_count} body slides, got {actual_body_count}"
+            )
+            
+            # Handle array length mismatch
+            if actual_body_count < expected_body_count:
+                # Too few slides - pad with placeholder
+                self.logger.warning("Padding missing slides with placeholders")
+                while len(body_slides) < expected_body_count:
+                    body_slides.append("[Content continues...]")
+            else:
+                # Too many slides - truncate
+                self.logger.warning(f"Truncating to {expected_body_count} slides")
+                body_slides = body_slides[:expected_body_count]
+            
+            story["body_slides_story"] = body_slides
+        
+        # Validate each body slide
+        for i, slide in enumerate(body_slides):
+            if not slide or not isinstance(slide, str) or not slide.strip():
+                self.logger.warning(f"Body slide {i+1} is empty or invalid")
+                body_slides[i] = f"[Slide {i+2} content]"
+            elif len(slide.strip()) < 10:
+                self.logger.warning(f"Body slide {i+1} is very short ({len(slide)} chars)")
+            elif len(slide.strip()) > 250:
+                self.logger.warning(
+                    f"Body slide {i+1} is very long ({len(slide)} chars), may not be readable"
+                )
+        
+        return story
+
+
+# Create singleton instance for easy import
+story_generator = StoryGenerator()

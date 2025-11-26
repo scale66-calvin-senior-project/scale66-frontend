@@ -1,0 +1,483 @@
+---
+description: Singleton pattern implementation for services and agents
+globs: backend/app/**/*
+alwaysApply: false
+---
+
+# Singleton Pattern
+
+Guidelines for implementing singleton pattern in Python services and agents.
+
+## When to Use Singletons
+
+Use singleton pattern for:
+- AI service clients (AnthropicService, GeminiService)
+- Database clients (Supabase)
+- External API clients (Stripe, email services)
+- AI agents (orchestrator, story generator, etc.)
+- Configuration objects
+
+DON'T use singleton for:
+- Request-scoped objects
+- Data models (Pydantic models)
+- Utility functions (use modules instead)
+- Objects that need different configurations
+
+## Class-Based Singleton
+
+For classes with state and initialization logic:
+
+```python
+from typing import Optional
+
+class ServiceName:
+    """
+    Service description.
+    
+    Singleton pattern ensures single instance across application.
+    """
+    
+    _instance: Optional['ServiceName'] = None
+    _client: Optional[Any] = None  # External client/resource
+    
+    def __new__(cls):
+        """Singleton instance creation."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        """Initialize service (only runs once)."""
+        # Guard to prevent re-initialization
+        if self._client is None:
+            try:
+                self._client = self._initialize_client()
+                logger.info(f"{self.__class__.__name__} initialized")
+            except Exception as e:
+                logger.error(f"Failed to initialize {self.__class__.__name__}: {e}")
+                raise ServiceError(f"Initialization failed: {e}")
+    
+    def _initialize_client(self):
+        """Initialize external client/resource."""
+        # Initialization logic here
+        pass
+    
+    def operation(self):
+        """Service operation."""
+        # Use self._client
+        pass
+```
+
+### Example: AI Service
+
+```python
+from typing import Optional
+from anthropic import AsyncAnthropic
+from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
+
+class AnthropicServiceError(Exception):
+    """Base exception for Anthropic service errors."""
+    pass
+
+class AnthropicService:
+    """
+    Anthropic service for text generation.
+    Default Model: claude-sonnet-4-5 (configured in settings)
+    """
+    
+    _instance: Optional['AnthropicService'] = None
+    _client: Optional[AsyncAnthropic] = None
+    
+    def __new__(cls):
+        """Singleton instance creation."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        """Initialization of the Anthropic service."""
+        if self._client is None:
+            try:
+                self._client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+            except Exception as e:
+                logger.error(f"Failed to initialize Anthropic client: {e}")
+                raise AnthropicServiceError(f"Failed to initialize Anthropic client: {e}")
+    
+    async def generate_text(self, prompt: str, max_tokens: int = 4096) -> str:
+        """Generate text using Claude."""
+        try:
+            response = await self._client.messages.create(
+                model=settings.anthropic_model,
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.content[0].text.strip()
+        except Exception as e:
+            logger.error(f"Failed to generate text: {e}")
+            raise AnthropicServiceError(f"Failed to generate text: {e}")
+
+# Create singleton instance at module level
+anthropic_service = AnthropicService()
+```
+
+### Example: AI Agent
+
+```python
+from typing import Optional
+from app.agents.base_agent import BaseAgent
+from app.models.pipeline import AgentInput, AgentOutput
+
+class StoryGenerator(BaseAgent[AgentInput, AgentOutput]):
+    """
+    Story Generator Agent - Step 3 of AI Pipeline.
+    
+    Generates compelling narratives for carousel content.
+    """
+    
+    _instance: Optional['StoryGenerator'] = None
+    
+    def __new__(cls):
+        """Singleton instance creation."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        """Initialize agent (only runs once)."""
+        # BaseAgent.__init__ is idempotent, safe to call multiple times
+        super().__init__(agent_name="story_generator")
+    
+    async def _validate_input(self, input_data: AgentInput) -> None:
+        """Validate input data."""
+        pass
+    
+    async def _execute(self, input_data: AgentInput) -> AgentOutput:
+        """Execute agent logic."""
+        pass
+
+# Create singleton instance at module level
+story_generator = StoryGenerator()
+```
+
+## Function-Based Singleton
+
+For simpler cases, use `@lru_cache()` decorator:
+
+```python
+from functools import lru_cache
+from supabase import create_client, Client
+from app.core.config import settings
+
+@lru_cache()
+def get_supabase_client() -> Client:
+    """
+    Get Supabase client with anon key (respects Row Level Security).
+    
+    NOTE: Using @lru_cache() to ensure single instance (singleton pattern)
+    
+    Returns:
+        Supabase client instance
+    
+    Raises:
+        ValueError: If Supabase URL or anon key is not configured
+    """
+    if not settings.supabase_url:
+        raise ValueError("SUPABASE_URL is not configured")
+    
+    if not settings.supabase_key:
+        raise ValueError("SUPABASE_KEY is not configured")
+    
+    return create_client(settings.supabase_url, settings.supabase_key)
+```
+
+### When to Use `@lru_cache()`
+
+Use `@lru_cache()` for:
+- Factory functions that return clients
+- Configuration loaders
+- Simple singleton instances
+- Functions with no parameters
+
+DON'T use `@lru_cache()` for:
+- Functions with parameters (cache will grow)
+- Classes (use `__new__` pattern)
+- Functions that need cleanup
+- Thread-unsafe operations
+
+## Module-Level Singleton
+
+Export singleton instance at module level for easy imports:
+
+```python
+# services/ai/anthropic_service.py
+class AnthropicService:
+    _instance = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+# Create singleton instance
+anthropic_service = AnthropicService()
+
+# Usage in other files:
+from app.services.ai.anthropic_service import anthropic_service
+
+result = await anthropic_service.generate_text("Hello")
+```
+
+## Thread Safety
+
+For thread-safe singletons (if needed):
+
+```python
+import threading
+from typing import Optional
+
+class ThreadSafeService:
+    _instance: Optional['ThreadSafeService'] = None
+    _lock = threading.Lock()
+    
+    def __new__(cls):
+        """Thread-safe singleton instance creation."""
+        if cls._instance is None:
+            with cls._lock:
+                # Double-check pattern
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+```
+
+**Note:** Most Python web frameworks (FastAPI, Flask) handle requests in separate threads/processes, but singletons are typically safe because they're initialized at import time.
+
+## Singleton with Dependency Injection
+
+For FastAPI dependencies:
+
+```python
+# core/supabase.py
+@lru_cache()
+def get_supabase_client() -> Client:
+    """Singleton Supabase client."""
+    return create_client(settings.supabase_url, settings.supabase_key)
+
+def get_supabase_dep() -> Client:
+    """
+    FastAPI dependency for Supabase client.
+    
+    Usage:
+    @router.get("/items")
+    async def list_items(supabase: Client = Depends(get_supabase_dep)):
+        ...
+    """
+    return get_supabase_client()
+```
+
+## Testing Singletons
+
+### Resetting for Tests
+
+```python
+class Service:
+    _instance = None
+    _client = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    @classmethod
+    def reset(cls):
+        """Reset singleton (for testing only)."""
+        cls._instance = None
+        if hasattr(cls._instance, '_client'):
+            cls._instance._client = None
+
+# In tests:
+def test_service():
+    Service.reset()  # Start fresh
+    service = Service()
+    # Test logic
+```
+
+### Mocking Singletons
+
+```python
+from unittest.mock import Mock, patch
+
+def test_with_mock():
+    with patch('app.services.ai.anthropic_service.anthropic_service') as mock_service:
+        mock_service.generate_text.return_value = "Mocked response"
+        
+        # Test code that uses the service
+        result = await some_function()
+        
+        assert result == "Expected result"
+        mock_service.generate_text.assert_called_once()
+```
+
+## Common Pitfalls
+
+### 1. Re-initialization
+
+**PROBLEM:**
+```python
+def __init__(self):
+    # This runs every time instance is accessed!
+    self._client = SomeClient()
+```
+
+**SOLUTION:**
+```python
+def __init__(self):
+    # Guard to prevent re-initialization
+    if self._client is None:
+        self._client = SomeClient()
+```
+
+### 2. Mutable Default Arguments
+
+**PROBLEM:**
+```python
+class Service:
+    def __init__(self, cache={}):  # Shared across instances!
+        self.cache = cache
+```
+
+**SOLUTION:**
+```python
+class Service:
+    def __init__(self, cache=None):
+        self.cache = cache if cache is not None else {}
+```
+
+### 3. Singleton Inheritance
+
+**PROBLEM:**
+```python
+class BaseService:
+    _instance = None
+
+class ServiceA(BaseService):  # Shares _instance with ServiceB!
+    pass
+
+class ServiceB(BaseService):
+    pass
+```
+
+**SOLUTION:**
+```python
+class ServiceA:
+    _instance: Optional['ServiceA'] = None  # Separate instance
+    
+class ServiceB:
+    _instance: Optional['ServiceB'] = None  # Separate instance
+```
+
+## Best Practices
+
+1. **Document Singleton Usage**: Add "Singleton pattern ensures single instance" in docstring
+2. **Type Hints**: Use `Optional['ClassName']` for `_instance`
+3. **Initialization Guard**: Check if resources exist before initializing
+4. **Error Handling**: Wrap initialization in try/except
+5. **Logging**: Log initialization success/failure
+6. **Module Export**: Export instance at module level for easy import
+7. **Custom Exceptions**: Define service-specific exceptions
+8. **Testing**: Provide reset method for tests
+9. **Thread Safety**: Add locks only if needed
+10. **Resource Cleanup**: Implement cleanup if service holds resources
+
+## Complete Example
+
+```python
+"""
+Gemini Service - Google Imagen 4 API integration.
+
+Singleton service for image generation using Google's Imagen 4 model.
+"""
+
+import logging
+from typing import Optional
+from google import genai
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
+class GeminiServiceError(Exception):
+    """Base exception for Gemini service errors."""
+    pass
+
+class GeminiService:
+    """
+    Google Imagen 4 service for image generation.
+    
+    Default Model: imagen-4.0-generate-001 (configured in settings)
+    
+    Singleton pattern ensures single instance across application.
+    """
+    
+    _instance: Optional['GeminiService'] = None
+    _client: Optional[genai.Client] = None
+    
+    def __new__(cls):
+        """Singleton instance creation."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        """Initialize Gemini service with Imagen 4."""
+        if self._client is None:
+            try:
+                self._client = genai.Client(api_key=settings.gemini_api_key)
+                logger.info(f"Initialized Gemini client with Imagen 4")
+            except Exception as e:
+                logger.error(f"Failed to initialize Gemini client: {e}")
+                raise GeminiServiceError(f"Failed to initialize Gemini client: {e}")
+    
+    async def generate_image(
+        self, 
+        prompt: str,
+        aspect_ratio: str = "1:1",
+    ) -> str:
+        """
+        Generate image using Imagen 4.
+        
+        Args:
+            prompt: Image description
+            aspect_ratio: Aspect ratio (1:1, 16:9, etc.)
+        
+        Returns:
+            Base64-encoded image data
+        
+        Raises:
+            GeminiServiceError: If generation fails
+        """
+        try:
+            response = self._client.models.generate_images(
+                model=settings.gemini_model,
+                prompt=prompt,
+                config={'aspect_ratio': aspect_ratio}
+            )
+            return response.images[0].image.data
+        except Exception as e:
+            logger.error(f"Failed to generate image: {e}")
+            raise GeminiServiceError(f"Failed to generate image: {e}")
+
+# Create singleton instance at module level
+gemini_service = GeminiService()
+```
+
+Usage:
+
+```python
+from app.services.ai.gemini_service import gemini_service
+
+# Use the singleton instance
+image_data = await gemini_service.generate_image("A beautiful sunset")
+```

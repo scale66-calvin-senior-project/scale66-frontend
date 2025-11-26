@@ -27,6 +27,9 @@ cp .env.example .env
 npm run dev
 # Server runs at http://localhost:3000
 
+#cp the .env.example file
+cp .env.example .env
+
 # Build for production
 npm run build
 npm start
