@@ -144,6 +144,8 @@ class StoryGenerator(BaseAgent[StoryGeneratorInput, StoryGeneratorOutput]):
             )
             
             return StoryGeneratorOutput(
+                step_name="story_generator",
+                success=True,
                 hook_slide_story=story["hook_slide_story"],
                 body_slides_story=story["body_slides_story"],
             )

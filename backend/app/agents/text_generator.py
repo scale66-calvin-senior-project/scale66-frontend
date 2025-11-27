@@ -145,6 +145,8 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
             )
             
             return TextGeneratorOutput(
+                step_name="text_generator",
+                success=True,
                 hook_slide_text=hook_result["text"],
                 body_slides_text=body_texts,
                 hook_slide_text_style=hook_result["style"],

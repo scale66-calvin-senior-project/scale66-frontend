@@ -8,283 +8,160 @@ alwaysApply: false
 
 ## Client Types
 
-### 1. Anon Client (RLS Enabled)
+### Anon Client (RLS Enabled)
 
 ```python
 from app.core.supabase import get_supabase_client
-
 client = get_supabase_client()  # Respects Row Level Security
 ```
 
 **Use for:** User-facing operations, standard CRUD, most endpoints
-**Characteristics:** Uses anon key, respects RLS policies, safer for general use
 
-### 2. Admin Client (RLS Bypassed)
+### Admin Client (RLS Bypassed)
 
 ```python
 from app.core.supabase import get_supabase_admin_client
-
 client = get_supabase_admin_client()  # WARNING: Bypasses RLS
 ```
 
-**Use for:** System operations, admin tasks, background jobs, creating users
-**Characteristics:** Uses service role key, bypasses ALL RLS, requires careful usage
+**Use for:** System operations, admin tasks, background jobs
 **CRITICAL:** Always document WHY admin client is needed
 
-## Dependency Injection in FastAPI
+## CRUD Layer Pattern
+
+All database operations go through CRUD classes in `app/crud/`. Each CRUD class handles column mapping between API models and database schema.
+
+### BaseCRUD
 
 ```python
-from fastapi import Depends
-from supabase import Client
-from app.api.deps import get_supabase_client, get_current_user
+from app.crud.base import BaseCRUD
 
-@router.get("/items")
-async def list_items(
-    current_user: dict = Depends(get_current_user),
-    supabase: Client = Depends(get_supabase_client)
-):
-    """List items for current user (respects RLS)."""
-    return supabase.table('items') \
-        .select('*') \
-        .eq('user_id', current_user["id"]) \
-        .execute().data
+class EntityCRUD(BaseCRUD):
+    COLUMN_MAP = {"model_field": "db_column"}
+    
+    def __init__(self):
+        super().__init__(table_name="entities")
+```
+
+### Column Mapping
+
+When API model field names differ from database columns:
+
+| CRUD | Model Field | DB Column |
+|------|-------------|-----------|
+| brand_kit | product_service_desc | product_service_description |
+| campaign | name | campaign_name |
+| post | caption | final_caption |
+
+### CRUD Method Signatures
+
+```python
+# Get by ID with ownership check
+async def get_by_id(self, supabase: Client, entity_id: str, user_id: str) -> Optional[dict]
+
+# Get all for user
+async def get_by_user_id(self, supabase: Client, user_id: str) -> List[dict]
+
+# Create for user
+async def create_for_user(self, supabase: Client, user_id: str, data: dict) -> Optional[dict]
+
+# Update with ownership check
+async def update(self, supabase: Client, entity_id: str, user_id: str, data: dict) -> Optional[dict]
+
+# Delete with ownership check
+async def delete(self, supabase: Client, entity_id: str, user_id: str) -> bool
 ```
 
 ## Query Patterns
 
-### Select
-
-```python
-# All columns
-supabase.table('posts').select('*').execute()
-
-# Specific columns
-supabase.table('posts').select('id, title, created_at').execute()
-
-# With joins
-supabase.table('posts').select('*, campaigns(name), brand_kits(brand_name)').execute()
-```
-
-### Filtering
-
-```python
-# Equality
-.eq('user_id', user_id)
-.eq('status', 'published')
-
-# Comparison
-.gt('created_at', '2024-01-01')
-.lt('created_at', '2024-12-31')
-
-# IN filter
-.in_('status', ['draft', 'published'])
-
-# LIKE filter
-.like('title', '%carousel%')
-```
-
-### Ordering and Pagination
-
-```python
-# Order
-.order('created_at', desc=True)
-
-# Limit/Offset
-.limit(10).offset(20)
-
-# Range
-.range(0, 9)  # First 10 items
-```
-
 ### Single Record
 
 ```python
-# Get single (raises error if not found or multiple found)
-result = supabase.table('posts') \
-    .select('*') \
-    .eq('id', post_id) \
-    .single() \
-    .execute()
+# Prefer maybe_single() - returns None if not found
+response = supabase.table('posts') \
+    .select('*').eq('id', post_id).eq('user_id', user_id) \
+    .maybe_single().execute()
+return response.data if response.data else None
+```
 
-# Maybe single (returns None if not found)
-result = supabase.table('posts') \
-    .select('*') \
-    .eq('id', post_id) \
-    .maybe_single() \
-    .execute()
+### Multiple Records
 
-if result.data:
-    post = result.data
+```python
+response = supabase.table('posts') \
+    .select('*').eq('user_id', user_id) \
+    .order('created_at', desc=True).execute()
+return response.data if response.data else []
 ```
 
 ### Insert
 
 ```python
-# Single
-result = supabase.table('posts').insert({
+response = supabase.table('posts').insert({
     'user_id': user_id,
-    'title': 'My Post',
     'status': 'draft'
 }).execute()
-
-created = result.data[0]
-
-# Multiple
-result = supabase.table('posts').insert([
-    {'user_id': user_id, 'title': 'Post 1'},
-    {'user_id': user_id, 'title': 'Post 2'},
-]).execute()
+return response.data[0] if response.data else None
 ```
 
 ### Update
 
 ```python
-result = supabase.table('posts') \
+response = supabase.table('posts') \
     .update({'status': 'published'}) \
-    .eq('id', post_id) \
-    .eq('user_id', user_id) \
-    .execute()
+    .eq('id', post_id).eq('user_id', user_id).execute()
+return response.data[0] if response.data else None
 ```
 
 ### Delete
 
 ```python
-# Hard delete
-result = supabase.table('posts') \
-    .delete() \
-    .eq('id', post_id) \
-    .eq('user_id', user_id) \
-    .execute()
-
-# Soft delete (recommended)
-result = supabase.table('posts') \
-    .update({'deleted_at': datetime.now().isoformat()}) \
-    .eq('id', post_id) \
-    .execute()
+response = supabase.table('posts') \
+    .delete().eq('id', post_id).eq('user_id', user_id).execute()
+return bool(response.data)
 ```
 
-## User Ownership Verification
+## User Ownership
 
-ALWAYS verify user ownership:
+ALWAYS include `.eq('user_id', user_id)` for user-owned resources:
 
 ```python
-# CORRECT: Filter by both id AND user_id
-result = supabase.table('posts') \
-    .select('*') \
-    .eq('id', post_id) \
-    .eq('user_id', user_id) \
-    .single() \
-    .execute()
+# CORRECT
+.eq('id', post_id).eq('user_id', user_id)
 
-if not result.data:
-    raise HTTPException(status_code=404, detail="Post not found")
-
-# INCORRECT: Missing user_id check - security issue!
-result = supabase.table('posts').select('*').eq('id', post_id).execute()
+# WRONG - Security issue!
+.eq('id', post_id)
 ```
 
-## Error Handling
+## Storage
 
 ```python
-try:
-    result = supabase.table('posts') \
-        .select('*') \
-        .eq('id', post_id) \
-        .single() \
-        .execute()
-    
-    return result.data
+from app.core.supabase import get_supabase_admin_client
 
-except Exception as e:
-    logger.error(f"Failed to fetch post {post_id}: {e}")
-    
-    if "not found" in str(e).lower():
-        raise HTTPException(status_code=404, detail="Post not found")
-    else:
-        raise HTTPException(status_code=500, detail="Failed to fetch post")
+supabase = get_supabase_admin_client()
+supabase.storage.from_('carousel-images').upload(path, file_data)
+url = supabase.storage.from_('carousel-images').get_public_url(path)
 ```
 
-## Storage Operations
+## FastAPI Dependency Injection
 
 ```python
-from app.core.supabase import get_supabase_client
+from fastapi import Depends
+from supabase import Client
+from app.core.supabase import get_supabase_dep
 
-supabase = get_supabase_client()
-
-# Upload
-supabase.storage.from_(bucket).upload(path, file_data)
-
-# Get public URL
-url = supabase.storage.from_(bucket).get_public_url(path)
-
-# Download
-data = supabase.storage.from_(bucket).download(path)
-
-# Delete
-supabase.storage.from_(bucket).remove([path])
-```
-
-## Authentication
-
-```python
-from app.api.deps import get_current_user
-
-@router.get("/profile")
-async def get_profile(current_user: dict = Depends(get_current_user)):
-    """
-    current_user contains:
-    - id: User UUID
-    - email: User email
-    - Other metadata from JWT
-    """
-    return {"id": current_user["id"], "email": current_user["email"]}
+@router.get("/items")
+async def list_items(
+    current_user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase_dep)
+):
+    return await item_crud.get_by_user_id(supabase, current_user["id"])
 ```
 
 ## Best Practices
 
-1. **User Filters:** Always add `.eq('user_id', user_id)` for user-owned resources
-2. **Check Response:** Verify `result.data` before using
-3. **Handle Errors:** Wrap queries in try/except
-4. **Use RLS Client:** Only use admin when necessary
-5. **Document Admin:** Comment why admin client needed
-6. **Validate Input:** Use Pydantic before DB operations
-7. **Pagination:** Always use limit/offset for lists
-8. **Select Fields:** Don't select '\*' in production unless needed
-
-## Common Patterns
-
-```python
-# Fetch user's resource
-supabase.table('resources').select('*').eq('user_id', current_user["id"]).execute()
-
-# Create resource for user
-supabase.table('resources').insert({
-    'user_id': current_user["id"],
-    'name': data.name,
-}).execute()
-
-# Update user's resource
-supabase.table('resources') \
-    .update(update_data) \
-    .eq('id', resource_id) \
-    .eq('user_id', current_user["id"]) \
-    .execute()
-
-# Delete user's resource
-supabase.table('resources') \
-    .delete() \
-    .eq('id', resource_id) \
-    .eq('user_id', current_user["id"]) \
-    .execute()
-
-# Check exists
-result = supabase.table('resources') \
-    .select('id') \
-    .eq('id', resource_id) \
-    .eq('user_id', current_user["id"]) \
-    .maybe_single() \
-    .execute()
-
-if not result.data:
-    raise HTTPException(status_code=404, detail="Not found")
-```
+1. Use CRUD layer - don't write raw queries in endpoints
+2. Always verify user ownership with `.eq('user_id', user_id)`
+3. Use `maybe_single()` for optional single records
+4. Return `response.data[0] if response.data else None` pattern
+5. Handle column mapping in CRUD classes
+6. Use admin client only when RLS bypass is required

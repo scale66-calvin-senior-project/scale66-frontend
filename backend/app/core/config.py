@@ -44,7 +44,12 @@ class Settings(BaseSettings):
     anthropic_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
     anthropic_model: str = "claude-sonnet-4-5"
-    gemini_model: str = "gemini-2.5-flash-image"
+    
+    # Gemini image generation model configuration
+    # Supported models:
+    #   - gemini-3-pro-image-preview (recommended: highest quality, supports 4K)
+    #   - gemini-2.5-flash-image (faster, cost-effective)
+    gemini_image_model: str = "gemini-3-pro-image-preview"
     
     # Email service (Resend)
     resend_api_key: Optional[str] = None

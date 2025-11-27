@@ -17,7 +17,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
 from app.models.pipeline import FinalizerInput, FinalizerOutput
-from app.core.supabase import get_supabase_admin
+from app.core.supabase import get_supabase_admin_client
 
 
 logger = logging.getLogger(__name__)
@@ -171,6 +171,8 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
             )
             
             return FinalizerOutput(
+                step_name="finalizer",
+                success=True,
                 carousel_id=carousel_id,
                 carousel_slides_urls=all_urls,
             )
@@ -467,7 +469,7 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
             ExecutionError: If upload fails
         """
         try:
-            supabase = get_supabase_admin()
+            supabase = get_supabase_admin_client()
             
             # Upload to carousel-slides bucket
             bucket_name = "carousel-slides"

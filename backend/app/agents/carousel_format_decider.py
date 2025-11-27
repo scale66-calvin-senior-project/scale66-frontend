@@ -139,6 +139,8 @@ class CarouselFormatDecider(BaseAgent[CarouselFormatDeciderInput, CarouselFormat
             )
             
             return CarouselFormatDeciderOutput(
+                step_name="carousel_format_decider",
+                success=True,
                 format_type=decision["format_type"],
                 num_slides=decision["num_slides"],
                 format_rationale=decision["format_rationale"],

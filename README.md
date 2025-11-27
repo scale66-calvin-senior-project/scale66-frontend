@@ -19,7 +19,7 @@ Scale66 helps small software founders:
 - **Database:** Supabase (PostgreSQL + Auth + Storage)
 - **AI Services:**
   - Anthropic Claude Sonnet 4.5 (text + vision) - IMPLEMENTED
-  - Google Imagen 4.0 (image generation) - IMPLEMENTED
+  - Google Gemini (image generation) - IMPLEMENTED
 - **Image Processing:** Pillow
 - **Payment:** Stripe
 - **Email:** Resend
@@ -139,7 +139,7 @@ scale66/
 1. **Orchestrator** - Coordinates entire pipeline
 2. **Format Decider** - Selects optimal carousel format
 3. **Story Generator** - Creates hook, script, and slides
-4. **Image Generator** - Generates images via Imagen 4
+4. **Image Generator** - Generates images via Gemini
 5. **Text Generator** - Creates on-screen text with styling
 6. **Finalizer** - Overlays text on images
 
@@ -147,7 +147,7 @@ scale66/
 
 - Claude Sonnet 4.5 for text generation
 - Claude Vision for image analysis
-- Imagen 4.0 for image generation
+- Gemini for image generation (gemini-3-pro-image-preview recommended)
 
 ### Feature-Based Architecture (Frontend)
 

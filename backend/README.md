@@ -9,7 +9,7 @@ AI-powered carousel content generation platform built with FastAPI and Supabase.
 - **Database:** Supabase (PostgreSQL + Auth + Storage)
 - **AI Services:**
   - Anthropic Claude (text generation + vision) - IMPLEMENTED
-  - Google Imagen 4 (image generation) - IMPLEMENTED
+  - Google Gemini (image generation) - IMPLEMENTED
 - **Image Processing:** Pillow (PIL)
 - **Payment:** Stripe
 - **Email:** Resend
@@ -43,7 +43,7 @@ backend/
     │   ├── orchestrator.py          # Pipeline coordinator
     │   ├── carousel_format_decider.py # Format selection - IMPLEMENTED
     │   ├── story_generator.py       # Story/narrative generation - IMPLEMENTED
-    │   ├── image_generator.py       # Image generation via Imagen 4 - IMPLEMENTED
+    │   ├── image_generator.py       # Image generation via Gemini - IMPLEMENTED
     │   ├── text_generator.py        # Text overlay generation - IMPLEMENTED
     │   └── finalizer.py             # Image composition & upload - IMPLEMENTED
     │
@@ -85,7 +85,7 @@ backend/
     ├── services/             # External integrations
     │   ├── ai/
     │   │   ├── anthropic_service.py # Claude API integration
-    │   │   └── gemini_service.py    # Imagen 4 integration
+    │   │   └── gemini_service.py    # Gemini image generation
     │   ├── email_service.py         # Resend email
     │   ├── image_overlay_service.py # Image composition
     │   ├── social_media_service.py  # Social platform APIs
@@ -107,7 +107,7 @@ backend/
 1. **Orchestrator** - Coordinates pipeline and manages state flow
 2. **Format Decider** - Analyzes content request and selects optimal carousel format (12 format types)
 3. **Story Generator** - Creates compelling hook and body slide narratives aligned to format
-4. **Image Generator** - Generates AI images for each slide using Imagen 4 (9:16 aspect ratio)
+4. **Image Generator** - Generates AI images for each slide using Gemini (9:16 aspect ratio)
 5. **Text Generator** - Uses Claude Vision to analyze images and generate text overlays with styling
 6. **Finalizer** - Overlays text on images using Pillow and uploads to Supabase Storage
 
@@ -115,7 +115,7 @@ backend/
 
 - Claude Sonnet 4.5 (format decisions, story generation, text generation)
 - Claude Vision (image analysis for text placement)
-- Imagen 4.0 (image generation)
+- Gemini (image generation - supports multiple models)
 
 **Implementation Status:** All 5 agents fully implemented
 
@@ -216,9 +216,10 @@ Base URL: `http://localhost:8000/api/v1`
   - Text generation (Claude Sonnet 4.5)
   - Image analysis (Claude Vision)
   - Async client with error handling
-- **Gemini Service** - Imagen 4 integration
+- **Gemini Service** - Image generation integration
+  - Supports gemini-3-pro-image-preview and gemini-2.5-flash-image
   - Image generation with aspect ratio control
-  - Size options (1K, 2K)
+  - Size options (1K, 2K, 4K on gemini-3-pro)
   - Base64 encoded output
 
 **Other Services:**
@@ -252,6 +253,7 @@ SUPABASE_JWT_SECRET=your-jwt-secret
 # AI Services (Required for core functionality)
 ANTHROPIC_API_KEY=sk-ant-...
 GEMINI_API_KEY=...
+GEMINI_IMAGE_MODEL=gemini-3-pro-image-preview  # or gemini-2.5-flash-image
 
 # Optional Services
 RESEND_API_KEY=re_...
@@ -318,10 +320,11 @@ uv run python main.py
 **Complete:**
 
 - Core infrastructure (config, logging, security, database)
-- AI services (Anthropic Claude + Google Imagen 4)
+- AI services (Anthropic Claude + Google Gemini image generation)
 - Pydantic models and schemas (all entities + pipeline)
 - AI pipeline agents (all 5 agents fully implemented)
 - Base agent class with error handling
+- Model-agnostic Gemini integration (gemini-3-pro, gemini-2.5-flash)
 
 **In Progress:**
 

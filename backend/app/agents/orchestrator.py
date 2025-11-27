@@ -35,7 +35,7 @@ from app.agents.story_generator import story_generator
 from app.agents.image_generator import image_generator
 from app.agents.text_generator import text_generator
 from app.agents.finalizer import finalizer
-from app.core.supabase import get_supabase_admin
+from app.core.supabase import get_supabase_admin_client
 
 
 logger = logging.getLogger(__name__)
@@ -249,7 +249,7 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             ExecutionError: If brand kit not found or invalid
         """
         try:
-            supabase = get_supabase_admin()
+            supabase = get_supabase_admin_client()
             
             # Fetch from brand_kits table
             response = supabase.table("brand_kits").select("*").eq("id", brand_kit_id).execute()
@@ -262,12 +262,18 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             brand_data = response.data[0]
             
             # Parse into BrandKit model
+            # Note: DB column is "product_service_description", model uses "product_service_desc"
+            pain_points = brand_data.get("customer_pain_points", [])
+            # Handle if pain_points is stored as string (legacy) vs JSONB array
+            if isinstance(pain_points, str):
+                pain_points = [pain_points] if pain_points else []
+            
             brand_kit = BrandKit(
                 brand_name=brand_data.get("brand_name", ""),
                 brand_niche=brand_data.get("brand_niche", ""),
                 brand_style=brand_data.get("brand_style", ""),
-                customer_pain_points=brand_data.get("customer_pain_points", []),
-                product_service_desc=brand_data.get("product_service_desc", ""),
+                customer_pain_points=pain_points,
+                product_service_desc=brand_data.get("product_service_description", ""),
             )
             
             # Validate required fields

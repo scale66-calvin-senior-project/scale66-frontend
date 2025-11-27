@@ -1,7 +1,12 @@
 """
 Image Generator Agent - Step 4 of AI Pipeline
 
-Generates AI images for carousel slides using Google Imagen 4.
+Generates AI images for carousel slides using Google Gemini image generation.
+
+Supports multiple models (configured in settings):
+- gemini-3-pro-image-preview (highest quality)
+- gemini-2.5-flash-image (faster, cost-effective)
+- imagen-4.0-generate-001 (legacy)
 
 Input: ImageGeneratorInput (hook_slide_story, body_slides_story)
 Output: ImageGeneratorOutput (hook_slide_image, body_slides_images)
@@ -22,7 +27,10 @@ class ImageGenerator(BaseAgent[ImageGeneratorInput, ImageGeneratorOutput]):
     """
     Generates AI images for carousel slides based on story content.
     
-    Uses Google Imagen 4 for high-quality image generation optimized for social media.
+    Uses Google Gemini image generation models for high-quality images
+    optimized for social media (9:16 aspect ratio for Instagram/TikTok).
+    
+    Model selection is configured via settings.gemini_image_model.
     """
     
     async def _validate_input(self, input_data: ImageGeneratorInput) -> None:
@@ -74,7 +82,7 @@ class ImageGenerator(BaseAgent[ImageGeneratorInput, ImageGeneratorOutput]):
     
     async def _execute(self, input_data: ImageGeneratorInput) -> ImageGeneratorOutput:
         """
-        Execute image generation logic using Google Imagen 4.
+        Execute image generation logic using configured Gemini model.
         
         Args:
             input_data: Validated input data
@@ -111,6 +119,8 @@ class ImageGenerator(BaseAgent[ImageGeneratorInput, ImageGeneratorOutput]):
             )
             
             return ImageGeneratorOutput(
+                step_name="image_generator",
+                success=True,
                 hook_slide_image=hook_image,
                 body_slides_images=body_images,
             )
@@ -165,16 +175,21 @@ class ImageGenerator(BaseAgent[ImageGeneratorInput, ImageGeneratorOutput]):
         
         full_prompt = f"{content_prompt} {base_style} {visual_emphasis}"
         
-        # Ensure prompt is within Imagen 4 limits (max 480 tokens ~ 1920 characters)
-        if len(full_prompt) > 1800:
-            self.logger.warning(f"Prompt too long ({len(full_prompt)} chars), truncating")
-            full_prompt = full_prompt[:1800]
+        # Ensure prompt is within reasonable limits
+        # Gemini models support longer prompts than legacy Imagen
+        # Conservative limit: ~2000 characters for compatibility
+        max_prompt_length = 2000
+        if len(full_prompt) > max_prompt_length:
+            self.logger.warning(
+                f"Prompt too long ({len(full_prompt)} chars), truncating to {max_prompt_length}"
+            )
+            full_prompt = full_prompt[:max_prompt_length]
         
         return full_prompt
     
     async def _generate_single_image(self, prompt: str) -> str:
         """
-        Generate a single image using Gemini service.
+        Generate a single image using configured Gemini service.
         
         Args:
             prompt: Image generation prompt
@@ -186,8 +201,9 @@ class ImageGenerator(BaseAgent[ImageGeneratorInput, ImageGeneratorOutput]):
             ExecutionError: If image generation fails
         """
         try:
-            # Use 1:1 aspect ratio for Instagram/TikTok compatibility
-            # Use 2K for higher quality
+            # Use 9:16 aspect ratio for Instagram/TikTok Stories/Reels
+            # Use 1K for balance of quality and generation speed
+            # Note: gemini-3-pro-image-preview supports up to 4K resolution
             image_base64 = await self.gemini.generate_image(
                 prompt=prompt,
                 aspect_ratio="9:16",
