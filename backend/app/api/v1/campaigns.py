@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from supabase import Client
 
 from app.api.deps import get_supabase_client, get_current_user
+from app.crud.campaign import campaign_crud
 
 
 router = APIRouter(prefix="/campaigns", tags=["campaigns"])
@@ -61,14 +62,22 @@ async def create_campaign(
         
     Returns:
         Created campaign
-    
-    TODO: Implement campaign creation:
-    1. Get user_id from current_user
-    2. Insert campaign into database
-    3. Return created campaign
     """
-    # TODO: Implement create
-    pass
+    user_id = current_user["id"]
+    
+    result = await campaign_crud.create_for_user(
+        supabase,
+        user_id,
+        campaign.model_dump()
+    )
+    
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to create campaign"
+        )
+    
+    return CampaignResponse(**result)
 
 
 @router.get("/", response_model=List[CampaignResponse])
@@ -85,14 +94,12 @@ async def list_campaigns(
         
     Returns:
         List of campaigns
-    
-    TODO: Implement campaign list:
-    1. Get user_id from current_user
-    2. Query campaigns table filtered by user_id
-    3. Return list of campaigns
     """
-    # TODO: Implement list
-    pass
+    user_id = current_user["id"]
+    
+    campaigns = await campaign_crud.get_by_user_id(supabase, user_id)
+    
+    return [CampaignResponse(**campaign) for campaign in campaigns]
 
 
 @router.get("/{campaign_id}", response_model=CampaignResponse)
@@ -112,15 +119,20 @@ async def get_campaign(
     Returns:
         Campaign details
     
-    TODO: Implement campaign fetch:
-    1. Query campaign by ID and user_id
-    2. Return campaign or 404
-    
     Raises:
         HTTPException: 404 if campaign not found or doesn't belong to user
     """
-    # TODO: Implement get
-    pass
+    user_id = current_user["id"]
+    
+    result = await campaign_crud.get_by_id(supabase, campaign_id, user_id)
+    
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    return CampaignResponse(**result)
 
 
 @router.put("/{campaign_id}", response_model=CampaignResponse)
@@ -142,16 +154,22 @@ async def update_campaign(
     Returns:
         Updated campaign
     
-    TODO: Implement campaign update:
-    1. Verify campaign belongs to user
-    2. Update campaign
-    3. Return updated campaign
-    
     Raises:
         HTTPException: 404 if campaign not found
     """
-    # TODO: Implement update
-    pass
+    user_id = current_user["id"]
+    
+    update_data = campaign.model_dump(exclude_unset=True)
+    
+    result = await campaign_crud.update(supabase, campaign_id, user_id, update_data)
+    
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    return CampaignResponse(**result)
 
 
 @router.delete("/{campaign_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -171,14 +189,19 @@ async def delete_campaign(
     Returns:
         None (204 No Content)
     
-    TODO: Implement campaign deletion:
-    1. Verify campaign belongs to user
-    2. Delete campaign
-    3. Consider what to do with associated posts
-    
     Raises:
         HTTPException: 404 if campaign not found
+    
+    Note:
+        Associated posts will have their campaign_id set to NULL by database ON DELETE SET NULL constraint
     """
-    # TODO: Implement delete
-    pass
+    user_id = current_user["id"]
+    
+    deleted = await campaign_crud.delete(supabase, campaign_id, user_id)
+    
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
 

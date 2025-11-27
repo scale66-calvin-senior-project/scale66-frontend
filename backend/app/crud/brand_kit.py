@@ -64,6 +64,11 @@ class BrandKitCRUD(BaseCRUD):
         response = supabase.table(self.table_name) \
             .update(db_data).eq('user_id', user_id).execute()
         return self._from_db_columns(response.data[0]) if response.data else None
+    
+    async def delete_for_user(self, supabase: Client, user_id: str) -> bool:
+        """Delete brand kit for user."""
+        response = supabase.table(self.table_name).delete().eq('user_id', user_id).execute()
+        return bool(response.data)
 
 
 brand_kit_crud = BrandKitCRUD()

@@ -38,9 +38,9 @@ backend/
 ├── pyrightconfig.json        # Type checking configuration
 │
 └── app/
-    ├── agents/               # AI pipeline (6-step sequential process)
-    │   ├── base_agent.py            # Base class with error handling
-    │   ├── orchestrator.py          # Pipeline coordinator
+    ├── agents/               # AI pipeline (orchestrator + 5 agents)
+    │   ├── base_agent.py            # Base class with error handling - IMPLEMENTED
+    │   ├── orchestrator.py          # Pipeline coordinator - IMPLEMENTED
     │   ├── carousel_format_decider.py # Format selection - IMPLEMENTED
     │   ├── story_generator.py       # Story/narrative generation - IMPLEMENTED
     │   ├── image_generator.py       # Image generation via Gemini - IMPLEMENTED
@@ -102,9 +102,9 @@ backend/
 
 ### AI Pipeline - IMPLEMENTED
 
-**6-step sequential carousel generation:**
+**Sequential carousel generation orchestrated by Orchestrator:**
 
-1. **Orchestrator** - Coordinates pipeline and manages state flow
+1. **Orchestrator** - Coordinates pipeline, manages state flow, and handles BrandKit fetching
 2. **Format Decider** - Analyzes content request and selects optimal carousel format (12 format types)
 3. **Story Generator** - Creates compelling hook and body slide narratives aligned to format
 4. **Image Generator** - Generates AI images for each slide using Gemini (9:16 aspect ratio)
@@ -115,9 +115,9 @@ backend/
 
 - Claude Sonnet 4.5 (format decisions, story generation, text generation)
 - Claude Vision (image analysis for text placement)
-- Gemini (image generation - supports multiple models)
+- Gemini (image generation - supports gemini-3-pro-image-preview and gemini-2.5-flash-image)
 
-**Implementation Status:** All 5 agents fully implemented
+**Implementation Status:** Complete - Orchestrator + all 5 pipeline agents implemented
 
 ### API Endpoints
 
@@ -322,13 +322,14 @@ uv run python main.py
 - Core infrastructure (config, logging, security, database)
 - AI services (Anthropic Claude + Google Gemini image generation)
 - Pydantic models and schemas (all entities + pipeline)
-- AI pipeline agents (all 5 agents fully implemented)
-- Base agent class with error handling
-- Model-agnostic Gemini integration (gemini-3-pro, gemini-2.5-flash)
+- AI pipeline (Orchestrator + all 5 agents fully implemented)
+- Base agent class with error handling and logging
+- Model-agnostic Gemini integration (gemini-3-pro-image-preview, gemini-2.5-flash-image)
+- Singleton pattern for services and agents
+- Image overlay service (Pillow-based text composition)
 
 **In Progress:**
 
-- Orchestrator implementation (pipeline coordination)
 - API endpoint handlers (agent integration)
-- CRUD operations
+- CRUD operations (structure defined)
 - External service integrations (email, social, payments)

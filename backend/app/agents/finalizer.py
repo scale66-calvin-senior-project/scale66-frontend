@@ -10,13 +10,16 @@ Output: FinalizerOutput (carousel_id, carousel_slides_urls)
 import base64
 import io
 import logging
+import os
 import re
 import uuid
+from pathlib import Path
 from typing import Dict, List, Tuple
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
 from app.models.pipeline import FinalizerInput, FinalizerOutput
+from app.core.config import settings
 from app.core.supabase import get_supabase_admin_client
 
 
@@ -133,6 +136,17 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
             carousel_id = str(uuid.uuid4())
             self.logger.info(f"Starting finalization for carousel: {carousel_id}")
             
+            # Create local output directories if saving locally
+            local_raw_dir = None
+            local_final_dir = None
+            if settings.save_local_output:
+                carousel_output_dir = Path(settings.output_dir) / "carousels" / carousel_id
+                local_raw_dir = carousel_output_dir / "raw"
+                local_final_dir = carousel_output_dir / "final"
+                local_raw_dir.mkdir(parents=True, exist_ok=True)
+                local_final_dir.mkdir(parents=True, exist_ok=True)
+                self.logger.info(f"Created local output directories: {carousel_output_dir}")
+            
             total_slides = 1 + len(input_data.body_slides_text)
             self.logger.info(f"Finalizing {total_slides} slides")
             
@@ -144,6 +158,8 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
                 image_base64=input_data.hook_slide_image,
                 carousel_id=carousel_id,
                 slide_index=0,
+                local_raw_dir=local_raw_dir,
+                local_final_dir=local_final_dir,
             )
             
             # Process body slides
@@ -160,6 +176,8 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
                     image_base64=image,
                     carousel_id=carousel_id,
                     slide_index=i + 1,
+                    local_raw_dir=local_raw_dir,
+                    local_final_dir=local_final_dir,
                 )
                 body_urls.append(body_url)
             
@@ -169,6 +187,9 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
             self.logger.info(
                 f"Finalization completed successfully: {len(all_urls)} slides uploaded"
             )
+            
+            if settings.save_local_output:
+                self.logger.info(f"Local files saved to: {carousel_output_dir}")
             
             return FinalizerOutput(
                 step_name="finalizer",
@@ -187,6 +208,8 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
         image_base64: str,
         carousel_id: str,
         slide_index: int,
+        local_raw_dir: Path = None,
+        local_final_dir: Path = None,
     ) -> str:
         """
         Finalize a single slide by overlaying text on image and uploading to storage.
@@ -197,6 +220,8 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
             image_base64: Base64 encoded background image
             carousel_id: Unique carousel identifier
             slide_index: Index of this slide (0 = hook, 1+ = body)
+            local_raw_dir: Optional directory to save raw image
+            local_final_dir: Optional directory to save final image
             
         Returns:
             Public URL of the finalized slide
@@ -209,6 +234,12 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
             image_bytes = base64.b64decode(image_base64)
             image = Image.open(io.BytesIO(image_bytes))
             
+            # Save raw image locally if enabled
+            if local_raw_dir:
+                raw_path = local_raw_dir / f"slide_{slide_index}.png"
+                image.save(raw_path, format='PNG', optimize=True, quality=95)
+                self.logger.info(f"Saved raw slide {slide_index} to: {raw_path}")
+            
             # Parse style specifications
             style_dict = self._parse_style(style)
             
@@ -220,11 +251,17 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
             final_image.save(output_buffer, format='PNG', optimize=True, quality=95)
             output_bytes = output_buffer.getvalue()
             
+            # Save final image locally if enabled
+            if local_final_dir:
+                final_path = local_final_dir / f"slide_{slide_index}.png"
+                final_image.save(final_path, format='PNG', optimize=True, quality=95)
+                self.logger.info(f"Saved final slide {slide_index} to: {final_path}")
+            
             # Upload to Supabase Storage
             file_path = f"carousels/{carousel_id}/slide_{slide_index}.png"
             public_url = await self._upload_to_storage(output_bytes, file_path)
             
-            self.logger.debug(f"Slide {slide_index} finalized and uploaded: {public_url}")
+            self.logger.info(f"Slide {slide_index} uploaded to Supabase: {public_url}")
             
             return public_url
             

@@ -139,13 +139,19 @@ async def run_pipeline(brand_kit_id: str):
     print("=" * 60)
     print(f"\nBrand Kit ID: {brand_kit_id}")
     print(f"User Prompt: {TEST_USER_PROMPT}")
-    print("\nThis will:")
+    print("\nPipeline Steps:")
     print("  1. Determine carousel format (Claude)")
     print("  2. Generate story narratives (Claude)")
     print("  3. Generate images (Gemini)")
     print("  4. Analyze images and create text (Claude Vision)")
     print("  5. Overlay text on images (Pillow)")
     print("  6. Upload to Supabase storage")
+    print("\nOutput Locations:")
+    print(f"  - Logs: backend/logs/scale66.log")
+    print(f"  - Local Images: backend/output/carousels/[carousel-id]/")
+    print(f"    - Raw slides (no text): raw/slide_*.png")
+    print(f"    - Final slides (with text): final/slide_*.png")
+    print(f"  - Supabase Storage: carousel-slides bucket")
     print("\nEstimated time: 2-3 minutes")
     print("=" * 60)
     
@@ -168,12 +174,42 @@ def display_results(result):
     if result.success:
         print(f"\nCarousel ID: {result.carousel_id}")
         print(f"Total Slides: {len(result.carousel_slides_urls)}")
-        print("\nGenerated Images:")
+        
+        print("\n" + "-" * 60)
+        print("SUPABASE STORAGE URLS")
+        print("-" * 60)
         for i, url in enumerate(result.carousel_slides_urls):
-            print(f"  Slide {i}: {url}")
+            slide_type = "Hook" if i == 0 else f"Body {i}"
+            print(f"  Slide {i} ({slide_type}): {url}")
+        
+        print("\n" + "-" * 60)
+        print("LOCAL OUTPUT FILES")
+        print("-" * 60)
+        from app.core.config import settings
+        if settings.save_local_output:
+            from pathlib import Path
+            local_dir = Path(settings.output_dir) / "carousels" / result.carousel_id
+            print(f"  Directory: {local_dir}")
+            print(f"  Raw slides (no text): {local_dir}/raw/slide_*.png")
+            print(f"  Final slides (with text): {local_dir}/final/slide_*.png")
+        else:
+            print("  Local output saving is disabled")
+        
+        print("\n" + "-" * 60)
+        print("LOGS")
+        print("-" * 60)
+        if settings.log_to_file:
+            print(f"  Log file: {settings.log_file}")
+            print(f"  Contains: Detailed pipeline execution logs with all outputs")
+        else:
+            print("  File logging is disabled (console only)")
         
         print("\n" + "=" * 60)
-        print("View your carousel images at the URLs above")
+        print("NEXT STEPS")
+        print("=" * 60)
+        print("  1. View images in Supabase Dashboard > Storage > carousel-slides")
+        print("  2. Review local files in backend/output/carousels/")
+        print("  3. Check detailed logs in backend/logs/scale66.log")
         print("=" * 60)
     else:
         print(f"\nERROR: {result.error_message}")
@@ -236,10 +272,16 @@ async def cleanup():
 
 async def main():
     """Main execution flow."""
+    # Setup logging with file output enabled
     setup_logging(log_level="INFO")
     
     print("=" * 60)
     print("FULL PIPELINE TEST")
+    print("=" * 60)
+    print(f"\nLogging Configuration:")
+    print(f"  - Level: INFO")
+    print(f"  - Console: Enabled")
+    print(f"  - File: backend/logs/scale66.log")
     print("=" * 60)
     
     check_prerequisites()
@@ -260,6 +302,7 @@ async def main():
         print(f"\nError: {e}")
         import traceback
         traceback.print_exc()
+        print(f"\nCheck logs for details: backend/logs/scale66.log")
     finally:
         await cleanup()
 

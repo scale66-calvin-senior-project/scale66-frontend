@@ -108,11 +108,24 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             )
             
             # Step 1: Fetch BrandKit from database
+            self.logger.info("=" * 80)
+            self.logger.info("STEP 1/6: FETCHING BRAND KIT")
+            self.logger.info("=" * 80)
             brand_kit = await self._fetch_brand_kit(input_data.brand_kit_id)
-            self.logger.info(f"Fetched brand kit: {brand_kit.brand_name}")
+            self.logger.info(f"Brand Kit Retrieved:")
+            self.logger.info(f"  - Brand Name: {brand_kit.brand_name}")
+            self.logger.info(f"  - Niche: {brand_kit.brand_niche}")
+            self.logger.info(f"  - Style: {brand_kit.brand_style}")
+            self.logger.info(f"  - Pain Points: {', '.join(brand_kit.customer_pain_points)}")
+            self.logger.info(f"  - Product/Service: {brand_kit.product_service_desc[:100]}...")
             
             # Step 2: Determine carousel format
-            self.logger.info("Step 2/6: Determining carousel format")
+            self.logger.info("")
+            self.logger.info("=" * 80)
+            self.logger.info("STEP 2/6: DETERMINING CAROUSEL FORMAT")
+            self.logger.info("=" * 80)
+            self.logger.info(f"User Prompt: {input_data.user_prompt}")
+            
             format_result = await carousel_format_decider.run(
                 CarouselFormatDeciderInput(
                     step_name="carousel_format_decider",
@@ -127,13 +140,17 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                     f"Format decision failed: {format_result.error_message}"
                 )
             
-            self.logger.info(
-                f"Format decided: {format_result.format_type} "
-                f"({format_result.num_slides} slides)"
-            )
+            self.logger.info(f"Format Decision:")
+            self.logger.info(f"  - Format Type: {format_result.format_type}")
+            self.logger.info(f"  - Number of Slides: {format_result.num_slides}")
+            self.logger.info(f"  - Rationale: {format_result.format_rationale}")
             
             # Step 3: Generate story narratives
-            self.logger.info("Step 3/6: Generating story narratives")
+            self.logger.info("")
+            self.logger.info("=" * 80)
+            self.logger.info("STEP 3/6: GENERATING STORY NARRATIVES")
+            self.logger.info("=" * 80)
+            
             story_result = await story_generator.run(
                 StoryGeneratorInput(
                     step_name="story_generator",
@@ -150,12 +167,19 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                     f"Story generation failed: {story_result.error_message}"
                 )
             
-            self.logger.info(
-                f"Story generated: hook + {len(story_result.body_slides_story)} body slides"
-            )
+            self.logger.info(f"Story Narratives Generated:")
+            self.logger.info(f"  - Hook Slide Story:")
+            self.logger.info(f"    {story_result.hook_slide_story}")
+            self.logger.info(f"  - Body Slides ({len(story_result.body_slides_story)} total):")
+            for i, story in enumerate(story_result.body_slides_story, 1):
+                self.logger.info(f"    Slide {i}: {story}")
             
             # Step 4: Generate AI images
-            self.logger.info("Step 4/6: Generating AI images")
+            self.logger.info("")
+            self.logger.info("=" * 80)
+            self.logger.info("STEP 4/6: GENERATING AI IMAGES")
+            self.logger.info("=" * 80)
+            
             image_result = await image_generator.run(
                 ImageGeneratorInput(
                     step_name="image_generator",
@@ -170,12 +194,18 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                     f"Image generation failed: {image_result.error_message}"
                 )
             
-            self.logger.info(
-                f"Images generated: {1 + len(image_result.body_slides_images)} total"
-            )
+            self.logger.info(f"AI Images Generated:")
+            self.logger.info(f"  - Hook Slide Image: Generated (base64, {len(image_result.hook_slide_image)} chars)")
+            self.logger.info(f"  - Body Slide Images: {len(image_result.body_slides_images)} images generated")
+            for i in range(len(image_result.body_slides_images)):
+                self.logger.info(f"    Slide {i+1}: Generated (base64, {len(image_result.body_slides_images[i])} chars)")
             
             # Step 5: Generate text overlays
-            self.logger.info("Step 5/6: Generating text overlays")
+            self.logger.info("")
+            self.logger.info("=" * 80)
+            self.logger.info("STEP 5/6: GENERATING TEXT OVERLAYS")
+            self.logger.info("=" * 80)
+            
             text_result = await text_generator.run(
                 TextGeneratorInput(
                     step_name="text_generator",
@@ -192,12 +222,20 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                     f"Text generation failed: {text_result.error_message}"
                 )
             
-            self.logger.info(
-                f"Text overlays generated: {1 + len(text_result.body_slides_text)} total"
-            )
+            self.logger.info(f"Text Overlays Generated:")
+            self.logger.info(f"  - Hook Slide Text: {text_result.hook_slide_text}")
+            self.logger.info(f"  - Hook Slide Style: {text_result.hook_slide_text_style}")
+            self.logger.info(f"  - Body Slides ({len(text_result.body_slides_text)} total):")
+            for i, (text, style) in enumerate(zip(text_result.body_slides_text, text_result.body_slides_text_styles), 1):
+                self.logger.info(f"    Slide {i} Text: {text}")
+                self.logger.info(f"    Slide {i} Style: {style}")
             
             # Step 6: Finalize slides (overlay text and upload)
-            self.logger.info("Step 6/6: Finalizing carousel slides")
+            self.logger.info("")
+            self.logger.info("=" * 80)
+            self.logger.info("STEP 6/6: FINALIZING CAROUSEL SLIDES")
+            self.logger.info("=" * 80)
+            
             final_result = await finalizer.run(
                 FinalizerInput(
                     step_name="finalizer",
@@ -216,9 +254,17 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                     f"Finalization failed: {final_result.error_message}"
                 )
             
-            self.logger.info(
-                f"Pipeline completed successfully! Carousel ID: {final_result.carousel_id}"
-            )
+            self.logger.info("")
+            self.logger.info("=" * 80)
+            self.logger.info("PIPELINE COMPLETED SUCCESSFULLY")
+            self.logger.info("=" * 80)
+            self.logger.info(f"Carousel ID: {final_result.carousel_id}")
+            self.logger.info(f"Total Slides: {len(final_result.carousel_slides_urls)}")
+            self.logger.info(f"Supabase URLs:")
+            for i, url in enumerate(final_result.carousel_slides_urls):
+                slide_type = "Hook" if i == 0 else f"Body {i}"
+                self.logger.info(f"  - Slide {i} ({slide_type}): {url}")
+            self.logger.info("=" * 80)
             
             # Return orchestrator output
             return OrchestratorOutput(
