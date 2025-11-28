@@ -6,38 +6,31 @@ alwaysApply: false
 
 # Feature Module Pattern
 
-Feature-based organization for frontend code with consistent structure and barrel exports.
-
-## Feature Directory Structure
-
-Each feature MUST follow this structure:
+## Directory Structure
 
 ```
 feature-name/
-├── components/                 # Feature-specific components
+├── components/
 │   ├── ComponentName/
 │   │   ├── ComponentName.tsx
 │   │   ├── ComponentName.module.css
 │   │   └── index.ts
 │   └── index.ts               # Barrel export
-├── hooks/                      # Feature-specific hooks
+├── hooks/
 │   ├── useFeatureName.ts
-│   ├── useFeatureAction.ts
-│   └── index.ts               # Barrel export
-├── services/                   # Feature API services
+│   └── index.ts
+├── services/
 │   ├── feature-name.service.ts
-│   └── index.ts               # Barrel export
-├── types/                      # Feature type definitions
+│   └── index.ts
+├── types/
 │   ├── feature-name.types.ts
-│   └── index.ts               # Barrel export
-└── index.ts                   # Main feature barrel export
+│   └── index.ts
+└── index.ts                   # Main barrel export
 ```
 
 ## Barrel Exports
 
 ### Main Feature Export
-
-Each feature's `index.ts` MUST export all sub-modules:
 
 ```typescript
 // features/auth/index.ts
@@ -49,82 +42,47 @@ export * from './types';
 
 ### Sub-module Exports
 
-Each sub-directory MUST have its own barrel export:
-
 ```typescript
 // features/auth/components/index.ts
 export { LoginForm } from './LoginForm';
 export { SignupForm } from './SignupForm';
-export { SocialAuthButtons } from './SocialAuthButtons';
-export { AuthToggle } from './AuthToggle';
-
-// Export types too
 export type { LoginFormProps } from './LoginForm';
-export type { SignupFormProps } from './SignupForm';
-```
 
-```typescript
 // features/auth/hooks/index.ts
 export { useAuth } from './useAuth';
 export { useLogin } from './useLogin';
-export { useSignup } from './useSignup';
-```
 
-```typescript
 // features/auth/services/index.ts
 export { authService } from './auth.service';
 export type { AuthService } from './auth.service';
-```
 
-```typescript
 // features/auth/types/index.ts
-export type {
-  User,
-  AuthState,
-  LoginCredentials,
-  SignupCredentials,
-  AuthError
-} from './auth.types';
+export type { User, AuthState, LoginCredentials } from './auth.types';
 ```
 
-## Feature Import Patterns
-
-### CORRECT Imports
+## Import Patterns
 
 ```typescript
-// Import from feature barrel
+// CORRECT - Import from feature barrel
 import { LoginForm, useAuth, authService, User } from '@/features/auth';
 
-// Import from sub-module barrel
+// CORRECT - Import from sub-module barrel
 import { LoginForm, SignupForm } from '@/features/auth/components';
-import { useAuth, useLogin } from '@/features/auth/hooks';
-```
 
-### INCORRECT Imports
-
-```typescript
-// DON'T import from individual files
+// INCORRECT - Don't import from individual files
 import { LoginForm } from '@/features/auth/components/LoginForm/LoginForm';
-import { useAuth } from '@/features/auth/hooks/useAuth';
 ```
 
 ## Service Structure
 
-Each feature service handles API calls for that feature:
-
 ```typescript
 // features/auth/services/auth.service.ts
 import { apiClient } from '@/services/api/client';
-import type { User, LoginCredentials, SignupCredentials } from '../types';
+import type { User, LoginCredentials } from '../types';
 
 class AuthService {
   async login(credentials: LoginCredentials): Promise<User> {
     const response = await apiClient.post('/auth/login', credentials);
-    return response.data;
-  }
-  
-  async signup(credentials: SignupCredentials): Promise<User> {
-    const response = await apiClient.post('/auth/signup', credentials);
     return response.data;
   }
   
@@ -143,8 +101,6 @@ export type { AuthService };
 ```
 
 ## Custom Hooks Structure
-
-Feature-specific hooks encapsulate business logic:
 
 ```typescript
 // features/auth/hooks/useAuth.ts
@@ -191,20 +147,11 @@ export const useAuth = () => {
     setUser(null);
   };
   
-  return {
-    user,
-    isLoading,
-    error,
-    login,
-    logout,
-    isAuthenticated: !!user,
-  };
+  return { user, isLoading, error, login, logout, isAuthenticated: !!user };
 };
 ```
 
 ## Type Definitions
-
-Feature types define data structures and interfaces:
 
 ```typescript
 // features/auth/types/auth.types.ts
@@ -220,12 +167,6 @@ export interface User {
 export interface LoginCredentials {
   email: string;
   password: string;
-}
-
-export interface SignupCredentials {
-  email: string;
-  password: string;
-  name?: string;
 }
 
 export interface AuthState {
@@ -245,8 +186,6 @@ export type AuthProvider = 'google' | 'github' | 'twitter';
 ```
 
 ## Feature Components
-
-Components specific to a feature stay within that feature:
 
 ```typescript
 // features/auth/components/LoginForm/LoginForm.tsx
@@ -285,14 +224,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onError }) => {
         label="Email"
         value={credentials.email}
         onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
-        error={error?.field === 'email' ? error.message : undefined}
       />
       <Input
         type="password"
         label="Password"
         value={credentials.password}
         onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-        error={error?.field === 'password' ? error.message : undefined}
       />
       <Button type="submit" isLoading={isLoading}>
         Log In
@@ -304,29 +241,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onError }) => {
 
 ## Feature Categories
 
-### App Features
+**App Features** (features/):
+- auth/ - Authentication
+- brand-kit/ - Brand kit management
+- campaigns/ - Campaign management
+- canvas/ - Canvas editor
+- dashboard/ - Dashboard
+- onboarding/ - Onboarding
+- payment/ - Payment processing
+- posting/ - Post management
+- settings/ - User settings
 
-Main application features (in `features/` directory):
-
-- `auth/` - Authentication and user management
-- `brand-kit/` - Brand kit management
-- `campaigns/` - Campaign management
-- `canvas/` - Canvas editor
-- `dashboard/` - Dashboard
-- `onboarding/` - User onboarding
-- `payment/` - Payment processing
-- `posting/` - Post management
-- `settings/` - User settings
-
-### Landing Features
-
-Landing page features (in `features/landing/`):
-
-- `landing-page/` - Home page sections
-- `blog/` - Blog components
-- `legal/` - Legal page components
-- `support/` - Support components
-- `waitlist/` - Waitlist components
+**Landing Features** (features/landing/):
+- landing-page/ - Home sections
+- blog/ - Blog components
+- legal/ - Legal pages
+- support/ - Support
+- waitlist/ - Waitlist
 
 ## Cross-Feature Communication
 
@@ -341,12 +272,7 @@ export const AuthContext = createContext<ReturnType<typeof useAuth> | null>(null
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const auth = useAuth();
-  
-  return (
-    <AuthContext.Provider value={auth}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
 };
 ```
 
@@ -354,7 +280,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 ```typescript
 // features/campaigns/hooks/useCampaigns.ts
-import { useAuth } from '@/features/auth';  // ✓ OK to import from other features
+import { useAuth } from '@/features/auth';
 import { campaignService } from '../services';
 
 export const useCampaigns = () => {
@@ -371,68 +297,23 @@ export const useCampaigns = () => {
 
 ## Best Practices
 
-1. **Keep Features Independent**: Minimize dependencies between features
-2. **Use Barrel Exports**: Always use index.ts for clean imports
-3. **Co-locate Code**: Keep related code within the same feature
-4. **Shared Code**: Move truly shared code to `components/`, `hooks/`, or `utils/`
-5. **Type Safety**: Define types in the feature's types directory
-6. **Single Responsibility**: Each feature handles one domain
+1. Keep features independent - minimize cross-feature dependencies
+2. Always use barrel exports via index.ts
+3. Co-locate related code within same feature
+4. Move truly shared code to components/, hooks/, or utils/
+5. Define types in feature's types directory
+6. Each feature handles one domain
 
-## When to Create a New Feature
+## When to Create New Feature
 
-Create a new feature when:
-- It represents a distinct domain or user flow
-- It has its own data models and API endpoints
-- It can be developed/tested independently
-- It has 3+ related components or hooks
+**Create when:**
+- Represents distinct domain or user flow
+- Has own data models and API endpoints
+- Can be developed/tested independently
+- Has 3+ related components or hooks
 
-DON'T create a feature for:
-- Single-use components (put in relevant page directory)
-- Utility functions (put in `utils/`)
-- Shared UI components (put in `components/ui/`)
-- Global state management (put in `context/`)
-
-## Example: Complete Feature
-
-```
-features/brand-kit/
-├── components/
-│   ├── BrandKitForm/
-│   │   ├── BrandKitForm.tsx
-│   │   ├── BrandKitForm.module.css
-│   │   └── index.ts
-│   ├── ColorPicker/
-│   │   ├── ColorPicker.tsx
-│   │   ├── ColorPicker.module.css
-│   │   └── index.ts
-│   └── index.ts                # export * from './BrandKitForm'; ...
-├── hooks/
-│   ├── useBrandKit.ts          # CRUD operations
-│   ├── useColorScheme.ts       # Color management
-│   └── index.ts                # export * from './useBrandKit'; ...
-├── services/
-│   ├── brand-kit.service.ts    # API calls
-│   └── index.ts                # export { brandKitService }
-├── types/
-│   ├── brand-kit.types.ts      # BrandKit, ColorScheme, etc.
-│   └── index.ts                # export * from './brand-kit.types'
-└── index.ts                    # export * from './components'; ...
-```
-
-Usage in pages:
-
-```typescript
-// app/(app)/brand-kit/page.tsx
-import { BrandKitForm, useBrandKit } from '@/features/brand-kit';
-
-export default function BrandKitPage() {
-  const { brandKit, isLoading, update } = useBrandKit();
-  
-  return (
-    <div>
-      <h1>Brand Kit</h1>
-      <BrandKitForm brandKit={brandKit} onSubmit={update} />
-    </div>
-  );
-}
-```
+**Don't create for:**
+- Single-use components (put in page directory)
+- Utility functions (put in utils/)
+- Shared UI components (put in components/ui/)
+- Global state (put in context/)

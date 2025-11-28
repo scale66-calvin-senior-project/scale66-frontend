@@ -8,16 +8,12 @@ Output: CarouselFormatDeciderOutput (format_type, num_slides, format_rationale)
 """
 
 import json
-import logging
-from typing import Dict, List
+from typing import Dict, List, Optional, Any
 from enum import Enum
 
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
 from app.models.pipeline import CarouselFormatDeciderInput, CarouselFormatDeciderOutput
 from app.services.ai.anthropic_service import AnthropicServiceError
-
-
-logger = logging.getLogger(__name__)
 
 
 class CarouselFormat(str, Enum):
@@ -58,7 +54,20 @@ class CarouselFormatDecider(BaseAgent[CarouselFormatDeciderInput, CarouselFormat
     Decides optimal carousel format based on content request and brand context.
     
     Uses Claude Sonnet 4.5 for intelligent format selection with structured output.
+    Singleton pattern ensures single instance across application.
     """
+    
+    _instance: Optional['CarouselFormatDecider'] = None
+    
+    def __new__(cls):
+        """Singleton instance creation."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        """Initialize carousel format decider agent."""
+        super().__init__()
     
     async def _validate_input(self, input_data: CarouselFormatDeciderInput) -> None:
         """
@@ -120,8 +129,7 @@ class CarouselFormatDecider(BaseAgent[CarouselFormatDeciderInput, CarouselFormat
             # Combine prompts for API call
             full_prompt = f"{system_prompt}\n\n{user_prompt}"
             
-            self.logger.info(f"Requesting format decision from Claude Sonnet 4.5")
-            self.logger.debug(f"User prompt preview: {input_data.user_prompt[:100]}...")
+            self.logger.debug(f"Requesting format decision from Claude")
             
             # Call Claude with lower temperature for consistent decisions
             response = await self.anthropic.generate_text(
@@ -133,12 +141,14 @@ class CarouselFormatDecider(BaseAgent[CarouselFormatDeciderInput, CarouselFormat
             # Parse and validate response
             decision = self._parse_response(response)
             
-            self.logger.info(
+            self.logger.debug(
                 f"Format decision: {decision['format_type']} "
                 f"({decision['num_slides']} slides)"
             )
             
             return CarouselFormatDeciderOutput(
+                step_name="carousel_format_decider",
+                success=True,
                 format_type=decision["format_type"],
                 num_slides=decision["num_slides"],
                 format_rationale=decision["format_rationale"],
@@ -221,7 +231,7 @@ BRAND CONTEXT:
 
 Based on this content request and brand context, recommend the optimal carousel format. Return your decision as a JSON object."""
     
-    def _parse_response(self, response: str) -> Dict[str, any]:
+    def _parse_response(self, response: str) -> Dict[str, Any]:
         """
         Parse and validate LLM response.
         

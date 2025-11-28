@@ -1,12 +1,17 @@
 """
 CRUD Operations - Database operations using Supabase client.
-
-This package contains CRUD operations for all database tables:
-- base: Base CRUD class with common operations
-- user: User operations
-- brand_kit: Brand kit operations
-- campaign: Campaign operations
-- post: Post operations
-- session: Session operations (if not using Supabase Auth)
 """
 
+from app.crud.brand_kit import brand_kit_crud
+from app.crud.campaign import campaign_crud
+from app.crud.post import post_crud
+from app.crud.session import session_crud
+from app.crud.user import user_crud
+
+__all__ = [
+    "brand_kit_crud",
+    "campaign_crud",
+    "post_crud",
+    "session_crud",
+    "user_crud",
+]

@@ -1,40 +1,52 @@
 """
-Text Generator Agent - Step 5 of AI Pipeline
+Text Generator Agent - Step 4 of AI Pipeline
 
-Generates on-screen text overlays and styling for carousel slides based on story content and image analysis.
+Converts verbose story narratives into short, punchy carousel captions.
 
-Input: TextGeneratorInput (hook_slide_story, body_slides_story, hook_slide_image, body_slides_images)
-Output: TextGeneratorOutput (hook_slide_text, body_slides_text, hook_slide_text_style, body_slides_text_styles)
+Runs BEFORE image generation - no image analysis needed.
+Pure text transformation: detailed story → concise caption (3-8 words ideal).
+
+Input: TextGeneratorInput (hook_slide_story, body_slides_story)
+Output: TextGeneratorOutput (hook_slide_text, body_slides_text)
 """
 
 import json
-import logging
-from typing import Dict, List
+from typing import List, Optional
 
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
 from app.models.pipeline import TextGeneratorInput, TextGeneratorOutput
 from app.services.ai.anthropic_service import AnthropicServiceError
 
 
-logger = logging.getLogger(__name__)
-
-
 class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
     """
-    Generates text overlays and styling for carousel slides.
+    Converts verbose story narratives into short, punchy carousel captions.
     
-    Uses Claude Sonnet 4.5 for text generation and Claude Vision for image analysis
-    to create optimal text placement and styling.
+    Uses Claude Sonnet 4.5 for text refinement and caption extraction.
+    No image analysis - runs before image generation.
+    Singleton pattern ensures single instance across application.
     """
+    
+    _instance: Optional['TextGenerator'] = None
+    
+    def __new__(cls):
+        """Singleton instance creation."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        """Initialize text generator agent."""
+        super().__init__()
     
     async def _validate_input(self, input_data: TextGeneratorInput) -> None:
         """
         Validate input data before execution.
         
         Checks:
-        - Hook slide story and image are not empty
-        - Body slides stories and images arrays match in length
-        - All stories and images are valid
+        - Hook slide story is not empty
+        - Body slides stories array is valid and within limits
+        - All story strings are valid
         
         Args:
             input_data: Text generator input schema
@@ -49,10 +61,6 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
         if len(input_data.hook_slide_story.strip()) < 10:
             raise ValidationError("hook_slide_story must be at least 10 characters")
         
-        # Validate hook_slide_image
-        if not input_data.hook_slide_image or not input_data.hook_slide_image.strip():
-            raise ValidationError("hook_slide_image cannot be empty")
-        
         # Validate body_slides_story
         if not input_data.body_slides_story:
             raise ValidationError("body_slides_story cannot be empty")
@@ -66,20 +74,6 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
         if len(input_data.body_slides_story) > 9:
             raise ValidationError("body_slides_story cannot contain more than 9 slides")
         
-        # Validate body_slides_images
-        if not input_data.body_slides_images:
-            raise ValidationError("body_slides_images cannot be empty")
-        
-        if not isinstance(input_data.body_slides_images, list):
-            raise ValidationError("body_slides_images must be a list")
-        
-        # Check array length match
-        if len(input_data.body_slides_story) != len(input_data.body_slides_images):
-            raise ValidationError(
-                f"body_slides_story ({len(input_data.body_slides_story)}) and "
-                f"body_slides_images ({len(input_data.body_slides_images)}) must have the same length"
-            )
-        
         # Validate each body slide story
         for i, story in enumerate(input_data.body_slides_story):
             if not story or not isinstance(story, str) or not story.strip():
@@ -90,65 +84,55 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
                     f"body_slides_story[{i}] must be at least 5 characters"
                 )
         
-        # Validate each body slide image
-        for i, image in enumerate(input_data.body_slides_images):
-            if not image or not isinstance(image, str) or not image.strip():
-                raise ValidationError(f"body_slides_images[{i}] is empty or invalid")
-        
         self.logger.debug("Input validation passed")
     
     async def _execute(self, input_data: TextGeneratorInput) -> TextGeneratorOutput:
         """
-        Execute text generation logic using Claude Sonnet 4.5 and Claude Vision.
+        Execute text generation logic using Claude Sonnet 4.5.
+        
+        Converts verbose story narratives into short, punchy carousel captions.
         
         Args:
             input_data: Validated input data
             
         Returns:
-            Generated text overlays with styling information
+            Generated short captions (no styling)
             
         Raises:
             ExecutionError: If text generation fails
         """
         try:
             total_slides = 1 + len(input_data.body_slides_story)
-            self.logger.info(f"Generating text overlays for {total_slides} slides")
+            self.logger.debug(f"Generating captions for {total_slides} slides")
             
-            # Generate hook slide text and style
-            self.logger.info("Generating hook slide text")
-            hook_result = await self._generate_slide_text(
+            # Generate hook slide caption
+            self.logger.debug("Generating hook slide caption")
+            hook_text = await self._generate_caption(
                 story=input_data.hook_slide_story,
-                image_base64=input_data.hook_slide_image,
                 is_hook=True,
             )
             
-            # Generate body slides text and styles
+            # Generate body slides captions
             body_texts: List[str] = []
-            body_styles: List[str] = []
             
-            for i, (story, image) in enumerate(zip(
-                input_data.body_slides_story,
-                input_data.body_slides_images
-            )):
-                self.logger.info(f"Generating body slide {i+1}/{len(input_data.body_slides_story)}")
-                body_result = await self._generate_slide_text(
+            for i, story in enumerate(input_data.body_slides_story):
+                self.logger.debug(f"Generating body slide {i+1}/{len(input_data.body_slides_story)}")
+                body_text = await self._generate_caption(
                     story=story,
-                    image_base64=image,
                     is_hook=False,
                 )
-                body_texts.append(body_result["text"])
-                body_styles.append(body_result["style"])
+                body_texts.append(body_text)
             
-            self.logger.info(
-                f"Text generation completed successfully: "
-                f"1 hook + {len(body_texts)} body texts with styling"
+            self.logger.debug(
+                f"Caption generation completed: "
+                f"1 hook + {len(body_texts)} body captions"
             )
             
             return TextGeneratorOutput(
-                hook_slide_text=hook_result["text"],
+                step_name="text_generator",
+                success=True,
+                hook_slide_text=hook_text,
                 body_slides_text=body_texts,
-                hook_slide_text_style=hook_result["style"],
-                body_slides_text_styles=body_styles,
             )
             
         except AnthropicServiceError as e:
@@ -156,22 +140,20 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
         except Exception as e:
             raise ExecutionError(f"Unexpected error during text generation: {str(e)}")
     
-    async def _generate_slide_text(
+    async def _generate_caption(
         self,
         story: str,
-        image_base64: str,
         is_hook: bool,
-    ) -> Dict[str, str]:
+    ) -> str:
         """
-        Generate text overlay and styling for a single slide using Claude Vision.
+        Generate short, punchy caption from verbose story narrative.
         
         Args:
-            story: The story content for this slide
-            image_base64: Base64 encoded image
+            story: The verbose story content for this slide
             is_hook: Whether this is the hook slide
             
         Returns:
-            Dictionary with 'text' and 'style' keys
+            Short caption string (3-8 words ideal)
             
         Raises:
             ExecutionError: If generation fails
@@ -184,37 +166,34 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
             # Combine prompts for API call
             full_prompt = f"{system_prompt}\n\n{user_prompt}"
             
-            # Convert base64 image to data URL format for Claude Vision
-            image_data_url = f"data:image/png;base64,{image_base64}"
+            self.logger.debug(f"Generating caption for {'hook' if is_hook else 'body'} slide")
             
-            self.logger.debug(f"Analyzing image and generating text for {'hook' if is_hook else 'body'} slide")
-            
-            # Call Claude Vision with image analysis
-            response = await self.anthropic.analyze_image(
-                image_url=image_data_url,
+            # Call Claude for text generation (no image analysis)
+            response = await self.anthropic.generate_text(
                 prompt=full_prompt,
-                max_tokens=1000,
+                max_tokens=500,
+                temperature=0.7,
             )
             
             # Parse and validate response
-            result = self._parse_response(response)
+            caption = self._parse_response(response)
             
             self.logger.debug(
-                f"Generated text ({len(result['text'])} chars) with style: {result['style'][:50]}..."
+                f"Generated caption ({len(caption)} chars): {caption}"
             )
             
-            return result
+            return caption
             
         except AnthropicServiceError as e:
-            raise ExecutionError(f"Failed to generate slide text: {str(e)}")
+            raise ExecutionError(f"Failed to generate caption: {str(e)}")
         except json.JSONDecodeError as e:
-            raise ExecutionError(f"Failed to parse text generation response: {str(e)}")
+            raise ExecutionError(f"Failed to parse caption response: {str(e)}")
         except Exception as e:
-            raise ExecutionError(f"Unexpected error in slide text generation: {str(e)}")
+            raise ExecutionError(f"Unexpected error in caption generation: {str(e)}")
     
     def _build_system_prompt(self, is_hook: bool) -> str:
         """
-        Build comprehensive system prompt for text generation.
+        Build comprehensive system prompt for caption generation.
         
         Args:
             is_hook: Whether this is the hook slide
@@ -224,75 +203,68 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
         """
         slide_type = "HOOK SLIDE (First Slide)" if is_hook else "BODY SLIDE"
         
-        return f"""You are an expert social media designer specializing in carousel text overlays for Instagram and TikTok. Your role is to analyze images and create compelling, readable text overlays that enhance engagement.
+        return f"""You are an expert social media content creator specializing in viral carousel posts for Instagram and TikTok. Your role is to extract short, punchy captions from verbose story narratives.
 
 CONTEXT: {slide_type}
 
-TEXT OVERLAY PRINCIPLES:
+CAPTION EXTRACTION PRINCIPLES:
 
-1. TEXT CONTENT:
-   - CRITICAL: Text should ENHANCE the story, not repeat it verbatim
-   - Extract the KEY INSIGHT or MAIN POINT from the story (3-8 words ideal)
+1. TEXT BREVITY:
+   - Extract the KEY INSIGHT or MAIN POINT from the story
+   - Target: 3-8 words (absolute maximum 10 words)
    - Use power words and emotional triggers
    - Create curiosity or reinforce value proposition
-   {'''   - Hook slides: Bold, attention-grabbing statement (e.g., "Stop Scrolling If...")
-   - Must create pattern interrupt and curiosity''' if is_hook else '''   - Body slides: Actionable insights or key takeaways
-   - Can use numbers, questions, or direct statements'''}
-   - Avoid full sentences if possible - punch, don't prose
-   - Maximum 10 words (ideal 3-6 words)
+   {'''   - Hook slides: Bold, attention-grabbing statement (e.g., "Done By 9 AM", "Stop Scrolling If...")
+   - Must create pattern interrupt and curiosity
+   - Preview value without giving everything away''' if is_hook else '''   - Body slides: Actionable insights or key takeaways
+   - Can use numbers, questions, or direct statements
+   - Each caption should standalone'''}
 
-2. READABILITY REQUIREMENTS:
+2. CAPTION QUALITY:
+   - Avoid full sentences - use punchy phrases
+   - Be specific, not generic
+   - Cut filler words ruthlessly
+   - Front-load key information
    - Must be instantly readable in <1 second on mobile
-   - High contrast with background (analyze image composition)
-   - Large enough for mobile viewing
-   - No fancy fonts that compromise legibility
-   - Strategic placement based on image composition
 
-3. IMAGE ANALYSIS:
-   - Identify key visual elements and focal points
-   - Determine optimal text placement zones (top/center/bottom)
-   - Ensure text doesn't obscure important visual elements
-   - Consider negative space for text placement
-   - Account for busy vs clean backgrounds
-
-4. STYLING SPECIFICATIONS:
-   - Font size: Describe as percentage of slide height (e.g., "20% height")
-   - Color: Specific hex code or high-contrast description
-   - Position: top/center/bottom based on image composition
-   - Alignment: left/center/right based on visual balance
-   - Background: Transparent overlay if needed (rgba specification)
-   - Text effects: Shadow, outline, or backdrop for visibility
-
-5. SOCIAL MEDIA OPTIMIZATION:
-   - Mobile-first design (vertical 9:16 format)
-   - Thumb-stopping visual hierarchy
-   - Save-worthy or share-worthy appeal
+3. SOCIAL MEDIA OPTIMIZATION:
+   - Mobile-first thinking (vertical 9:16 format)
+   - Thumb-stopping appeal
+   - Save-worthy or share-worthy phrasing
    - Platform native aesthetic (Instagram/TikTok style)
+
+4. EXTRACTION STRATEGY:
+   - Read the full story narrative
+   - Identify the core message/insight
+   - Distill into shortest possible form
+   - Preserve emotional impact and clarity
+   - Ensure caption enhances (not duplicates) the story
 
 OUTPUT FORMAT:
 You must respond with ONLY a valid JSON object in this exact format:
 {{
-  "text": "<3-10 word overlay text>",
-  "style": "<complete styling specification>"
+  "caption": "<3-8 word punchy caption>"
 }}
 
-STYLE FORMAT EXAMPLE:
-"font_size: 18% of slide height, color: #FFFFFF, position: top-center, alignment: center, background: rgba(0,0,0,0.4), text_shadow: 2px 2px 4px rgba(0,0,0,0.8), padding: 20px"
-
 CRITICAL REQUIREMENTS:
-- Text must be 3-10 words maximum
-- Style must include: font_size, color, position, alignment
-- Analyze the image carefully to determine optimal placement
-- Ensure high contrast for readability
+- Caption must be 3-10 words maximum (ideal 3-8 words)
+- Extract essence, don't summarize
 - Do not include any text outside the JSON object
-- Do not use markdown code blocks"""
+- Do not use markdown code blocks
+
+EXAMPLES:
+Story: "Plan your tasks the night before so you wake up with zero decision fatigue and can take immediate action at dawn"
+Caption: {{"caption": "Plan Tonight, Win Tomorrow"}}
+
+Story: "Do a 20-minute focused work sprint before checking email to get deep work done before distractions hit"
+Caption: {{"caption": "Deep Work Before Distractions"}}"""
     
     def _build_user_prompt(self, story: str, is_hook: bool) -> str:
         """
         Build user prompt with story content and task.
         
         Args:
-            story: The story content for this slide
+            story: The verbose story content for this slide
             is_hook: Whether this is the hook slide
             
         Returns:
@@ -300,34 +272,34 @@ CRITICAL REQUIREMENTS:
         """
         slide_type = "hook" if is_hook else "body"
         
-        return f"""SLIDE STORY CONTENT:
+        return f"""VERBOSE STORY NARRATIVE:
 "{story}"
 
 TASK:
-Analyze the provided image and create an optimal text overlay for this {slide_type} slide.
+Extract a short, punchy caption from this {slide_type} slide story.
 
 STEPS:
-1. Examine the image composition (focal points, negative space, color distribution)
-2. Identify the best text placement zone that doesn't obscure key visual elements
-3. Extract the core message from the story (3-10 words maximum)
-4. Determine styling that ensures high contrast and readability
-5. Provide complete styling specifications for the Finalizer agent
+1. Read the full story narrative carefully
+2. Identify the core message, key insight, or main point
+3. Distill it into the shortest possible form (3-8 words ideal)
+4. Ensure it's instantly readable and scroll-stopping
+5. Preserve emotional impact and clarity
 
-Remember: The text should complement and enhance the story, not duplicate it. Focus on the KEY INSIGHT or HOOK that will stop the scroll and drive engagement.
+Remember: The caption should ENHANCE the story, not duplicate it verbatim. Focus on the KEY INSIGHT or HOOK that will stop the scroll and drive engagement.
 
-Return your text and styling as a JSON object."""
+Return your caption as a JSON object."""
     
-    def _parse_response(self, response: str) -> Dict[str, str]:
+    def _parse_response(self, response: str) -> str:
         """
         Parse and validate LLM response.
         
-        Extracts JSON from response and validates text and style.
+        Extracts JSON from response and validates caption text.
         
         Args:
             response: Raw LLM response
             
         Returns:
-            Validated text and style dictionary
+            Validated caption string
             
         Raises:
             ExecutionError: If response is invalid
@@ -354,56 +326,33 @@ Return your text and styling as a JSON object."""
             else:
                 raise ExecutionError("No valid JSON found in response")
         
-        # Validate required fields
-        if "text" not in result:
-            raise ExecutionError("Missing 'text' in response")
-        if "style" not in result:
-            raise ExecutionError("Missing 'style' in response")
+        # Validate required field
+        if "caption" not in result:
+            raise ExecutionError("Missing 'caption' in response")
         
-        # Validate text
-        text = result["text"]
-        if not text or not isinstance(text, str) or not text.strip():
-            raise ExecutionError("text must be a non-empty string")
+        # Validate caption
+        caption = result["caption"]
+        if not caption or not isinstance(caption, str) or not caption.strip():
+            raise ExecutionError("caption must be a non-empty string")
         
-        # Check text length
-        text_stripped = text.strip()
-        word_count = len(text_stripped.split())
+        # Check caption length
+        caption_stripped = caption.strip()
+        word_count = len(caption_stripped.split())
         
-        if word_count > 15:
+        if word_count > 12:
             self.logger.warning(
-                f"Text is too long ({word_count} words), truncating to first 10 words"
+                f"Caption is too long ({word_count} words), truncating to first 10 words"
             )
-            words = text_stripped.split()[:10]
-            result["text"] = " ".join(words)
+            words = caption_stripped.split()[:10]
+            caption_stripped = " ".join(words)
         
-        if len(text_stripped) < 3:
-            self.logger.warning(f"Text is very short ({len(text_stripped)} chars)")
+        if len(caption_stripped) < 3:
+            self.logger.warning(f"Caption is very short ({len(caption_stripped)} chars)")
         
-        # Validate style
-        style = result["style"]
-        if not style or not isinstance(style, str) or not style.strip():
-            self.logger.warning("Style is empty or invalid, using default")
-            result["style"] = (
-                "font_size: 16% of slide height, color: #FFFFFF, "
-                "position: center, alignment: center, "
-                "background: rgba(0,0,0,0.3), "
-                "text_shadow: 2px 2px 4px rgba(0,0,0,0.8)"
-            )
+        if word_count > 10:
+            self.logger.warning(f"Caption exceeds ideal length ({word_count} words, ideal 3-8)")
         
-        # Basic validation that style contains key properties
-        required_style_props = ["font_size", "color", "position"]
-        missing_props = [
-            prop for prop in required_style_props
-            if prop not in result["style"].lower()
-        ]
-        
-        if missing_props:
-            self.logger.warning(
-                f"Style missing properties: {', '.join(missing_props)}. "
-                f"Finalizer may need to infer defaults."
-            )
-        
-        return result
+        return caption_stripped
 
 
 # Create singleton instance for easy import

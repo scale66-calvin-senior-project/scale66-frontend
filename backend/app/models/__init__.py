@@ -50,11 +50,19 @@ from .payment import (
 
 # AI pipeline models
 from .pipeline import (
-    CarouselFormatDecision,
-    StoryData,
-    TextData,
-    ImageData,
-    CarouselOutput,
+    OrchestratorInput,
+    OrchestratorOutput,
+    CarouselFormatDeciderInput,
+    CarouselFormatDeciderOutput,
+    StoryGeneratorInput,
+    StoryGeneratorOutput,
+    ImageGeneratorInput,
+    ImageGeneratorOutput,
+    TextGeneratorInput,
+    TextGeneratorOutput,
+    FinalizerInput,
+    FinalizerOutput,
+    SlideQualityMetrics,
 )
 
 # Common models
@@ -94,11 +102,19 @@ __all__ = [
     "SubscriptionResponse",
     "PaymentTransactionResponse",
     # Pipeline
-    "CarouselFormatDecision",
-    "StoryData",
-    "TextData",
-    "ImageData",
-    "CarouselOutput",
+    "OrchestratorInput",
+    "OrchestratorOutput",
+    "CarouselFormatDeciderInput",
+    "CarouselFormatDeciderOutput",
+    "StoryGeneratorInput",
+    "StoryGeneratorOutput",
+    "ImageGeneratorInput",
+    "ImageGeneratorOutput",
+    "TextGeneratorInput",
+    "TextGeneratorOutput",
+    "FinalizerInput",
+    "FinalizerOutput",
+    "SlideQualityMetrics",
     # Common
     "MessageResponse",
     "ErrorResponse",

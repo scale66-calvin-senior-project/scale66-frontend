@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from supabase import Client
 
 from app.api.deps import get_supabase_client, get_current_user
+from app.crud.brand_kit import brand_kit_crud
 
 
 router = APIRouter(prefix="/brand-kit", tags=["brand_kit"])
@@ -81,22 +82,24 @@ async def create_brand_kit(
     Returns:
         Created brand kit
     
-    TODO: Implement brand kit creation:
-    1. Get user_id from current_user
-    2. Insert brand kit data into database
-    3. Return created brand kit
-    
     Raises:
         HTTPException: 400 if validation fails
     """
-    # TODO: Implement create
-    # user_id = current_user["id"]
-    # response = supabase.table('brand_kits') \
-    #     .insert({**brand_kit.dict(), 'user_id': user_id}) \
-    #     .execute()
-    # 
-    # return BrandKitResponse(**response.data[0])
-    pass
+    user_id = current_user["id"]
+    
+    result = await brand_kit_crud.create_for_user(
+        supabase, 
+        user_id, 
+        brand_kit.model_dump()
+    )
+    
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to create brand kit"
+        )
+    
+    return BrandKitResponse(**result)
 
 
 @router.get("/", response_model=BrandKitResponse)
@@ -114,27 +117,20 @@ async def get_brand_kit(
     Returns:
         User's brand kit
     
-    TODO: Implement brand kit fetch:
-    1. Get user_id from current_user
-    2. Query brand_kits table filtered by user_id
-    3. Return brand kit or 404 if not found
-    
     Raises:
         HTTPException: 404 if brand kit doesn't exist
     """
-    # TODO: Implement get
-    # user_id = current_user["id"]
-    # response = supabase.table('brand_kits') \
-    #     .select('*') \
-    #     .eq('user_id', user_id) \
-    #     .single() \
-    #     .execute()
-    # 
-    # if not response.data:
-    #     raise HTTPException(status_code=404, detail="Brand kit not found")
-    # 
-    # return BrandKitResponse(**response.data)
-    pass
+    user_id = current_user["id"]
+    
+    result = await brand_kit_crud.get_by_user_id(supabase, user_id)
+    
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Brand kit not found"
+        )
+    
+    return BrandKitResponse(**result)
 
 
 @router.put("/", response_model=BrandKitResponse)
@@ -154,31 +150,22 @@ async def update_brand_kit(
     Returns:
         Updated brand kit
     
-    TODO: Implement brand kit update:
-    1. Get user_id from current_user
-    2. Update brand_kits table filtered by user_id
-    3. Only update fields that are not None
-    4. Return updated brand kit
-    
     Raises:
         HTTPException: 404 if brand kit doesn't exist
     """
-    # TODO: Implement update
-    # user_id = current_user["id"]
-    # 
-    # # Only update non-None fields
-    # update_data = {k: v for k, v in brand_kit.dict().items() if v is not None}
-    # 
-    # response = supabase.table('brand_kits') \
-    #     .update(update_data) \
-    #     .eq('user_id', user_id) \
-    #     .execute()
-    # 
-    # if not response.data:
-    #     raise HTTPException(status_code=404, detail="Brand kit not found")
-    # 
-    # return BrandKitResponse(**response.data[0])
-    pass
+    user_id = current_user["id"]
+    
+    update_data = brand_kit.model_dump(exclude_unset=True)
+    
+    result = await brand_kit_crud.update_for_user(supabase, user_id, update_data)
+    
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Brand kit not found"
+        )
+    
+    return BrandKitResponse(**result)
 
 
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
@@ -196,23 +183,16 @@ async def delete_brand_kit(
     Returns:
         None (204 No Content)
     
-    TODO: Implement brand kit deletion:
-    1. Get user_id from current_user
-    2. Delete brand_kits record filtered by user_id
-    3. Return 204 on success
-    
     Raises:
         HTTPException: 404 if brand kit doesn't exist
     """
-    # TODO: Implement delete
-    # user_id = current_user["id"]
-    # 
-    # response = supabase.table('brand_kits') \
-    #     .delete() \
-    #     .eq('user_id', user_id) \
-    #     .execute()
-    # 
-    # if not response.data:
-    #     raise HTTPException(status_code=404, detail="Brand kit not found")
-    pass
+    user_id = current_user["id"]
+    
+    deleted = await brand_kit_crud.delete_for_user(supabase, user_id)
+    
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Brand kit not found"
+        )
 

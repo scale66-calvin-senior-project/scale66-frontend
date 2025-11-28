@@ -66,7 +66,7 @@ class AnthropicService:
             Generated text as a string
         """
         try:
-            logger.info(f"Generating text with model: {settings.anthropic_model}")
+            logger.debug(f"Generating text with model: {settings.anthropic_model}")
 
             response = await self._client.messages.create(
                 model=settings.anthropic_model,
@@ -76,7 +76,7 @@ class AnthropicService:
             )
 
             response_text = response.content[0].text.strip()
-            logger.info(f"Generated text: {response_text}")
+            logger.debug(f"Generated text: {response_text[:200]}...")
 
             return response_text
 
@@ -94,7 +94,7 @@ class AnthropicService:
         Analyze image using Anthropic's Claude Vision model.
 
         Args:
-            image_url: The URL of the image to analyze
+            image_url: The URL of the image (HTTP URL, data URL, or file path)
             prompt: The prompt to send to the LLM
             max_tokens: The maximum number of tokens to generate
 
@@ -102,8 +102,35 @@ class AnthropicService:
             Analysis result as a string
         """
         try:
-            logger.info(f"Analyzing image: {image_url}")
-            image_data = base64.standard_b64encode(httpx.get(image_url).content).decode("utf-8")
+            logger.debug(f"Analyzing image (truncated): {image_url[:100]}...")
+            
+            # Handle different image URL formats
+            if image_url.startswith("data:image/"):
+                # Data URL format: data:image/png;base64,iVBORw0KG...
+                parts = image_url.split(",", 1)
+                if len(parts) == 2:
+                    image_data = parts[1]  # Already base64
+                    # Detect actual media type from base64 data magic bytes
+                    # JPEG starts with /9j/, PNG starts with iVBORw0KG
+                    if image_data.startswith("/9j/"):
+                        media_type = "image/jpeg"
+                    elif image_data.startswith("iVBORw0KG"):
+                        media_type = "image/png"
+                    else:
+                        # Default to JPEG as that's what Gemini produces
+                        media_type = "image/jpeg"
+                else:
+                    raise AnthropicServiceError("Invalid data URL format")
+            elif image_url.startswith(("http://", "https://")):
+                # HTTP/HTTPS URL - fetch the image
+                response = httpx.get(image_url)
+                image_data = base64.standard_b64encode(response.content).decode("utf-8")
+                media_type = "image/jpeg"
+            else:
+                # Assume local file path
+                with open(image_url, "rb") as f:
+                    image_data = base64.standard_b64encode(f.read()).decode("utf-8")
+                media_type = "image/png" if image_url.endswith(".png") else "image/jpeg"
 
             response = await self._client.messages.create(
                 model=settings.anthropic_model,
@@ -116,7 +143,7 @@ class AnthropicService:
                                 "type": "image",
                                 "source": {
                                     "type": "base64",
-                                    "media_type": "image/jpeg",
+                                    "media_type": media_type,
                                     "data": image_data,
                                 },
                             },
@@ -130,7 +157,7 @@ class AnthropicService:
             )
 
             response_text = response.content[0].text.strip()
-            logger.info(f"Analyzed image: {response_text}")
+            logger.debug(f"Analyzed image successfully")
             return response_text
 
         except Exception as e:

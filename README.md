@@ -19,7 +19,7 @@ Scale66 helps small software founders:
 - **Database:** Supabase (PostgreSQL + Auth + Storage)
 - **AI Services:**
   - Anthropic Claude Sonnet 4.5 (text + vision) - IMPLEMENTED
-  - Google Imagen 4.0 (image generation) - IMPLEMENTED
+  - Google Gemini (image generation) - IMPLEMENTED
 - **Image Processing:** Pillow
 - **Payment:** Stripe
 - **Email:** Resend
@@ -104,13 +104,14 @@ cd frontend && npm run dev
 scale66/
 ├── backend/                    # FastAPI backend (Python)
 │   ├── app/
-│   │   ├── agents/                # AI pipeline (6-step sequential)
+│   │   ├── agents/                # AI pipeline (orchestrator + 5 agents)
 │   │   ├── api/v1/                # REST API endpoints
 │   │   ├── core/                  # Config, security, database
 │   │   ├── crud/                  # Database operations
 │   │   ├── models/                # Pydantic schemas
 │   │   ├── services/              # External integrations
 │   │   └── utils/                 # Utility functions
+│   ├── output/                # Generated carousel output
 │   └── main.py                # Application entry point
 │
 ├── frontend/                   # Next.js frontend (TypeScript)
@@ -121,6 +122,11 @@ scale66/
 │       ├── services/              # API service layer
 │       ├── lib/                   # Supabase, Stripe
 │       └── types/                 # TypeScript types
+│
+├── figma-design/               # UI/UX design references
+│   ├── onboarding-*.png           # Onboarding flow mockups
+│   ├── canvas-*.png               # Canvas editor designs
+│   └── dashboard-*.png            # Dashboard designs
 │
 └── README.md                   # This file
 ```
@@ -134,20 +140,20 @@ scale66/
 
 ### AI Pipeline (Backend)
 
-6-step sequential process for carousel generation:
+Sequential carousel generation pipeline orchestrated by Orchestrator agent:
 
-1. **Orchestrator** - Coordinates entire pipeline
-2. **Format Decider** - Selects optimal carousel format
-3. **Story Generator** - Creates hook, script, and slides
-4. **Image Generator** - Generates images via Imagen 4
-5. **Text Generator** - Creates on-screen text with styling
-6. **Finalizer** - Overlays text on images
+1. **Orchestrator** - Coordinates entire pipeline and manages state
+2. **Format Decider** - Selects optimal carousel format (12 format types)
+3. **Story Generator** - Creates verbose hook and body slide narratives
+4. **Text Generator** - Converts stories into short captions
+5. **Image Generator** - Generates images with text rendered via Gemini 3 Pro
+6. **Finalizer** - Validates quality via Claude Vision and uploads to storage
 
 **Models Used:**
 
-- Claude Sonnet 4.5 for text generation
-- Claude Vision for image analysis
-- Imagen 4.0 for image generation
+- Claude Sonnet 4.5 for text generation and caption extraction
+- Claude Vision for image quality validation and OCR
+- Gemini 3 Pro for image generation with text rendering (9:16 aspect ratio)
 
 ### Feature-Based Architecture (Frontend)
 
@@ -232,9 +238,9 @@ See `.env.example` files in backend and frontend directories.
 **Backend:**
 
 - Core infrastructure: Complete
-- AI services: Implemented
+- AI services: Implemented (Anthropic, Gemini)
 - Pydantic models: Complete
-- AI pipeline: In progress
+- AI pipeline: Implemented (all 5 agents + orchestrator)
 - API endpoints: In progress
 
 **Frontend:**
