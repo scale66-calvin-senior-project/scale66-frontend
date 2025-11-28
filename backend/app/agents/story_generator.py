@@ -8,16 +8,12 @@ Output: StoryGeneratorOutput (hook_slide_story, body_slides_story)
 """
 
 import json
-import logging
-from typing import Dict, List
+from typing import Dict, List, Optional, Any
 
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
 from app.models.pipeline import StoryGeneratorInput, StoryGeneratorOutput
 from app.agents.carousel_format_decider import CarouselFormat
 from app.services.ai.anthropic_service import AnthropicServiceError
-
-
-logger = logging.getLogger(__name__)
 
 
 # Format-specific storytelling structures for each carousel type
@@ -42,7 +38,20 @@ class StoryGenerator(BaseAgent[StoryGeneratorInput, StoryGeneratorOutput]):
     Generates narrative content for carousel slides based on format and brand.
     
     Uses Claude Sonnet 4.5 for creative storytelling with brand voice alignment.
+    Singleton pattern ensures single instance across application.
     """
+    
+    _instance: Optional['StoryGenerator'] = None
+    
+    def __new__(cls):
+        """Singleton instance creation."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        """Initialize story generator agent."""
+        super().__init__()
     
     async def _validate_input(self, input_data: StoryGeneratorInput) -> None:
         """
@@ -123,11 +132,10 @@ class StoryGenerator(BaseAgent[StoryGeneratorInput, StoryGeneratorOutput]):
             # Combine prompts for API call
             full_prompt = f"{system_prompt}\n\n{user_prompt}"
             
-            self.logger.info(
+            self.logger.debug(
                 f"Generating story for format '{input_data.format_type}' "
                 f"with {input_data.num_slides} slides"
             )
-            self.logger.debug(f"User prompt preview: {input_data.user_prompt[:100]}...")
             
             # Call Claude with higher temperature for creativity
             response = await self.anthropic.generate_text(
@@ -139,8 +147,8 @@ class StoryGenerator(BaseAgent[StoryGeneratorInput, StoryGeneratorOutput]):
             # Parse and validate response
             story = self._parse_response(response, input_data.num_slides)
             
-            self.logger.info(
-                f"Story generated successfully: hook + {len(story['body_slides_story'])} body slides"
+            self.logger.debug(
+                f"Story generated: hook + {len(story['body_slides_story'])} body slides"
             )
             
             return StoryGeneratorOutput(
@@ -269,7 +277,7 @@ Generate a complete carousel story following the '{input_data.format_type}' form
 
 Return your story as a JSON object with the hook and an array of {body_slide_count} body slides."""
     
-    def _parse_response(self, response: str, expected_num_slides: int) -> Dict[str, any]:
+    def _parse_response(self, response: str, expected_num_slides: int) -> Dict[str, Any]:
         """
         Parse and validate LLM response.
         

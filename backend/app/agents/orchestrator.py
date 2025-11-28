@@ -5,21 +5,23 @@ Coordinates the entire carousel generation pipeline by executing agents sequenti
 and managing state flow between steps.
 
 Input: OrchestratorInput (brand_kit_id, user_prompt)
-Output: OrchestratorOutput (carousel_id, carousel_slides_urls)
+Output: OrchestratorOutput (carousel_id, carousel_slides_urls, quality_metrics)
 
-Pipeline Flow:
+Pipeline Flow (Updated Architecture):
 1. Fetch BrandKit from database
 2. CarouselFormatDecider → determine format and slide count
-3. StoryGenerator → create hook and body slide narratives
-4. ImageGenerator → generate AI images for each slide
-5. TextGenerator → analyze images and create text overlays
-6. Finalizer → compose final slides and upload to storage
+3. StoryGenerator → create verbose hook and body slide narratives
+4. TextGenerator → convert stories into short captions (NEW ORDER)
+5. ImageGenerator → generate images WITH text rendered by Gemini 3 Pro
+6. Finalizer → validate quality using Claude Vision and upload to storage
 """
 
-import logging
+import time
 from typing import Optional
 
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
+from app.core.logging import create_run_log_file
+from app.core.config import settings
 from app.models.pipeline import (
     OrchestratorInput,
     OrchestratorOutput,
@@ -38,9 +40,6 @@ from app.agents.finalizer import finalizer
 from app.core.supabase import get_supabase_admin_client
 
 
-logger = logging.getLogger(__name__)
-
-
 class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
     """
     Orchestrates the complete carousel generation pipeline.
@@ -48,7 +47,21 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
     Coordinates sequential execution of all AI agents and manages state flow
     between pipeline steps. Handles brand kit fetching, validation, and error
     recovery.
+    
+    Singleton pattern ensures single instance across application.
     """
+    
+    _instance: Optional['Orchestrator'] = None
+    
+    def __new__(cls):
+        """Singleton instance creation."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        """Initialize orchestrator agent."""
+        super().__init__()
     
     async def _validate_input(self, input_data: OrchestratorInput) -> None:
         """
@@ -102,28 +115,56 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
         Raises:
             ExecutionError: If any pipeline step fails
         """
+        # Track pipeline duration
+        start_time = time.time()
+        
+        # Create a new log file for this pipeline run
+        run_log_handler = None
         try:
-            self.logger.info(
-                f"Starting pipeline execution for brand_kit_id: {input_data.brand_kit_id}"
-            )
+            run_log_handler = create_run_log_file(input_data.brand_kit_id)
+            # Pipeline start separator
+            brand_id_short = input_data.brand_kit_id[:8]
+            self.logger.info("╔" + "═" * 78 + "╗")
+            self.logger.info(f"║ PIPELINE START | Brand Kit: {brand_id_short}                                      ║")
+            self.logger.info("╚" + "═" * 78 + "╝")
+            self.logger.info("")
             
             # Step 1: Fetch BrandKit from database
-            self.logger.info("=" * 80)
-            self.logger.info("STEP 1/6: FETCHING BRAND KIT")
-            self.logger.info("=" * 80)
+            self.logger.info("─── STEP 1/6: BRAND KIT ───")
             brand_kit = await self._fetch_brand_kit(input_data.brand_kit_id)
-            self.logger.info(f"Brand Kit Retrieved:")
-            self.logger.info(f"  - Brand Name: {brand_kit.brand_name}")
-            self.logger.info(f"  - Niche: {brand_kit.brand_niche}")
-            self.logger.info(f"  - Style: {brand_kit.brand_style}")
-            self.logger.info(f"  - Pain Points: {', '.join(brand_kit.customer_pain_points)}")
-            self.logger.info(f"  - Product/Service: {brand_kit.product_service_desc[:100]}...")
+            
+            # Enhanced Brand Kit display
+            self.logger.info("Brand Kit Retrieved:")
+            self.logger.info(f"  Brand Name       : {brand_kit.brand_name}")
+            self.logger.info(f"  Niche            : {brand_kit.brand_niche}")
+            self.logger.info(f"  Style            : {brand_kit.brand_style}")
+            self.logger.info(f"  Customer Pain Points:")
+            for pain_point in brand_kit.customer_pain_points:
+                self.logger.info(f"    • {pain_point}")
+            self.logger.info(f"  Product/Service  :")
+            # Wrap product description for better readability
+            desc = brand_kit.product_service_desc
+            max_line_length = 70
+            words = desc.split()
+            lines = []
+            current_line = []
+            current_length = 0
+            for word in words:
+                if current_length + len(word) + 1 > max_line_length:
+                    lines.append(" ".join(current_line))
+                    current_line = [word]
+                    current_length = len(word)
+                else:
+                    current_line.append(word)
+                    current_length += len(word) + 1
+            if current_line:
+                lines.append(" ".join(current_line))
+            for line in lines:
+                self.logger.info(f"    {line}")
             
             # Step 2: Determine carousel format
             self.logger.info("")
-            self.logger.info("=" * 80)
-            self.logger.info("STEP 2/6: DETERMINING CAROUSEL FORMAT")
-            self.logger.info("=" * 80)
+            self.logger.info("─── STEP 2/6: CAROUSEL FORMAT ───")
             self.logger.info(f"User Prompt: {input_data.user_prompt}")
             
             format_result = await carousel_format_decider.run(
@@ -140,16 +181,12 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                     f"Format decision failed: {format_result.error_message}"
                 )
             
-            self.logger.info(f"Format Decision:")
-            self.logger.info(f"  - Format Type: {format_result.format_type}")
-            self.logger.info(f"  - Number of Slides: {format_result.num_slides}")
-            self.logger.info(f"  - Rationale: {format_result.format_rationale}")
+            self.logger.info(f"Format: {format_result.format_type} ({format_result.num_slides} slides)")
+            self.logger.info(f"Rationale: {format_result.format_rationale}")
             
             # Step 3: Generate story narratives
             self.logger.info("")
-            self.logger.info("=" * 80)
-            self.logger.info("STEP 3/6: GENERATING STORY NARRATIVES")
-            self.logger.info("=" * 80)
+            self.logger.info("─── STEP 3/6: STORY NARRATIVES ───")
             
             story_result = await story_generator.run(
                 StoryGeneratorInput(
@@ -167,44 +204,14 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                     f"Story generation failed: {story_result.error_message}"
                 )
             
-            self.logger.info(f"Story Narratives Generated:")
-            self.logger.info(f"  - Hook Slide Story:")
-            self.logger.info(f"    {story_result.hook_slide_story}")
-            self.logger.info(f"  - Body Slides ({len(story_result.body_slides_story)} total):")
+            self.logger.info(f"Hook: {story_result.hook_slide_story}")
+            self.logger.info(f"Body Slides:")
             for i, story in enumerate(story_result.body_slides_story, 1):
-                self.logger.info(f"    Slide {i}: {story}")
+                self.logger.info(f"  {i}. {story}")
             
-            # Step 4: Generate AI images
+            # Step 4: Generate text captions (NEW ORDER - before images)
             self.logger.info("")
-            self.logger.info("=" * 80)
-            self.logger.info("STEP 4/6: GENERATING AI IMAGES")
-            self.logger.info("=" * 80)
-            
-            image_result = await image_generator.run(
-                ImageGeneratorInput(
-                    step_name="image_generator",
-                    success=True,
-                    hook_slide_story=story_result.hook_slide_story,
-                    body_slides_story=story_result.body_slides_story,
-                )
-            )
-            
-            if not image_result.success:
-                raise ExecutionError(
-                    f"Image generation failed: {image_result.error_message}"
-                )
-            
-            self.logger.info(f"AI Images Generated:")
-            self.logger.info(f"  - Hook Slide Image: Generated (base64, {len(image_result.hook_slide_image)} chars)")
-            self.logger.info(f"  - Body Slide Images: {len(image_result.body_slides_images)} images generated")
-            for i in range(len(image_result.body_slides_images)):
-                self.logger.info(f"    Slide {i+1}: Generated (base64, {len(image_result.body_slides_images[i])} chars)")
-            
-            # Step 5: Generate text overlays
-            self.logger.info("")
-            self.logger.info("=" * 80)
-            self.logger.info("STEP 5/6: GENERATING TEXT OVERLAYS")
-            self.logger.info("=" * 80)
+            self.logger.info("─── STEP 4/6: TEXT CAPTIONS ───")
             
             text_result = await text_generator.run(
                 TextGeneratorInput(
@@ -212,8 +219,6 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                     success=True,
                     hook_slide_story=story_result.hook_slide_story,
                     body_slides_story=story_result.body_slides_story,
-                    hook_slide_image=image_result.hook_slide_image,
-                    body_slides_images=image_result.body_slides_images,
                 )
             )
             
@@ -222,30 +227,48 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                     f"Text generation failed: {text_result.error_message}"
                 )
             
-            self.logger.info(f"Text Overlays Generated:")
-            self.logger.info(f"  - Hook Slide Text: {text_result.hook_slide_text}")
-            self.logger.info(f"  - Hook Slide Style: {text_result.hook_slide_text_style}")
-            self.logger.info(f"  - Body Slides ({len(text_result.body_slides_text)} total):")
-            for i, (text, style) in enumerate(zip(text_result.body_slides_text, text_result.body_slides_text_styles), 1):
-                self.logger.info(f"    Slide {i} Text: {text}")
-                self.logger.info(f"    Slide {i} Style: {style}")
+            self.logger.info(f"Hook Text: {text_result.hook_slide_text}")
+            self.logger.info(f"Body Slide Texts:")
+            for i, text in enumerate(text_result.body_slides_text, 1):
+                self.logger.info(f"  {i}. {text}")
             
-            # Step 6: Finalize slides (overlay text and upload)
+            # Step 5: Generate images WITH text (NEW ORDER - after captions)
             self.logger.info("")
-            self.logger.info("=" * 80)
-            self.logger.info("STEP 6/6: FINALIZING CAROUSEL SLIDES")
-            self.logger.info("=" * 80)
+            self.logger.info("─── STEP 5/6: AI IMAGES (WITH TEXT) ───")
+            
+            image_result = await image_generator.run(
+                ImageGeneratorInput(
+                    step_name="image_generator",
+                    success=True,
+                    hook_slide_story=story_result.hook_slide_story,
+                    body_slides_story=story_result.body_slides_story,
+                    hook_slide_text=text_result.hook_slide_text,
+                    body_slides_text=text_result.body_slides_text,
+                )
+            )
+            
+            if not image_result.success:
+                raise ExecutionError(
+                    f"Image generation failed: {image_result.error_message}"
+                )
+            
+            self.logger.info(f"Generated: 1 hook + {len(image_result.body_slides_images)} body images (with text rendered)")
+            
+            # Step 6: Validate quality and upload
+            self.logger.info("")
+            self.logger.info("─── STEP 6/6: QUALITY VALIDATION & UPLOAD ───")
             
             final_result = await finalizer.run(
                 FinalizerInput(
                     step_name="finalizer",
                     success=True,
-                    hook_slide_text=text_result.hook_slide_text,
-                    body_slides_text=text_result.body_slides_text,
-                    hook_slide_text_style=text_result.hook_slide_text_style,
-                    body_slides_text_styles=text_result.body_slides_text_styles,
                     hook_slide_image=image_result.hook_slide_image,
                     body_slides_images=image_result.body_slides_images,
+                    hook_slide_text=text_result.hook_slide_text,
+                    body_slides_text=text_result.body_slides_text,
+                    hook_slide_story=story_result.hook_slide_story,
+                    body_slides_story=story_result.body_slides_story,
+                    brand_kit=brand_kit,
                 )
             )
             
@@ -254,17 +277,49 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                     f"Finalization failed: {final_result.error_message}"
                 )
             
+            # Calculate total duration
+            pipeline_duration = int((time.time() - start_time) * 1000)
+            duration_seconds = pipeline_duration / 1000
+            duration_str = f"{int(duration_seconds // 60)}m {int(duration_seconds % 60)}s" if duration_seconds >= 60 else f"{duration_seconds:.1f}s"
+            
+            # Pipeline completion summary
             self.logger.info("")
-            self.logger.info("=" * 80)
-            self.logger.info("PIPELINE COMPLETED SUCCESSFULLY")
-            self.logger.info("=" * 80)
-            self.logger.info(f"Carousel ID: {final_result.carousel_id}")
-            self.logger.info(f"Total Slides: {len(final_result.carousel_slides_urls)}")
-            self.logger.info(f"Supabase URLs:")
-            for i, url in enumerate(final_result.carousel_slides_urls):
-                slide_type = "Hook" if i == 0 else f"Body {i}"
-                self.logger.info(f"  - Slide {i} ({slide_type}): {url}")
-            self.logger.info("=" * 80)
+            slide_count = len(final_result.carousel_slides_urls)
+            quality_score = sum(m.image_quality_score for m in final_result.quality_metrics) / len(final_result.quality_metrics)
+            self.logger.info("╔" + "═" * 78 + "╗")
+            self.logger.info(f"║ PIPELINE COMPLETE | Duration: {duration_str:<8} | {slide_count} slides | Quality: {quality_score:.2f}      ║")
+            self.logger.info(f"║ Carousel ID: {final_result.carousel_id}                            ║")
+            self.logger.info("╚" + "═" * 78 + "╝")
+            self.logger.info("")
+            
+            # Show quality metrics summary
+            self.logger.info("Quality Metrics:")
+            for metrics in final_result.quality_metrics:
+                slide_type = "Hook" if metrics.slide_index == 0 else f"Body {metrics.slide_index}"
+                self.logger.info(
+                    f"  [{metrics.slide_index}] {slide_type}: "
+                    f"Quality={metrics.image_quality_score:.2f}, "
+                    f"Text Match={metrics.text_matches_expected}, "
+                    f"Readable={metrics.text_readable}"
+                )
+                if metrics.issues:
+                    for issue in metrics.issues:
+                        self.logger.info(f"      Issue: {issue}")
+            self.logger.info("")
+            
+            # Show local file paths if enabled
+            if settings.save_local_output:
+                from pathlib import Path
+                local_dir = Path(settings.output_dir) / "carousels" / final_result.carousel_id / "final"
+                self.logger.info("Output Files:")
+                self.logger.info(f"  Location: {local_dir}/")
+                for i in range(slide_count):
+                    slide_type = "Hook" if i == 0 else f"Body {i}"
+                    self.logger.info(f"    [{i}] {slide_type}: slide_{i}.png")
+            else:
+                self.logger.info("Local output saving is disabled")
+                self.logger.info("View slides in Supabase Storage > carousel-slides bucket")
+            self.logger.info("")
             
             # Return orchestrator output
             return OrchestratorOutput(
@@ -272,6 +327,7 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                 success=True,
                 carousel_id=final_result.carousel_id,
                 carousel_slides_urls=final_result.carousel_slides_urls,
+                quality_metrics=final_result.quality_metrics,
             )
             
         except ExecutionError:
@@ -280,6 +336,11 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
         except Exception as e:
             # Catch any unexpected errors
             raise ExecutionError(f"Pipeline execution failed: {str(e)}")
+        finally:
+            # Clean up the run-specific log file handler
+            if run_log_handler:
+                logging.getLogger().removeHandler(run_log_handler)
+                run_log_handler.close()
     
     async def _fetch_brand_kit(self, brand_kit_id: str) -> BrandKit:
         """

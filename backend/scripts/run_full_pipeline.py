@@ -142,15 +142,13 @@ async def run_pipeline(brand_kit_id: str):
     print("\nPipeline Steps:")
     print("  1. Determine carousel format (Claude)")
     print("  2. Generate story narratives (Claude)")
-    print("  3. Generate images (Gemini)")
-    print("  4. Analyze images and create text (Claude Vision)")
-    print("  5. Overlay text on images (Pillow)")
+    print("  3. Extract short captions from stories (Claude)")
+    print("  4. Generate images WITH text rendered (Gemini 3 Pro)")
+    print("  5. Validate quality using Claude Vision")
     print("  6. Upload to Supabase storage")
     print("\nOutput Locations:")
-    print(f"  - Logs: backend/logs/scale66.log")
-    print(f"  - Local Images: backend/output/carousels/[carousel-id]/")
-    print(f"    - Raw slides (no text): raw/slide_*.png")
-    print(f"    - Final slides (with text): final/slide_*.png")
+    print(f"  - Logs: backend/logs/scale66_YYYY-MM-DD_HH-MM-SS_[run-id].log")
+    print(f"  - Local Images: backend/output/carousels/[carousel-id]/final/slide_*.png")
     print(f"  - Supabase Storage: carousel-slides bucket")
     print("\nEstimated time: 2-3 minutes")
     print("=" * 60)
@@ -175,6 +173,26 @@ def display_results(result):
         print(f"\nCarousel ID: {result.carousel_id}")
         print(f"Total Slides: {len(result.carousel_slides_urls)}")
         
+        # Display quality metrics
+        if result.quality_metrics:
+            print("\n" + "-" * 60)
+            print("QUALITY METRICS")
+            print("-" * 60)
+            for metrics in result.quality_metrics:
+                slide_type = "Hook" if metrics.slide_index == 0 else f"Body {metrics.slide_index}"
+                print(f"  Slide {metrics.slide_index} ({slide_type}):")
+                print(f"    Quality Score: {metrics.image_quality_score:.2f}")
+                print(f"    Text Readable: {metrics.text_readable}")
+                print(f"    Text Matches: {metrics.text_matches_expected}")
+                if metrics.text_accuracy_score:
+                    print(f"    Text Accuracy: {metrics.text_accuracy_score:.2f}")
+                if metrics.brand_alignment_score:
+                    print(f"    Brand Alignment: {metrics.brand_alignment_score:.2f}")
+                if metrics.issues:
+                    print(f"    Issues: {', '.join(metrics.issues)}")
+                if metrics.suggestions:
+                    print(f"    Suggestions: {', '.join(metrics.suggestions[:2])}")
+        
         print("\n" + "-" * 60)
         print("SUPABASE STORAGE URLS")
         print("-" * 60)
@@ -188,10 +206,9 @@ def display_results(result):
         from app.core.config import settings
         if settings.save_local_output:
             from pathlib import Path
-            local_dir = Path(settings.output_dir) / "carousels" / result.carousel_id
+            local_dir = Path(settings.output_dir) / "carousels" / result.carousel_id / "final"
             print(f"  Directory: {local_dir}")
-            print(f"  Raw slides (no text): {local_dir}/raw/slide_*.png")
-            print(f"  Final slides (with text): {local_dir}/final/slide_*.png")
+            print(f"  Slides (with text): slide_0.png, slide_1.png, ...")
         else:
             print("  Local output saving is disabled")
         
@@ -199,8 +216,12 @@ def display_results(result):
         print("LOGS")
         print("-" * 60)
         if settings.log_to_file:
-            print(f"  Log file: {settings.log_file}")
-            print(f"  Contains: Detailed pipeline execution logs with all outputs")
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            example_log = f"logs/scale66_{timestamp}_{result.carousel_id[:8]}.log"
+            print(f"  Log file created for this run")
+            print(f"  Check: backend/{example_log}")
+            print(f"  Contains: Pipeline execution + quality metrics")
         else:
             print("  File logging is disabled (console only)")
         
@@ -209,7 +230,8 @@ def display_results(result):
         print("=" * 60)
         print("  1. View images in Supabase Dashboard > Storage > carousel-slides")
         print("  2. Review local files in backend/output/carousels/")
-        print("  3. Check detailed logs in backend/logs/scale66.log")
+        print("  3. Check quality metrics and suggestions above")
+        print("  4. Review run-specific log file in backend/logs/")
         print("=" * 60)
     else:
         print(f"\nERROR: {result.error_message}")
@@ -231,17 +253,34 @@ async def save_to_posts(brand_kit_id: str, result):
     campaign_id = campaign.data[0]['id']
     print(f"  Created campaign: {campaign_id}")
     
+    # Build carousel metadata
+    carousel_metadata = {
+        'carousel_id': result.carousel_id,
+        'brand_kit_id': brand_kit_id,
+        'prompt': TEST_USER_PROMPT,
+        'num_slides': len(result.carousel_slides_urls)
+    }
+    
+    # Add quality metrics if available
+    if result.quality_metrics:
+        overall_quality = sum(m.image_quality_score for m in result.quality_metrics) / len(result.quality_metrics)
+        carousel_metadata['overall_quality_score'] = overall_quality
+        carousel_metadata['quality_metrics'] = [
+            {
+                'slide_index': m.slide_index,
+                'image_quality_score': m.image_quality_score,
+                'text_readable': m.text_readable,
+                'text_matches_expected': m.text_matches_expected,
+            }
+            for m in result.quality_metrics
+        ]
+    
     # Now create the post with campaign_id
     post_data = {
         'user_id': TEST_USER_ID,
         'campaign_id': campaign_id,
         'carousel_slides': result.carousel_slides_urls,
-        'carousel_metadata': {
-            'carousel_id': result.carousel_id,
-            'brand_kit_id': brand_kit_id,
-            'prompt': TEST_USER_PROMPT,
-            'num_slides': len(result.carousel_slides_urls)
-        },
+        'carousel_metadata': carousel_metadata,
         'final_caption': TEST_USER_PROMPT,
         'platform': 'instagram',
         'status': 'draft'
@@ -302,7 +341,7 @@ async def main():
         print(f"\nError: {e}")
         import traceback
         traceback.print_exc()
-        print(f"\nCheck logs for details: backend/logs/scale66.log")
+        print(f"\nCheck logs for details in: backend/logs/")
     finally:
         await cleanup()
 

@@ -47,7 +47,7 @@ class GeminiService:
         if self._client is None:
             try:
                 self._client = genai.Client(api_key=settings.gemini_api_key)
-                logger.info(
+                logger.debug(
                     f"Initialized Gemini client with model: {settings.gemini_image_model}"
                 )
             except Exception as e:
@@ -80,7 +80,7 @@ class GeminiService:
         model_name = settings.gemini_image_model
         
         try:
-            logger.info(
+            logger.debug(
                 f"Generating image with {model_name} "
                 f"(aspect_ratio={aspect_ratio}, size={image_size}): {prompt[:100]}..."
             )
@@ -113,7 +113,7 @@ class GeminiService:
             # Get image bytes and encode to base64
             image_bytes = image_part.inline_data.data
             
-            logger.info("Image generated successfully")
+            logger.debug("Image generated successfully")
             return base64.b64encode(image_bytes).decode("utf-8")
                 
         except GeminiServiceError:

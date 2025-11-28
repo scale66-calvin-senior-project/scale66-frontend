@@ -111,11 +111,9 @@ class BaseAgent(ABC, Generic[InputT, OutputT]):
         start_time = time.time()
         
         try:
-            self.logger.info(f"{self.agent_name} - Starting execution")
-            
             # Step 1: Validate input
             await self._validate_input(input_data)
-            self.logger.debug(f"{self.agent_name} - Input validation passed")
+            self.logger.debug(f"Input validation passed")
             
             # Step 2: Execute agent logic
             output = await self._execute(input_data)
@@ -124,17 +122,15 @@ class BaseAgent(ABC, Generic[InputT, OutputT]):
             execution_time = int((time.time() - start_time) * 1000)
             output.execution_time = execution_time
             
-            self.logger.info(
-                f"{self.agent_name} - Execution completed successfully "
-                f"({execution_time}ms)"
-            )
+            # Log completion with timing
+            self.logger.info(f"Completed ({execution_time / 1000:.1f}s)")
             
             return output
             
         except ValidationError as e:
             execution_time_ms = int((time.time() - start_time) * 1000)
-            error_msg = f"Input validation failed: {str(e)}"
-            self.logger.error(f"{self.agent_name} - {error_msg}")
+            error_msg = f"Validation failed: {str(e)}"
+            self.logger.error(error_msg)
             
             # Return failed output for pipeline continuity
             return self._create_error_output(error_msg, execution_time_ms)
@@ -142,14 +138,14 @@ class BaseAgent(ABC, Generic[InputT, OutputT]):
         except ExecutionError as e:
             execution_time_ms = int((time.time() - start_time) * 1000)
             error_msg = f"Execution failed: {str(e)}"
-            self.logger.error(f"{self.agent_name} - {error_msg}", exc_info=True)
+            self.logger.error(error_msg, exc_info=True)
             
             return self._create_error_output(error_msg, execution_time_ms)
             
         except Exception as e:
             execution_time_ms = int((time.time() - start_time) * 1000)
             error_msg = f"Unexpected error: {str(e)}"
-            self.logger.error(f"{self.agent_name} - {error_msg}", exc_info=True)
+            self.logger.error(error_msg, exc_info=True)
             
             return self._create_error_output(error_msg, execution_time_ms)
     
@@ -158,6 +154,7 @@ class BaseAgent(ABC, Generic[InputT, OutputT]):
         Create error output when execution fails.
         
         Subclasses can override this to provide custom error outputs.
+        Default behavior is to raise ExecutionError to halt pipeline.
         
         Args:
             error_message: Error description
@@ -165,7 +162,8 @@ class BaseAgent(ABC, Generic[InputT, OutputT]):
             
         Returns:
             Error output with failed status
+            
+        Raises:
+            ExecutionError: Default behavior halts pipeline
         """
-        # This is a fallback - agents should override if needed
-        # For MVP, we'll raise the error to halt the pipeline
         raise ExecutionError(error_message)

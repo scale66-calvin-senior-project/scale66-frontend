@@ -43,9 +43,9 @@ backend/
     │   ├── orchestrator.py          # Pipeline coordinator - IMPLEMENTED
     │   ├── carousel_format_decider.py # Format selection - IMPLEMENTED
     │   ├── story_generator.py       # Story/narrative generation - IMPLEMENTED
-    │   ├── image_generator.py       # Image generation via Gemini - IMPLEMENTED
-    │   ├── text_generator.py        # Text overlay generation - IMPLEMENTED
-    │   └── finalizer.py             # Image composition & upload - IMPLEMENTED
+    │   ├── text_generator.py        # Caption generation from stories - IMPLEMENTED
+    │   ├── image_generator.py       # Image gen with text (Gemini 3 Pro) - IMPLEMENTED
+    │   └── finalizer.py             # Quality validation & upload - IMPLEMENTED
     │
     ├── api/                  # REST API endpoints
     │   ├── deps.py                  # Dependency injection
@@ -87,7 +87,6 @@ backend/
     │   │   ├── anthropic_service.py # Claude API integration
     │   │   └── gemini_service.py    # Gemini image generation
     │   ├── email_service.py         # Resend email
-    │   ├── image_overlay_service.py # Image composition
     │   ├── social_media_service.py  # Social platform APIs
     │   ├── storage_service.py       # File storage
     │   └── stripe_service.py        # Payment processing
@@ -106,16 +105,18 @@ backend/
 
 1. **Orchestrator** - Coordinates pipeline, manages state flow, and handles BrandKit fetching
 2. **Format Decider** - Analyzes content request and selects optimal carousel format (12 format types)
-3. **Story Generator** - Creates compelling hook and body slide narratives aligned to format
-4. **Image Generator** - Generates AI images for each slide using Gemini (9:16 aspect ratio)
-5. **Text Generator** - Uses Claude Vision to analyze images and generate text overlays with styling
-6. **Finalizer** - Overlays text on images using Pillow and uploads to Supabase Storage
+3. **Story Generator** - Creates verbose, detailed narratives for each slide
+4. **Text Generator** - Converts stories into short, punchy carousel captions (3-8 words)
+5. **Image Generator** - Generates images WITH text baked in using Gemini 3 Pro text rendering
+6. **Finalizer** - Validates image quality using Claude Vision and uploads to Supabase Storage
+
+**Key Architecture:** Text generation runs BEFORE images. Gemini 3 Pro renders text directly in images, eliminating separate text overlay processing. Finalizer validates quality and stores metrics (no retry logic in MVP).
 
 **AI Models:**
 
 - Claude Sonnet 4.5 (format decisions, story generation, text generation)
-- Claude Vision (image analysis for text placement)
-- Gemini (image generation - supports gemini-3-pro-image-preview and gemini-2.5-flash-image)
+- Gemini 3 Pro Image (image generation with text rendering)
+- Claude Vision (quality validation)
 
 **Implementation Status:** Complete - Orchestrator + all 5 pipeline agents implemented
 
@@ -214,11 +215,13 @@ Base URL: `http://localhost:8000/api/v1`
 
 - **Anthropic Service** - Claude API integration
   - Text generation (Claude Sonnet 4.5)
-  - Image analysis (Claude Vision)
+  - Image analysis (Claude Vision for quality validation)
   - Async client with error handling
-- **Gemini Service** - Image generation integration
-  - Supports gemini-3-pro-image-preview and gemini-2.5-flash-image
-  - Image generation with aspect ratio control
+- **Gemini Service** - Image generation integration with text rendering
+  - Supports gemini-3-pro-image-preview (with text generation capabilities)
+  - Supports gemini-2.5-flash-image (faster alternative)
+  - Image generation with text overlays baked in
+  - Aspect ratio control (9:16 for social media)
   - Size options (1K, 2K, 4K on gemini-3-pro)
   - Base64 encoded output
 
@@ -226,8 +229,9 @@ Base URL: `http://localhost:8000/api/v1`
 
 - Email Service - Resend API (structure defined)
 - Social Media Service - Instagram/TikTok OAuth (structure defined)
-- Storage Service - Supabase Storage (structure defined)
+- Storage Service - Supabase Storage (implemented for carousel uploads)
 - Stripe Service - Payment processing (structure defined)
+- Image Overlay Service - DEPRECATED (replaced by Gemini 3 Pro text rendering)
 
 ### Utilities
 
@@ -320,13 +324,12 @@ uv run python main.py
 **Complete:**
 
 - Core infrastructure (config, logging, security, database)
-- AI services (Anthropic Claude + Google Gemini image generation)
-- Pydantic models and schemas (all entities + pipeline)
-- AI pipeline (Orchestrator + all 5 agents fully implemented)
+- AI services (Anthropic Claude + Gemini 3 Pro with text rendering)
+- Pydantic models and schemas (all entities + updated pipeline models)
+- AI pipeline (Orchestrator + all 5 agents with new architecture)
 - Base agent class with error handling and logging
-- Model-agnostic Gemini integration (gemini-3-pro-image-preview, gemini-2.5-flash-image)
+- Gemini 3 Pro integration with text-in-image generation
 - Singleton pattern for services and agents
-- Image overlay service (Pillow-based text composition)
 
 **In Progress:**
 

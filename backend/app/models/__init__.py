@@ -62,6 +62,7 @@ from .pipeline import (
     TextGeneratorOutput,
     FinalizerInput,
     FinalizerOutput,
+    SlideQualityMetrics,
 )
 
 # Common models
@@ -113,6 +114,7 @@ __all__ = [
     "TextGeneratorOutput",
     "FinalizerInput",
     "FinalizerOutput",
+    "SlideQualityMetrics",
     # Common
     "MessageResponse",
     "ErrorResponse",

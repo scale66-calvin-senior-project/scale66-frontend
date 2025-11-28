@@ -66,7 +66,7 @@ class AnthropicService:
             Generated text as a string
         """
         try:
-            logger.info(f"Generating text with model: {settings.anthropic_model}")
+            logger.debug(f"Generating text with model: {settings.anthropic_model}")
 
             response = await self._client.messages.create(
                 model=settings.anthropic_model,
@@ -76,7 +76,7 @@ class AnthropicService:
             )
 
             response_text = response.content[0].text.strip()
-            logger.info(f"Generated text: {response_text}")
+            logger.debug(f"Generated text: {response_text[:200]}...")
 
             return response_text
 
@@ -102,7 +102,7 @@ class AnthropicService:
             Analysis result as a string
         """
         try:
-            logger.info(f"Analyzing image (truncated): {image_url[:100]}...")
+            logger.debug(f"Analyzing image (truncated): {image_url[:100]}...")
             
             # Handle different image URL formats
             if image_url.startswith("data:image/"):
@@ -157,7 +157,7 @@ class AnthropicService:
             )
 
             response_text = response.content[0].text.strip()
-            logger.info(f"Analyzed image successfully")
+            logger.debug(f"Analyzed image successfully")
             return response_text
 
         except Exception as e:

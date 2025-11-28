@@ -42,6 +42,46 @@ class ContextFilter(logging.Filter):
         return True
 
 
+class SmartFormatter(logging.Formatter):
+    """
+    Smart formatter that only shows logger name when it changes.
+    
+    This reduces repetitive "Orchestrator |" on every line while still
+    showing context when different components log messages.
+    """
+    
+    def __init__(self, fmt=None, datefmt=None):
+        super().__init__(fmt, datefmt)
+        self.last_logger = None
+    
+    def format(self, record: logging.LogRecord) -> str:
+        """Format log record, showing logger name only when it changes."""
+        current_logger = record.name
+        
+        # Special handling for orchestrator - don't repeat name
+        if current_logger == "Orchestrator":
+            # Only show logger name for specific messages
+            if any(keyword in record.getMessage() for keyword in [
+                "PIPELINE START", "STEP ", "PIPELINE COMPLETE"
+            ]):
+                # These are section headers - no prefix needed
+                return record.getMessage()
+            else:
+                # Regular orchestrator messages - no prefix
+                return record.getMessage()
+        
+        # For other agents, show name only when it changes or for completion messages
+        if current_logger != self.last_logger or "Completed" in record.getMessage():
+            self.last_logger = current_logger
+            # Show logger name for agent completion or when switching agents
+            return f"{current_logger} | {record.getMessage()}"
+        else:
+            # Same logger continuing - no prefix
+            return record.getMessage()
+        
+        return record.getMessage()
+
+
 def setup_logging(
     log_level: Optional[str] = None,
     log_file: Optional[str] = None
@@ -80,18 +120,9 @@ def setup_logging(
     root_logger.handlers.clear()
     
     # Create formatters
-    if settings.environment == "production":
-        # Production: Structured format with all details
-        formatter = logging.Formatter(
-            fmt='%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d | %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        )
-    else:
-        # Development: Simpler format for readability
-        formatter = logging.Formatter(
-            fmt='%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
-            datefmt='%H:%M:%S'
-        )
+    # Use smart formatter that reduces repetitive logger names
+    # This is for user-facing output logs, not debugging logs
+    formatter = SmartFormatter()
     
     # Console handler (always enabled)
     console_handler = logging.StreamHandler(sys.stdout)
@@ -114,20 +145,17 @@ def setup_logging(
         file_handler.addFilter(ContextFilter())
         root_logger.addHandler(file_handler)
     
-    # Set log levels for noisy third-party libraries
-    logging.getLogger("httpx").setLevel(logging.WARNING)
-    logging.getLogger("httpcore").setLevel(logging.WARNING)
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
-    logging.getLogger("anthropic").setLevel(logging.WARNING)
-    logging.getLogger("google").setLevel(logging.WARNING)
+    # Suppress all third-party library logs (only show errors)
+    logging.getLogger("httpx").setLevel(logging.ERROR)
+    logging.getLogger("httpcore").setLevel(logging.ERROR)
+    logging.getLogger("urllib3").setLevel(logging.ERROR)
+    logging.getLogger("anthropic").setLevel(logging.ERROR)
+    logging.getLogger("google").setLevel(logging.ERROR)
+    logging.getLogger("google_genai").setLevel(logging.ERROR)
+    logging.getLogger("google.genai").setLevel(logging.ERROR)
+    logging.getLogger("google_genai.models").setLevel(logging.ERROR)
     
-    # Log initialization
-    logger = logging.getLogger(__name__)
-    logger.info(
-        f"Logging initialized: level={log_level.upper()}, "
-        f"environment={settings.environment}, "
-        f"file_logging={'enabled' if settings.log_to_file else 'disabled'}"
-    )
+    # Logging initialized (no log message - this is internal setup)
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -144,4 +172,64 @@ def get_logger(name: str) -> logging.Logger:
         This is a convenience function. You can also use logging.getLogger(__name__) directly.
     """
     return logging.getLogger(name)
+
+
+def create_run_log_file(run_id: str) -> logging.Handler:
+    """
+    Create a new file handler for a specific pipeline run.
+    
+    This creates a timestamped log file for a single execution:
+    logs/scale66_2024-11-28_18-34-39_abc123.log
+    
+    Args:
+        run_id: Unique identifier for this run (e.g., carousel_id or brand_kit_id)
+    
+    Returns:
+        FileHandler instance configured for this run
+    
+    Usage:
+        # At start of pipeline run
+        handler = create_run_log_file(carousel_id)
+        
+        # At end of pipeline run
+        logging.getLogger().removeHandler(handler)
+        handler.close()
+    """
+    from datetime import datetime
+    
+    # Create timestamp for filename
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    
+    # Create filename: scale66_YYYY-MM-DD_HH-MM-SS_runid.log
+    short_run_id = run_id[:8] if len(run_id) > 8 else run_id
+    log_filename = f"scale66_{timestamp}_{short_run_id}.log"
+    
+    # Determine log file path
+    if settings.log_file:
+        log_dir = Path(settings.log_file).parent
+    else:
+        log_dir = Path("logs")
+    
+    log_path = log_dir / log_filename
+    log_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Create file handler with smart formatter
+    formatter = SmartFormatter()
+    
+    file_handler = logging.FileHandler(
+        filename=log_path,
+        mode='w',  # Write mode - new file each time
+        encoding='utf-8'
+    )
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(formatter)
+    
+    # Add to root logger
+    root_logger = logging.getLogger()
+    root_logger.addHandler(file_handler)
+    
+    # Note: Don't log the file creation to the file itself
+    # (that's internal info, not user-facing pipeline info)
+    
+    return file_handler
 

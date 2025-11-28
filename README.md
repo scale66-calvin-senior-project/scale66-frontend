@@ -144,16 +144,16 @@ Sequential carousel generation pipeline orchestrated by Orchestrator agent:
 
 1. **Orchestrator** - Coordinates entire pipeline and manages state
 2. **Format Decider** - Selects optimal carousel format (12 format types)
-3. **Story Generator** - Creates hook, script, and slides
-4. **Image Generator** - Generates images via Gemini (9:16 aspect ratio)
-5. **Text Generator** - Creates on-screen text with styling via Claude Vision
-6. **Finalizer** - Overlays text on images and uploads to Supabase Storage
+3. **Story Generator** - Creates verbose hook and body slide narratives
+4. **Text Generator** - Converts stories into short captions
+5. **Image Generator** - Generates images with text rendered via Gemini 3 Pro
+6. **Finalizer** - Validates quality via Claude Vision and uploads to storage
 
 **Models Used:**
 
-- Claude Sonnet 4.5 for text generation
-- Claude Vision for image analysis
-- Gemini for image generation (gemini-3-pro-image-preview recommended)
+- Claude Sonnet 4.5 for text generation and caption extraction
+- Claude Vision for image quality validation and OCR
+- Gemini 3 Pro for image generation with text rendering (9:16 aspect ratio)
 
 ### Feature-Based Architecture (Frontend)
 
