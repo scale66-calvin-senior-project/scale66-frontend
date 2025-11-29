@@ -10,11 +10,11 @@ Input: TextGeneratorInput (hook_slide_story, body_slides_story)
 Output: TextGeneratorOutput (hook_slide_text, body_slides_text)
 """
 
-import json
 from typing import List, Optional
 
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
 from app.models.pipeline import TextGeneratorInput, TextGeneratorOutput
+from app.models.structured import ClaudeTextOutput
 from app.services.ai.anthropic_service import AnthropicServiceError
 
 
@@ -107,32 +107,42 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
             
             # Generate hook slide caption
             self.logger.debug("Generating hook slide caption")
-            hook_text = await self._generate_caption(
+            hook_text, hook_rationale = await self._generate_caption(
                 story=input_data.hook_slide_story,
                 is_hook=True,
             )
             
             # Generate body slides captions
             body_texts: List[str] = []
+            body_rationales: List[str] = []
             
             for i, story in enumerate(input_data.body_slides_story):
                 self.logger.debug(f"Generating body slide {i+1}/{len(input_data.body_slides_story)}")
-                body_text = await self._generate_caption(
+                body_text, body_rationale = await self._generate_caption(
                     story=story,
                     is_hook=False,
                 )
                 body_texts.append(body_text)
+                body_rationales.append(body_rationale)
             
-            self.logger.debug(
+            # Combine all rationales for logging
+            all_rationales = [hook_rationale] + body_rationales
+            
+            self.logger.info(
                 f"Caption generation completed: "
                 f"1 hook + {len(body_texts)} body captions"
             )
+            self.logger.info("Caption Rationales:")
+            self.logger.info(f"  [0] Hook: {hook_rationale}")
+            for i, rationale in enumerate(body_rationales, 1):
+                self.logger.info(f"  [{i}] Body {i}: {rationale}")
             
             return TextGeneratorOutput(
                 step_name="text_generator",
                 success=True,
                 hook_slide_text=hook_text,
                 body_slides_text=body_texts,
+                captions_rationale=all_rationales,
             )
             
         except AnthropicServiceError as e:
@@ -144,7 +154,7 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
         self,
         story: str,
         is_hook: bool,
-    ) -> str:
+    ) -> tuple[str, str]:
         """
         Generate short, punchy caption from verbose story narrative.
         
@@ -153,7 +163,7 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
             is_hook: Whether this is the hook slide
             
         Returns:
-            Short caption string (3-8 words ideal)
+            Tuple of (caption, rationale)
             
         Raises:
             ExecutionError: If generation fails
@@ -168,26 +178,39 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
             
             self.logger.debug(f"Generating caption for {'hook' if is_hook else 'body'} slide")
             
-            # Call Claude for text generation (no image analysis)
-            response = await self.anthropic.generate_text(
+            # Call Claude with structured output for guaranteed valid response
+            text_output = await self.anthropic.generate_structured_output(
                 prompt=full_prompt,
+                output_model=ClaudeTextOutput,
                 max_tokens=500,
                 temperature=0.7,
             )
             
-            # Parse and validate response
-            caption = self._parse_response(response)
+            # Validate caption length
+            caption = text_output.caption.strip()
+            word_count = len(caption.split())
+            
+            if word_count > 12:
+                self.logger.warning(
+                    f"Caption is too long ({word_count} words), truncating to first 10 words"
+                )
+                words = caption.split()[:10]
+                caption = " ".join(words)
+            
+            if len(caption) < 3:
+                self.logger.warning(f"Caption is very short ({len(caption)} chars)")
+            
+            if word_count > 10:
+                self.logger.warning(f"Caption exceeds ideal length ({word_count} words, ideal 3-8)")
             
             self.logger.debug(
                 f"Generated caption ({len(caption)} chars): {caption}"
             )
             
-            return caption
+            return caption, text_output.rationale.strip()
             
         except AnthropicServiceError as e:
             raise ExecutionError(f"Failed to generate caption: {str(e)}")
-        except json.JSONDecodeError as e:
-            raise ExecutionError(f"Failed to parse caption response: {str(e)}")
         except Exception as e:
             raise ExecutionError(f"Unexpected error in caption generation: {str(e)}")
     
@@ -240,24 +263,19 @@ CAPTION EXTRACTION PRINCIPLES:
    - Preserve emotional impact and clarity
    - Ensure caption enhances (not duplicates) the story
 
-OUTPUT FORMAT:
-You must respond with ONLY a valid JSON object in this exact format:
-{{
-  "caption": "<3-8 word punchy caption>"
-}}
-
-CRITICAL REQUIREMENTS:
-- Caption must be 3-10 words maximum (ideal 3-8 words)
+OUTPUT REQUIREMENTS:
+- caption: Short, punchy caption (3-10 words maximum, ideal 3-8 words)
+- rationale: Strategic explanation of why this caption works (50-150 characters)
 - Extract essence, don't summarize
-- Do not include any text outside the JSON object
-- Do not use markdown code blocks
 
 EXAMPLES:
 Story: "Plan your tasks the night before so you wake up with zero decision fatigue and can take immediate action at dawn"
-Caption: {{"caption": "Plan Tonight, Win Tomorrow"}}
+Output: caption="Plan Tonight, Win Tomorrow", rationale="Creates anticipation and implies immediate benefit with simple action-result pairing"
 
 Story: "Do a 20-minute focused work sprint before checking email to get deep work done before distractions hit"
-Caption: {{"caption": "Deep Work Before Distractions"}}"""
+Output: caption="Deep Work Before Distractions", rationale="Establishes priority and sequence, using power words that resonate with productivity-focused audience"
+
+Remember: The caption should ENHANCE the story, not duplicate it verbatim. Focus on the KEY INSIGHT or HOOK that will stop the scroll and drive engagement."""
     
     def _build_user_prompt(self, story: str, is_hook: bool) -> str:
         """
@@ -284,75 +302,9 @@ STEPS:
 3. Distill it into the shortest possible form (3-8 words ideal)
 4. Ensure it's instantly readable and scroll-stopping
 5. Preserve emotional impact and clarity
+6. Provide a rationale explaining why your caption works
 
-Remember: The caption should ENHANCE the story, not duplicate it verbatim. Focus on the KEY INSIGHT or HOOK that will stop the scroll and drive engagement.
-
-Return your caption as a JSON object."""
-    
-    def _parse_response(self, response: str) -> str:
-        """
-        Parse and validate LLM response.
-        
-        Extracts JSON from response and validates caption text.
-        
-        Args:
-            response: Raw LLM response
-            
-        Returns:
-            Validated caption string
-            
-        Raises:
-            ExecutionError: If response is invalid
-        """
-        # Clean response - remove potential markdown code blocks
-        cleaned = response.strip()
-        if cleaned.startswith("```json"):
-            cleaned = cleaned[7:]
-        if cleaned.startswith("```"):
-            cleaned = cleaned[3:]
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3]
-        cleaned = cleaned.strip()
-        
-        # Parse JSON
-        try:
-            result = json.loads(cleaned)
-        except json.JSONDecodeError:
-            # Try to extract JSON from text
-            start_idx = cleaned.find("{")
-            end_idx = cleaned.rfind("}") + 1
-            if start_idx >= 0 and end_idx > start_idx:
-                result = json.loads(cleaned[start_idx:end_idx])
-            else:
-                raise ExecutionError("No valid JSON found in response")
-        
-        # Validate required field
-        if "caption" not in result:
-            raise ExecutionError("Missing 'caption' in response")
-        
-        # Validate caption
-        caption = result["caption"]
-        if not caption or not isinstance(caption, str) or not caption.strip():
-            raise ExecutionError("caption must be a non-empty string")
-        
-        # Check caption length
-        caption_stripped = caption.strip()
-        word_count = len(caption_stripped.split())
-        
-        if word_count > 12:
-            self.logger.warning(
-                f"Caption is too long ({word_count} words), truncating to first 10 words"
-            )
-            words = caption_stripped.split()[:10]
-            caption_stripped = " ".join(words)
-        
-        if len(caption_stripped) < 3:
-            self.logger.warning(f"Caption is very short ({len(caption_stripped)} chars)")
-        
-        if word_count > 10:
-            self.logger.warning(f"Caption exceeds ideal length ({word_count} words, ideal 3-8)")
-        
-        return caption_stripped
+Remember: The caption should ENHANCE the story, not duplicate it verbatim. Focus on the KEY INSIGHT or HOOK that will stop the scroll and drive engagement."""
 
 
 # Create singleton instance for easy import

@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     # AI Services
     anthropic_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
-    anthropic_model: str = "claude-sonnet-4-5"
+    anthropic_model: str = "claude-haiku-4-5"
     
     # Gemini image generation model configuration
     # Supported models:

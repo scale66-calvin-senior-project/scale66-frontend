@@ -149,10 +149,16 @@ class ImageGenerator(BaseAgent[ImageGeneratorInput, ImageGeneratorOutput]):
                 text_overlay=input_data.hook_slide_text,
                 is_hook=True
             )
-            hook_image = await self._generate_single_image(hook_prompt)
+            hook_image, hook_rationale = await self._generate_single_image(
+                prompt=hook_prompt,
+                story=input_data.hook_slide_story,
+                text_overlay=input_data.hook_slide_text,
+                is_hook=True
+            )
             
             # Generate body slide images with text
             body_images: List[str] = []
+            body_rationales: List[str] = []
             for i, (story, text) in enumerate(zip(
                 input_data.body_slides_story,
                 input_data.body_slides_text
@@ -163,19 +169,33 @@ class ImageGenerator(BaseAgent[ImageGeneratorInput, ImageGeneratorOutput]):
                     text_overlay=text,
                     is_hook=False
                 )
-                body_image = await self._generate_single_image(body_prompt)
+                body_image, body_rationale = await self._generate_single_image(
+                    prompt=body_prompt,
+                    story=story,
+                    text_overlay=text,
+                    is_hook=False
+                )
                 body_images.append(body_image)
+                body_rationales.append(body_rationale)
             
-            self.logger.debug(
+            # Combine all rationales for logging
+            all_rationales = [hook_rationale] + body_rationales
+            
+            self.logger.info(
                 f"Image generation completed: "
                 f"1 hook + {len(body_images)} body images (all with text rendered)"
             )
+            self.logger.info("Image Rationales:")
+            self.logger.info(f"  [0] Hook: {hook_rationale}")
+            for i, rationale in enumerate(body_rationales, 1):
+                self.logger.info(f"  [{i}] Body {i}: {rationale}")
             
             return ImageGeneratorOutput(
                 step_name="image_generator",
                 success=True,
                 hook_slide_image=hook_image,
                 body_slides_images=body_images,
+                images_rationale=all_rationales,
             )
             
         except GeminiServiceError as e:
@@ -254,30 +274,45 @@ class ImageGenerator(BaseAgent[ImageGeneratorInput, ImageGeneratorOutput]):
         
         return full_prompt
     
-    async def _generate_single_image(self, prompt: str) -> str:
+    async def _generate_single_image(
+        self, 
+        prompt: str, 
+        story: str, 
+        text_overlay: str,
+        is_hook: bool
+    ) -> tuple[str, str]:
         """
         Generate a single image using configured Gemini service.
         
         Args:
             prompt: Image generation prompt
+            story: Story context for rationale
+            text_overlay: Text being rendered
+            is_hook: Whether this is hook slide
             
         Returns:
-            Base64 encoded image string
+            Tuple of (base64 encoded image string, rationale)
             
         Raises:
             ExecutionError: If image generation fails
         """
         try:
             # Use 9:16 aspect ratio for Instagram/TikTok Stories/Reels
-            # Use 1K for balance of quality and generation speed
             # Note: gemini-3-pro-image-preview supports up to 4K resolution
             image_base64 = await self.gemini.generate_image(
                 prompt=prompt,
                 aspect_ratio="9:16",
-                image_size="1K",
+                image_size="2K",
             )
             
-            return image_base64
+            # Generate rationale for this image
+            slide_type = "hook" if is_hook else "body"
+            rationale = (
+                f"{slide_type.capitalize()} image generated with text '{text_overlay}' "
+                f"rendered in professional social media style, matching story context"
+            )
+            
+            return image_base64, rationale
             
         except GeminiServiceError as e:
             self.logger.error(f"Failed to generate image: {e}")

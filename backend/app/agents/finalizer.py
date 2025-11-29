@@ -19,7 +19,8 @@ from typing import List, Optional, Tuple
 from PIL import Image
 
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
-from app.models.pipeline import FinalizerInput, FinalizerOutput, SlideQualityMetrics
+from app.models.pipeline import FinalizerInput, FinalizerOutput, EvaluationMetrics
+from app.models.structured import ClaudeEvaluationOutput
 from app.models.brand_kit import BrandKit
 from app.core.config import settings
 from app.core.supabase import get_supabase_admin_client
@@ -56,6 +57,7 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
         - Hook and body slide images are not empty
         - Expected texts and stories for validation are valid
         - All arrays match in length
+        - Format type and complete story are provided
         
         Args:
             input_data: Finalizer input schema
@@ -63,6 +65,14 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
         Raises:
             ValidationError: If input is invalid
         """
+        # Validate format_type
+        if not input_data.format_type or not input_data.format_type.strip():
+            raise ValidationError("format_type cannot be empty")
+        
+        # Validate complete_story
+        if not input_data.complete_story or not input_data.complete_story.strip():
+            raise ValidationError("complete_story cannot be empty")
+        
         # Validate hook_slide_image
         if not input_data.hook_slide_image or not input_data.hook_slide_image.strip():
             raise ValidationError("hook_slide_image cannot be empty")
@@ -135,15 +145,15 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
     
     async def _execute(self, input_data: FinalizerInput) -> FinalizerOutput:
         """
-        Execute finalization logic - validate images and upload to storage.
+        Execute finalization logic - upload images and generate evaluation metrics.
         
-        Images already have text rendered. This step validates quality and uploads.
+        Images already have text rendered. This step uploads and evaluates.
         
         Args:
             input_data: Validated input data
             
         Returns:
-            Carousel ID, URLs, and quality metrics
+            Carousel ID, URLs, and evaluation metrics
             
         Raises:
             ExecutionError: If finalization fails
@@ -162,54 +172,40 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
                 self.logger.debug(f"Created local output directory: {local_output_dir}")
             
             total_slides = 1 + len(input_data.body_slides_images)
-            self.logger.debug(f"Validating and uploading {total_slides} slides")
+            self.logger.debug(f"Uploading {total_slides} slides")
             
-            # Process hook slide
-            self.logger.debug("Validating hook slide")
-            hook_metrics, hook_url = await self._validate_and_upload_slide(
+            # Upload hook slide
+            self.logger.debug("Uploading hook slide")
+            hook_url = await self._upload_slide(
                 image_base64=input_data.hook_slide_image,
-                expected_text=input_data.hook_slide_text,
-                story_context=input_data.hook_slide_story,
                 carousel_id=carousel_id,
                 slide_index=0,
-                is_hook=True,
-                brand_kit=input_data.brand_kit,
                 local_output_dir=local_output_dir,
             )
             
-            # Process body slides
-            body_metrics: List[SlideQualityMetrics] = []
+            # Upload body slides
             body_urls: List[str] = []
             
-            for i, (image, text, story) in enumerate(zip(
-                input_data.body_slides_images,
-                input_data.body_slides_text,
-                input_data.body_slides_story
-            )):
-                self.logger.debug(f"Validating body slide {i+1}/{len(input_data.body_slides_images)}")
-                metrics, url = await self._validate_and_upload_slide(
+            for i, image in enumerate(input_data.body_slides_images):
+                self.logger.debug(f"Uploading body slide {i+1}/{len(input_data.body_slides_images)}")
+                url = await self._upload_slide(
                     image_base64=image,
-                    expected_text=text,
-                    story_context=story,
                     carousel_id=carousel_id,
                     slide_index=i + 1,
-                    is_hook=False,
-                    brand_kit=input_data.brand_kit,
                     local_output_dir=local_output_dir,
                 )
-                body_metrics.append(metrics)
                 body_urls.append(url)
             
-            # Combine all URLs and metrics
+            # Combine all URLs
             all_urls = [hook_url] + body_urls
-            all_metrics = [hook_metrics] + body_metrics
             
-            # Calculate overall quality score
-            overall_quality = sum(m.image_quality_score for m in all_metrics) / len(all_metrics)
+            self.logger.debug(f"Upload completed: {len(all_urls)} slides")
             
-            self.logger.debug(
-                f"Finalization completed: {len(all_urls)} slides uploaded, "
-                f"overall quality: {overall_quality:.2f}"
+            # Generate comprehensive evaluation metrics using Claude Vision
+            self.logger.debug("Generating evaluation metrics")
+            evaluation_metrics = await self._generate_evaluation_metrics(
+                input_data=input_data,
+                carousel_id=carousel_id,
             )
             
             if settings.save_local_output:
@@ -220,44 +216,33 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
                 success=True,
                 carousel_id=carousel_id,
                 carousel_slides_urls=all_urls,
-                quality_metrics=all_metrics,
+                evaluation_metrics=evaluation_metrics,
             )
             
         except Exception as e:
             raise ExecutionError(f"Unexpected error during finalization: {str(e)}")
     
-    async def _validate_and_upload_slide(
+    async def _upload_slide(
         self,
         image_base64: str,
-        expected_text: str,
-        story_context: str,
         carousel_id: str,
         slide_index: int,
-        is_hook: bool,
-        brand_kit: BrandKit,
         local_output_dir: Optional[Path] = None,
-    ) -> Tuple[SlideQualityMetrics, str]:
+    ) -> str:
         """
-        Validate a single slide using Claude Vision and upload to storage.
-        
-        Image already has text rendered by Gemini 3 Pro.
-        This method validates quality and uploads.
+        Upload a single slide to storage.
         
         Args:
             image_base64: Base64 encoded image with text rendered
-            expected_text: The text that should be in the image
-            story_context: The story context for this slide
             carousel_id: Unique carousel identifier
             slide_index: Index of this slide (0 = hook, 1+ = body)
-            is_hook: Whether this is the hook slide
-            brand_kit: Brand kit for brand compliance validation
             local_output_dir: Optional directory to save image locally
             
         Returns:
-            Tuple of (quality_metrics, public_url)
+            Public URL of uploaded image
             
         Raises:
-            ExecutionError: If validation or upload fails
+            ExecutionError: If upload fails
         """
         try:
             # Decode base64 image
@@ -270,254 +255,170 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
                 image.save(local_path, format='PNG', optimize=True, quality=95)
                 self.logger.debug(f"Saved slide {slide_index} to: {local_path}")
             
-            # Validate image quality using Claude Vision
-            self.logger.debug(f"Validating slide {slide_index} quality")
-            quality_metrics = await self._validate_slide_quality(
-                image_base64=image_base64,
-                expected_text=expected_text,
-                story_context=story_context,
-                slide_index=slide_index,
-                is_hook=is_hook,
-                brand_kit=brand_kit,
-            )
-            
             # Upload to Supabase Storage
             file_path = f"carousels/{carousel_id}/slide_{slide_index}.png"
             public_url = await self._upload_to_storage(image_bytes, file_path)
             
-            self.logger.debug(
-                f"Slide {slide_index} validated (quality: {quality_metrics.image_quality_score:.2f}) "
-                f"and uploaded"
-            )
+            self.logger.debug(f"Slide {slide_index} uploaded")
             
-            return (quality_metrics, public_url)
+            return public_url
             
         except Exception as e:
-            self.logger.error(f"Failed to validate/upload slide {slide_index}: {e}")
-            raise ExecutionError(f"Failed to validate/upload slide {slide_index}: {str(e)}")
+            self.logger.error(f"Failed to upload slide {slide_index}: {e}")
+            raise ExecutionError(f"Failed to upload slide {slide_index}: {str(e)}")
     
-    async def _validate_slide_quality(
+    async def _generate_evaluation_metrics(
         self,
-        image_base64: str,
-        expected_text: str,
-        story_context: str,
-        slide_index: int,
-        is_hook: bool,
-        brand_kit: BrandKit,
-    ) -> SlideQualityMetrics:
+        input_data: FinalizerInput,
+        carousel_id: str,
+    ) -> EvaluationMetrics:
         """
-        Validate slide quality using Claude Vision.
+        Generate comprehensive evaluation metrics for the entire pipeline.
         
-        Checks text readability, accuracy, image quality, and brand alignment.
+        Uses Claude to evaluate format appropriateness, story quality, text quality,
+        image quality, and brand alignment.
         
         Args:
-            image_base64: Base64 encoded image to validate
-            expected_text: The text that should appear in the image
-            story_context: The story context for this slide
-            slide_index: Index of this slide
-            is_hook: Whether this is the hook slide
-            brand_kit: Brand kit for brand compliance
+            input_data: Complete finalizer input with all pipeline outputs
+            carousel_id: Carousel ID for reference
             
         Returns:
-            SlideQualityMetrics with validation results
+            EvaluationMetrics with detailed assessments
             
         Raises:
-            ExecutionError: If validation fails
+            ExecutionError: If evaluation fails
         """
         try:
-            # Build validation prompt
-            validation_prompt = self._build_validation_prompt(
-                expected_text=expected_text,
-                story_context=story_context,
-                is_hook=is_hook,
-                brand_kit=brand_kit,
+            # Build comprehensive evaluation prompt
+            evaluation_prompt = self._build_evaluation_prompt(input_data)
+            
+            # Call Claude with structured output for guaranteed valid response
+            self.logger.debug("Calling Claude for pipeline evaluation with structured output")
+            evaluation_output = await self.anthropic.generate_structured_output(
+                prompt=evaluation_prompt,
+                output_model=ClaudeEvaluationOutput,
+                max_tokens=4096,
+                temperature=0.3,
             )
             
-            # Convert base64 to data URL for Claude Vision
-            image_data_url = f"data:image/png;base64,{image_base64}"
-            
-            # Call Claude Vision
-            response = await self.anthropic.analyze_image(
-                image_url=image_data_url,
-                prompt=validation_prompt,
-                max_tokens=1000,
+            # Convert ClaudeEvaluationOutput to EvaluationMetrics
+            metrics = EvaluationMetrics(
+                format_type_evaluation=evaluation_output.format_type_evaluation,
+                hook_slide_story_evaluation=evaluation_output.hook_slide_story_evaluation,
+                body_slides_story_evaluation=evaluation_output.body_slides_story_evaluation,
+                complete_story_evaluation=evaluation_output.complete_story_evaluation,
+                hook_slide_text_evaluation=evaluation_output.hook_slide_text_evaluation,
+                body_slides_text_evaluation=evaluation_output.body_slides_text_evaluation,
+                hook_slide_image_evaluation=evaluation_output.hook_slide_image_evaluation,
+                body_slides_images_evaluation=evaluation_output.body_slides_images_evaluation,
+                brand_kit_evaluation=evaluation_output.brand_kit_evaluation,
             )
             
-            # Parse validation response
-            metrics = self._parse_validation_response(
-                response=response,
-                slide_index=slide_index,
-                expected_text=expected_text,
-            )
+            self.logger.info("Evaluation metrics generated successfully")
             
             return metrics
             
         except AnthropicServiceError as e:
-            self.logger.error(f"Claude Vision validation failed: {e}")
-            # Return default metrics on failure (MVP: accept all)
-            return SlideQualityMetrics(
-                slide_index=slide_index,
-                text_readable=True,
-                text_matches_expected=True,
-                text_accuracy_score=0.5,
-                image_quality_score=0.5,
-                brand_alignment_score=None,
-                issues=["Validation failed - using default metrics"],
-                suggestions=[],
-            )
+            self.logger.error(f"Evaluation generation failed: {e}")
+            # Return default metrics on failure
+            return self._get_default_evaluation_metrics()
         except Exception as e:
-            self.logger.error(f"Unexpected validation error: {e}")
-            return SlideQualityMetrics(
-                slide_index=slide_index,
-                text_readable=True,
-                text_matches_expected=True,
-                text_accuracy_score=0.5,
-                image_quality_score=0.5,
-                brand_alignment_score=None,
-                issues=[f"Validation error: {str(e)}"],
-                suggestions=[],
-            )
+            self.logger.error(f"Unexpected evaluation error: {e}")
+            return self._get_default_evaluation_metrics()
     
-    def _build_validation_prompt(
-        self,
-        expected_text: str,
-        story_context: str,
-        is_hook: bool,
-        brand_kit: BrandKit,
-    ) -> str:
+    def _build_evaluation_prompt(self, input_data: FinalizerInput) -> str:
         """
-        Build validation prompt for Claude Vision.
+        Build comprehensive evaluation prompt for Claude.
         
         Args:
-            expected_text: Text that should be in the image
-            story_context: Story context for this slide
-            is_hook: Whether this is the hook slide
-            brand_kit: Brand kit for compliance checking
+            input_data: Complete finalizer input
             
         Returns:
-            Validation prompt string
+            Evaluation prompt string
         """
         brand_info = ""
-        if brand_kit:
+        if input_data.brand_kit:
             brand_info = f"""
 BRAND CONTEXT:
-- Brand Name: {brand_kit.brand_name}
-- Brand Style: {brand_kit.brand_style}
-- Brand Niche: {brand_kit.brand_niche}
-"""
+- Brand Name: {input_data.brand_kit.brand_name}
+- Brand Style: {input_data.brand_kit.brand_style}
+- Brand Niche: {input_data.brand_kit.brand_niche}
+- Product/Service: {input_data.brand_kit.product_service_desc}"""
         
-        slide_type = "HOOK SLIDE (first slide)" if is_hook else "BODY SLIDE"
+        total_slides = 1 + len(input_data.body_slides_images)
         
-        return f"""You are a quality assurance expert for social media carousel images. Analyze this {slide_type} and provide detailed quality metrics.
+        return f"""You are a social media content quality analyst. Evaluate this carousel content across all pipeline stages.
 
-EXPECTED TEXT: "{expected_text}"
-STORY CONTEXT: "{story_context}"
+CAROUSEL SPECIFICATIONS:
+- Format Type: {input_data.format_type}
+- Total Slides: {total_slides}
 {brand_info}
 
-VALIDATION TASKS:
+COMPLETE STORY:
+"{input_data.complete_story}"
 
-1. TEXT READABILITY:
-   - Is the text clearly visible and readable on mobile?
-   - Is there sufficient contrast between text and background?
-   - Is the text size appropriate for quick scanning?
+HOOK SLIDE:
+- Story: "{input_data.hook_slide_story}"
+- Text: "{input_data.hook_slide_text}"
 
-2. TEXT ACCURACY:
-   - Extract the text you see in the image
-   - Compare it to the expected text: "{expected_text}"
-   - Calculate similarity (0-1, where 1 = perfect match)
+BODY SLIDES:
+{chr(10).join(f"- Slide {i+1} Story: \"{story}\"" for i, story in enumerate(input_data.body_slides_story))}
 
-3. IMAGE QUALITY:
-   - Overall visual quality and professionalism
-   - Image clarity and resolution
-   - Composition and visual appeal
-   - Appropriate for Instagram/TikTok
+{chr(10).join(f"- Slide {i+1} Text: \"{text}\"" for i, text in enumerate(input_data.body_slides_text))}
 
-4. BRAND ALIGNMENT:
-   - Does the visual style match the brand style?
-   - Is it appropriate for the brand niche?
-   - Professional and on-brand appearance?
+EVALUATION TASKS:
 
-5. ISSUES & SUGGESTIONS:
-   - List any problems or concerns
-   - Suggest improvements
+1. FORMAT TYPE EVALUATION:
+   - Is the chosen format ({input_data.format_type}) appropriate for this content?
+   - Does it align with the complete story and brand?
 
-OUTPUT FORMAT (JSON only):
-{{
-  "text_readable": true/false,
-  "extracted_text": "the text you see in the image",
-  "text_accuracy_score": 0.0-1.0,
-  "image_quality_score": 0.0-1.0,
-  "brand_alignment_score": 0.0-1.0 or null,
-  "issues": ["issue 1", "issue 2"],
-  "suggestions": ["suggestion 1", "suggestion 2"]
-}}
+2. STORY QUALITY EVALUATION:
+   - Hook Story: Is it attention-grabbing and aligned with format?
+   - Body Stories: Do they follow the format structure? Are they cohesive?
+   - Complete Story: Does it tie everything together effectively?
 
-Provide detailed, actionable feedback. Be honest but constructive."""
+3. TEXT QUALITY EVALUATION:
+   - Hook Text: Is it punchy, scroll-stopping, and under 10 words?
+   - Body Texts: Are they concise, clear, and aligned with stories?
+
+4. IMAGE EVALUATION (without seeing images):
+   - Based on the texts and stories, assess if the content is appropriate for image generation
+   - Are the texts suitable for text overlay rendering?
+
+5. BRAND ALIGNMENT EVALUATION:
+   - Does the overall content match the brand style and niche?
+   - Is the messaging appropriate for the target audience?
+
+OUTPUT REQUIREMENTS:
+- format_type_evaluation: Assessment of format appropriateness
+- hook_slide_story_evaluation: Assessment of hook story quality
+- body_slides_story_evaluation: List of assessments for each body story (must match number of body slides)
+- complete_story_evaluation: Assessment of complete story coherence
+- hook_slide_text_evaluation: Assessment of hook text quality
+- body_slides_text_evaluation: List of assessments for each body text (must match number of body slides)
+- hook_slide_image_evaluation: Assessment of hook image suitability
+- body_slides_images_evaluation: List of assessments for each body image (must match number of body slides)
+- brand_kit_evaluation: Assessment of overall brand alignment
+
+Provide detailed, actionable feedback. Be constructive and specific."""
     
-    def _parse_validation_response(
-        self,
-        response: str,
-        slide_index: int,
-        expected_text: str,
-    ) -> SlideQualityMetrics:
+    def _get_default_evaluation_metrics(self) -> EvaluationMetrics:
         """
-        Parse Claude Vision validation response.
+        Get default evaluation metrics when evaluation fails.
         
-        Args:
-            response: Raw response from Claude Vision
-            slide_index: Index of this slide
-            expected_text: Expected text for fallback
-            
         Returns:
-            SlideQualityMetrics
+            Default EvaluationMetrics
         """
-        import json
-        
-        # Clean response
-        cleaned = response.strip()
-        if cleaned.startswith("```json"):
-            cleaned = cleaned[7:]
-        if cleaned.startswith("```"):
-            cleaned = cleaned[3:]
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3]
-        cleaned = cleaned.strip()
-        
-        # Parse JSON
-        try:
-            result = json.loads(cleaned)
-        except json.JSONDecodeError:
-            # Try to extract JSON
-            start_idx = cleaned.find("{")
-            end_idx = cleaned.rfind("}") + 1
-            if start_idx >= 0 and end_idx > start_idx:
-                result = json.loads(cleaned[start_idx:end_idx])
-            else:
-                # Return default metrics
-                return SlideQualityMetrics(
-                    slide_index=slide_index,
-                    text_readable=True,
-                    text_matches_expected=True,
-                    text_accuracy_score=0.7,
-                    image_quality_score=0.7,
-                    brand_alignment_score=None,
-                    issues=["Could not parse validation response"],
-                    suggestions=[],
-                )
-        
-        # Extract text match
-        extracted_text = result.get("extracted_text", "")
-        text_matches = extracted_text.lower().strip() == expected_text.lower().strip()
-        
-        return SlideQualityMetrics(
-            slide_index=slide_index,
-            text_readable=result.get("text_readable", True),
-            text_matches_expected=text_matches,
-            text_accuracy_score=result.get("text_accuracy_score", 0.7),
-            image_quality_score=result.get("image_quality_score", 0.7),
-            brand_alignment_score=result.get("brand_alignment_score"),
-            issues=result.get("issues", []),
-            suggestions=result.get("suggestions", []),
+        return EvaluationMetrics(
+            format_type_evaluation="Evaluation not available - pipeline completed successfully",
+            hook_slide_story_evaluation="Evaluation not available",
+            body_slides_story_evaluation=["Evaluation not available"],
+            complete_story_evaluation="Evaluation not available",
+            hook_slide_text_evaluation="Evaluation not available",
+            body_slides_text_evaluation=["Evaluation not available"],
+            hook_slide_image_evaluation="Evaluation not available",
+            body_slides_images_evaluation=["Evaluation not available"],
+            brand_kit_evaluation="Evaluation not available",
         )
     
     async def _upload_to_storage(self, image_bytes: bytes, file_path: str) -> str:

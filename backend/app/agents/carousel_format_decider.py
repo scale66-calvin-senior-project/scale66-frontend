@@ -7,12 +7,12 @@ Input: CarouselFormatDeciderInput (user_prompt, brand_kit)
 Output: CarouselFormatDeciderOutput (format_type, num_slides, format_rationale)
 """
 
-import json
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from enum import Enum
 
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
 from app.models.pipeline import CarouselFormatDeciderInput, CarouselFormatDeciderOutput
+from app.models.structured import ClaudeFormatDecisionOutput
 from app.services.ai.anthropic_service import AnthropicServiceError
 
 
@@ -131,35 +131,29 @@ class CarouselFormatDecider(BaseAgent[CarouselFormatDeciderInput, CarouselFormat
             
             self.logger.debug(f"Requesting format decision from Claude")
             
-            # Call Claude with lower temperature for consistent decisions
-            response = await self.anthropic.generate_text(
+            # Call Claude with structured output for guaranteed valid response
+            format_output = await self.anthropic.generate_structured_output(
                 prompt=full_prompt,
+                output_model=ClaudeFormatDecisionOutput,
                 max_tokens=1000,
                 temperature=0.3,
             )
             
-            # Parse and validate response
-            decision = self._parse_response(response)
-            
             self.logger.debug(
-                f"Format decision: {decision['format_type']} "
-                f"({decision['num_slides']} slides)"
+                f"Format decision: {format_output.format_type} "
+                f"({format_output.num_slides} slides)"
             )
             
             return CarouselFormatDeciderOutput(
                 step_name="carousel_format_decider",
                 success=True,
-                format_type=decision["format_type"],
-                num_slides=decision["num_slides"],
-                format_rationale=decision["format_rationale"],
+                format_type=format_output.format_type,
+                num_slides=format_output.num_slides,
+                format_rationale=format_output.format_rationale,
             )
             
         except AnthropicServiceError as e:
             raise ExecutionError(f"LLM service error: {str(e)}")
-        except json.JSONDecodeError as e:
-            raise ExecutionError(f"Failed to parse LLM response: {str(e)}")
-        except KeyError as e:
-            raise ExecutionError(f"Missing required field in response: {str(e)}")
         except Exception as e:
             raise ExecutionError(f"Unexpected error during execution: {str(e)}")
     
@@ -194,15 +188,10 @@ DECISION CRITERIA:
 - Optimize for social media engagement patterns
 - Simpler concepts = fewer slides (3-5), complex topics = more slides (6-10)
 
-OUTPUT FORMAT:
-You must respond with ONLY a valid JSON object in this exact format:
-{{
-  "format_type": "<one of the format values from above>",
-  "num_slides": <integer between 3 and 10>,
-  "format_rationale": "<2-3 sentence explanation of why this format works best>"
-}}
-
-Do not include any text outside the JSON object. Do not use markdown code blocks."""
+OUTPUT REQUIREMENTS:
+- format_type: One of the format values from above
+- num_slides: Integer between 3 and 10
+- format_rationale: 2-3 sentence explanation of why this format works best for this content and brand"""
     
     def _build_user_prompt(self, input_data: CarouselFormatDeciderInput) -> str:
         """
@@ -229,86 +218,7 @@ BRAND CONTEXT:
 - Customer Pain Points: {pain_points}
 - Product/Service Description: {brand_kit.product_service_desc}
 
-Based on this content request and brand context, recommend the optimal carousel format. Return your decision as a JSON object."""
-    
-    def _parse_response(self, response: str) -> Dict[str, Any]:
-        """
-        Parse and validate LLM response.
-        
-        Extracts JSON from response and validates required fields.
-        
-        Args:
-            response: Raw LLM response
-            
-        Returns:
-            Validated decision dictionary
-            
-        Raises:
-            ExecutionError: If response is invalid
-        """
-        # Clean response - remove potential markdown code blocks
-        cleaned = response.strip()
-        if cleaned.startswith("```json"):
-            cleaned = cleaned[7:]
-        if cleaned.startswith("```"):
-            cleaned = cleaned[3:]
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3]
-        cleaned = cleaned.strip()
-        
-        # Parse JSON
-        try:
-            decision = json.loads(cleaned)
-        except json.JSONDecodeError:
-            # Try to extract JSON from text
-            start_idx = cleaned.find("{")
-            end_idx = cleaned.rfind("}") + 1
-            if start_idx >= 0 and end_idx > start_idx:
-                decision = json.loads(cleaned[start_idx:end_idx])
-            else:
-                raise ExecutionError("No valid JSON found in response")
-        
-        # Validate required fields
-        if "format_type" not in decision:
-            raise ExecutionError("Missing 'format_type' in response")
-        if "num_slides" not in decision:
-            raise ExecutionError("Missing 'num_slides' in response")
-        if "format_rationale" not in decision:
-            raise ExecutionError("Missing 'format_rationale' in response")
-        
-        # Validate format_type
-        format_type = decision["format_type"]
-        valid_formats = [fmt.value for fmt in CarouselFormat]
-        if format_type not in valid_formats:
-            self.logger.warning(
-                f"Invalid format_type '{format_type}', defaulting to 'top_5'"
-            )
-            decision["format_type"] = CarouselFormat.TOP_5.value
-        
-        # Validate and clamp num_slides
-        try:
-            num_slides = int(decision["num_slides"])
-            if num_slides < 3:
-                self.logger.warning(f"num_slides {num_slides} too low, clamping to 3")
-                num_slides = 3
-            elif num_slides > 10:
-                self.logger.warning(f"num_slides {num_slides} too high, clamping to 10")
-                num_slides = 10
-            decision["num_slides"] = num_slides
-        except (ValueError, TypeError):
-            self.logger.warning("Invalid num_slides, defaulting to 5")
-            decision["num_slides"] = 5
-        
-        # Validate rationale
-        rationale = decision["format_rationale"]
-        if not rationale or not isinstance(rationale, str) or len(rationale.strip()) < 10:
-            self.logger.warning("Invalid or missing rationale, generating default")
-            decision["format_rationale"] = (
-                f"Selected {decision['format_type']} format based on content analysis "
-                f"and brand alignment."
-            )
-        
-        return decision
+Based on this content request and brand context, recommend the optimal carousel format that will drive maximum engagement."""
 
 
 # Create singleton instance for easy import

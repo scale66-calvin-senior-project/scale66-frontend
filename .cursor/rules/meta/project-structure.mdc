@@ -5,311 +5,217 @@ alwaysApply: true
 
 # Project Structure
 
-This is a monorepo containing a FastAPI backend and Next.js frontend for a social media content generation platform.
+Monorepo: FastAPI backend + Next.js frontend for social media content generation.
 
-## Root Directory Structure
+## Root Structure
 
 ```
 scale66/
-├── backend/              # Python FastAPI backend
-├── frontend/             # Next.js TypeScript frontend
-├── figma-design/         # UI/UX design references
-└── README.md             # Project documentation
+├── backend/    # Python FastAPI
+├── frontend/   # Next.js TypeScript
+├── figma-design/
+└── README.md
 ```
 
-## Backend Structure (Python + FastAPI)
+## Backend (Python + FastAPI)
 
 ```
 backend/
-├── main.py                      # FastAPI application entry point
-├── pyproject.toml               # Python dependencies (uv package manager)
-├── pyrightconfig.json           # Python type checking configuration
-├── uv.lock                      # Dependency lock file
-├── output/                      # Generated content output directory
+├── main.py                  # Entry point
+├── pyproject.toml           # Dependencies (uv)
+├── output/                  # Generated content
 └── app/
-    ├── agents/                  # AI agent pipeline
-    │   ├── base_agent.py               # Base agent interface
-    │   ├── orchestrator.py             # Agent coordination
-    │   ├── story_generator.py          # Story creation agent
-    │   ├── text_generator.py           # Text content agent
-    │   ├── image_generator.py          # Image generation agent
-    │   ├── carousel_format_decider.py  # Format decision agent
-    │   └── finalizer.py                # Final processing agent
+    ├── agents/              # AI pipeline
+    │   ├── base_agent.py
+    │   ├── orchestrator.py
+    │   ├── story_generator.py
+    │   ├── text_generator.py
+    │   ├── image_generator.py
+    │   ├── carousel_format_decider.py
+    │   └── finalizer.py
     │
-    ├── api/                     # REST API endpoints
-    │   ├── deps.py                     # Dependency injection
-    │   └── v1/                         # API version 1
-    │       ├── brand_kit.py            # Brand kit endpoints
-    │       ├── campaigns.py            # Campaign management
-    │       ├── content.py              # Content generation
-    │       ├── payment.py              # Payment processing
-    │       ├── posts.py                # Post management
-    │       └── social.py               # Social media integration
+    ├── api/v1/              # REST endpoints
+    │   ├── brand_kit.py
+    │   ├── campaigns.py
+    │   ├── content.py
+    │   ├── posts.py
+    │   └── ...
     │
-    ├── core/                    # Core application setup
-    │   ├── config.py                   # Configuration management
-    │   ├── logging.py                  # Logging setup
-    │   ├── security.py                 # Authentication & authorization
-    │   └── supabase.py                 # Supabase client setup
+    ├── core/                # App setup
+    │   ├── config.py
+    │   ├── logging.py
+    │   ├── security.py
+    │   └── supabase.py
     │
-    ├── crud/                    # Database operations
-    │   ├── base.py                     # Base CRUD operations
-    │   ├── brand_kit.py                # Brand kit CRUD
-    │   ├── campaign.py                 # Campaign CRUD
-    │   ├── post.py                     # Post CRUD
-    │   ├── session.py                  # Session CRUD
-    │   └── user.py                     # User CRUD
+    ├── crud/                # Database ops
+    │   ├── base.py
+    │   ├── brand_kit.py
+    │   ├── campaign.py
+    │   └── ...
     │
-    ├── models/                  # Pydantic data models
-    │   ├── brand_kit.py                # Brand kit schemas
-    │   ├── campaign.py                 # Campaign schemas
-    │   ├── common.py                   # Shared schemas
-    │   ├── content.py                  # Content schemas
-    │   ├── payment.py                  # Payment schemas
-    │   ├── pipeline.py                 # Pipeline schemas
-    │   ├── post.py                     # Post schemas
-    │   ├── social.py                   # Social media schemas
-    │   └── user.py                     # User schemas
+    ├── models/              # Pydantic schemas
+    │   ├── pipeline.py
+    │   ├── brand_kit.py
+    │   └── ...
     │
-    ├── services/                # Business logic & external services
-    │   ├── ai/                         # AI service integrations
-    │   │   ├── anthropic_service.py    # Claude/Anthropic API
-    │   │   └── gemini_service.py       # Google Gemini API
-    │   ├── email_service.py            # Email functionality
-    │   ├── image_overlay_service.py    # Image processing
-    │   ├── social_media_service.py     # Social platform APIs
-    │   ├── storage_service.py          # File storage (Supabase)
-    │   └── stripe_service.py           # Payment processing
+    ├── services/            # Business logic
+    │   ├── ai/
+    │   │   ├── anthropic_service.py
+    │   │   └── gemini_service.py
+    │   ├── storage_service.py
+    │   ├── stripe_service.py
+    │   └── ...
     │
-    └── utils/                   # Utility functions
-        ├── file_handlers.py            # File operations
-        ├── formatters.py               # Data formatting
-        └── validators.py               # Input validation
+    └── utils/
 ```
 
-### Backend Key Files
+**Key Backend Files:**
 
-- `main.py` - Application entry point, FastAPI app initialization
-- `app/agents/orchestrator.py` - Coordinates AI agent pipeline
-- `app/core/config.py` - Environment variables and settings
-- `app/api/v1/*.py` - API route definitions
+- `main.py` - FastAPI app initialization
+- `app/agents/orchestrator.py` - AI pipeline coordination
+- `app/core/config.py` - Environment variables
+- `app/api/v1/*.py` - API routes
 
-## Frontend Structure (Next.js + TypeScript)
+## Frontend (Next.js + TypeScript)
 
 ```
 frontend/
-├── package.json                # NPM dependencies
-├── next.config.ts              # Next.js configuration
-├── tsconfig.json               # TypeScript configuration
-├── eslint.config.mjs           # ESLint configuration
-├── public/                     # Static assets
-│   ├── favicon.ico
-│   └── logo.png
+├── package.json
+├── next.config.ts
 └── src/
-    ├── app/                    # Next.js App Router
-    │   ├── layout.tsx                  # Root layout
-    │   ├── globals.css                 # Global styles
+    ├── app/                        # Next.js App Router
+    │   ├── (landing)/              # Marketing pages
+    │   │   ├── page.tsx
+    │   │   ├── blog/
+    │   │   ├── support/
+    │   │   └── waitlist/
     │   │
-    │   ├── (landing)/                  # Landing page group
-    │   │   ├── page.tsx                # Home page
-    │   │   ├── layout.tsx              # Landing layout
-    │   │   ├── blog/                   # Blog pages
-    │   │   ├── privacy-policy/         # Legal pages
-    │   │   ├── terms-conditions/
-    │   │   ├── support/                # Support page
-    │   │   └── waitlist/               # Waitlist page
+    │   ├── (auth)/                 # Auth pages
+    │   │   ├── login/
+    │   │   └── signup/
     │   │
-    │   ├── (auth)/                     # Authentication group
-    │   │   ├── layout.tsx              # Auth layout
-    │   │   ├── login/                  # Login page
-    │   │   └── signup/                 # Signup page
-    │   │
-    │   └── (app)/                      # Authenticated app group
-    │       ├── layout.tsx              # App layout
-    │       ├── dashboard/              # Dashboard page
-    │       ├── brand-kit/              # Brand kit management
-    │       ├── campaigns/              # Campaign management
-    │       ├── canvas/[id]/            # Canvas editor (dynamic route)
-    │       ├── onboarding/             # User onboarding
-    │       └── settings/               # User settings
+    │   └── (app)/                  # Authenticated app
+    │       ├── dashboard/
+    │       ├── brand-kit/
+    │       ├── campaigns/
+    │       ├── canvas/[id]/
+    │       └── settings/
     │
-    ├── components/             # Reusable components
-    │   ├── ui/                         # Base UI components
-    │   │   ├── Button/                 # Button component
-    │   │   ├── Card/                   # Card component
-    │   │   ├── Checkbox/               # Checkbox component
-    │   │   ├── Dropdown/               # Dropdown component
-    │   │   ├── Input/                  # Input component
-    │   │   ├── Modal/                  # Modal component
-    │   │   ├── Spinner/                # Loading spinner
-    │   │   └── TextArea/               # TextArea component
-    │   │
-    │   ├── common/                     # Common components
-    │   │   ├── EmptyState/             # Empty state display
-    │   │   ├── ErrorBoundary/          # Error handling
-    │   │   ├── LoadingSpinner/         # Loading indicator
-    │   │   └── SuccessMessage/         # Success feedback
-    │   │
-    │   └── layouts/                    # Layout components
-    │       ├── AppLayout/              # Main app layout
-    │       ├── AuthLayout/             # Authentication layout
-    │       └── LandingLayout/          # Landing page layout
-    │           ├── Navbar.tsx          # Navigation bar
-    │           └── Footer.tsx          # Footer
+    ├── components/
+    │   ├── ui/                     # Base components
+    │   │   ├── Button/
+    │   │   ├── Input/
+    │   │   ├── Modal/
+    │   │   └── ...
+    │   ├── common/                 # Shared business components
+    │   └── layouts/                # Page layouts
     │
-    ├── features/               # Feature-based modules
-    │   ├── auth/                       # Authentication feature
-    │   │   ├── components/             # Auth-specific components
-    │   │   │   ├── LoginForm/
-    │   │   │   ├── SignupForm/
-    │   │   │   ├── SocialAuthButtons/
-    │   │   │   └── AuthToggle/
-    │   │   ├── hooks/                  # Auth hooks
-    │   │   ├── services/               # Auth services
-    │   │   └── types/                  # Auth types
-    │   │
-    │   ├── brand-kit/                  # Brand kit feature
-    │   ├── campaigns/                  # Campaign management
-    │   ├── canvas/                     # Canvas editor
-    │   ├── dashboard/                  # Dashboard
-    │   ├── onboarding/                 # User onboarding
-    │   ├── payment/                    # Payment processing
-    │   ├── posting/                    # Post management
-    │   ├── settings/                   # User settings
-    │   │
-    │   └── landing/                    # Landing page features
-    │       ├── landing-page/           # Home page sections
-    │       ├── blog/                   # Blog components
-    │       ├── legal/                  # Legal page components
-    │       ├── support/                # Support components
-    │       └── waitlist/               # Waitlist components
+    ├── features/                   # Feature modules
+    │   ├── auth/
+    │   │   ├── components/
+    │   │   ├── hooks/
+    │   │   ├── services/
+    │   │   ├── types/
+    │   │   └── index.ts
+    │   ├── brand-kit/
+    │   ├── campaigns/
+    │   ├── canvas/
+    │   ├── dashboard/
+    │   ├── onboarding/
+    │   ├── payment/
+    │   ├── posting/
+    │   ├── settings/
+    │   └── landing/                # Landing features
     │
-    ├── context/                # React Context providers
-    │   ├── AuthContext.tsx             # Authentication state
-    │   ├── BrandContext.tsx            # Brand kit state
-    │   └── ThemeContext.tsx            # Theme state
+    ├── context/                    # React Context
+    │   ├── AuthContext.tsx
+    │   ├── BrandContext.tsx
+    │   └── ThemeContext.tsx
     │
-    ├── hooks/                  # Shared React hooks
-    │   ├── useAuth.ts                  # Authentication hook
-    │   ├── useUser.ts                  # User data hook
-    │   ├── useDebounce.ts              # Debounce utility
-    │   ├── useLocalStorage.ts          # Local storage hook
-    │   └── useMediaQuery.ts            # Responsive design hook
+    ├── hooks/                      # Shared hooks
+    │   ├── useAuth.ts
+    │   ├── useDebounce.ts
+    │   └── ...
     │
-    ├── services/               # External service integrations
-    │   └── api/                        # API client
-    │       ├── client.ts               # HTTP client setup
-    │       └── interceptors.ts         # Request/response interceptors
+    ├── services/api/               # API client
+    │   ├── client.ts
+    │   └── interceptors.ts
     │
-    ├── lib/                    # Third-party library configs
-    │   ├── supabase.ts                 # Supabase client
-    │   └── stripe.ts                   # Stripe client
+    ├── lib/                        # Third-party configs
+    │   ├── supabase.ts
+    │   └── stripe.ts
     │
-    ├── types/                  # TypeScript type definitions
-    │   ├── api.types.ts                # API response types
-    │   ├── brand.types.ts              # Brand types
-    │   ├── campaign.types.ts           # Campaign types
-    │   ├── post.types.ts               # Post types
-    │   └── user.types.ts               # User types
+    ├── types/                      # TypeScript types
+    │   ├── api.types.ts
+    │   ├── brand.types.ts
+    │   └── ...
     │
-    ├── data/                   # Static data
-    │   ├── brandStyles.ts              # Brand style presets
-    │   ├── pricingPlans.ts             # Pricing information
-    │   └── socialPlatforms.ts          # Social platform configs
-    │
-    ├── utils/                  # Utility functions
-    │   ├── constants.ts                # App constants
-    │   ├── date.ts                     # Date utilities
-    │   ├── formatters.ts               # Data formatting
-    │   ├── storage.ts                  # Storage utilities
-    │   └── validation.ts               # Input validation
-    │
-    ├── styles/                 # Global styles
-    │   ├── variables.css               # CSS variables
-    │   └── utilities.css               # Utility classes
-    │
-    └── middleware.ts           # Next.js middleware (auth, routing)
+    ├── data/                       # Static data
+    ├── utils/                      # Utility functions
+    ├── styles/                     # Global styles
+    └── middleware.ts               # Auth/routing
 ```
 
-### Frontend Key Files
+**Key Frontend Files:**
 
 - `src/app/layout.tsx` - Root layout with providers
-- `src/middleware.ts` - Route protection and authentication
-- `src/lib/supabase.ts` - Supabase client configuration
+- `src/middleware.ts` - Route protection
+- `src/lib/supabase.ts` - Supabase client
 - `src/services/api/client.ts` - Backend API client
 
-## Component Organization Pattern
+## Organizational Patterns
 
-Each component follows a consistent structure:
+### Component Structure
 
 ```
 ComponentName/
-├── ComponentName.tsx           # Component implementation
-├── ComponentName.module.css    # Scoped CSS module
-└── index.ts                    # Re-export for clean imports
+├── ComponentName.tsx
+├── ComponentName.module.css
+└── index.ts
 ```
 
-## Feature Module Pattern
-
-Each feature follows a consistent structure:
+### Feature Module Structure
 
 ```
 feature-name/
-├── components/                 # Feature-specific components
-├── hooks/                      # Feature-specific hooks
-├── services/                   # Feature API services
-├── types/                      # Feature type definitions
-└── index.ts                    # Feature exports
-```
-
-## Important Configuration Files
-
-### Backend
-- `pyproject.toml` - Python dependencies and project metadata
-- `pyrightconfig.json` - Type checking configuration
-- `app/core/config.py` - Environment variables and settings
-
-### Frontend
-- `package.json` - NPM dependencies and scripts
-- `next.config.ts` - Next.js build and runtime configuration
-- `tsconfig.json` - TypeScript compiler options
-- `src/config/env.ts` - Environment variable validation
-
-## Design Assets
-
-```
-figma-design/
-├── onboarding-1.png through onboarding-7.png  # Onboarding flow mockups
+├── components/
+├── hooks/
+├── services/
+├── types/
+└── index.ts
 ```
 
 ## Key Architectural Patterns
 
-1. **Backend**: Clean architecture with separation of concerns (agents, API, CRUD, models, services)
-2. **Frontend**: Feature-based organization with shared components, hooks, and utilities
-3. **API Communication**: RESTful API with versioning (v1)
-4. **Authentication**: Supabase Auth with JWT tokens
-5. **Styling**: CSS Modules for component-scoped styles
-6. **Type Safety**: TypeScript (frontend) and Pydantic (backend)
-7. **State Management**: React Context API for global state
+1. **Backend:** Clean architecture (agents, API, CRUD, models, services)
+2. **Frontend:** Feature-based with shared components/hooks/utils
+3. **API:** RESTful with versioning (v1)
+4. **Auth:** Supabase Auth with JWT
+5. **Styling:** CSS Modules (component-scoped)
+6. **Type Safety:** TypeScript (frontend) + Pydantic (backend)
+7. **State:** React Context API
 
-## Navigation Guidelines
+## Navigation
 
-- Backend API routes: `backend/app/api/v1/`
+- Backend API: `backend/app/api/v1/`
 - Frontend pages: `frontend/src/app/`
-- Shared UI components: `frontend/src/components/ui/`
-- Feature modules: `frontend/src/features/{feature-name}/`
-- Business logic: `backend/app/services/` and `frontend/src/features/{feature-name}/services/`
-- Data models: `backend/app/models/` and `frontend/src/types/`
-- Configuration: `backend/app/core/config.py` and `frontend/src/config/`
+- UI components: `frontend/src/components/ui/`
+- Features: `frontend/src/features/{feature-name}/`
+- Backend services: `backend/app/services/`
+- Frontend services: `frontend/src/features/{feature-name}/services/`
+- Models: `backend/app/models/` + `frontend/src/types/`
+- Config: `backend/app/core/config.py` + `frontend/src/config/`
 
-## Module Import Patterns
+## Import Patterns
 
 ### Frontend
-- Always use barrel exports (index.ts) for cleaner imports
+
+- Use barrel exports (index.ts)
 - Import from feature modules, not individual files
 - Use absolute imports from `src/` when configured
 
 ### Backend
-- Use relative imports within the same module
-- Import from `app.` prefix for cross-module imports
-- Follow Python package structure with `__init__.py`
+
+- Relative imports within same module
+- `app.` prefix for cross-module imports
+- Follow Python package structure

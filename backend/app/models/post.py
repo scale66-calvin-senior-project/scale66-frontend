@@ -13,7 +13,7 @@ class PostBase(BaseModel):
     carousel_slides: List[str]
     carousel_metadata: dict
     caption: Optional[str] = None
-    platform: str = Field(..., pattern="^(instagram|tiktok|linkedin|twitter)$")
+    platform: str = Field(..., pattern="^(instagram|tiktok)$")
     status: str = Field(default="draft", pattern="^(draft|scheduled|published|failed)$")
     scheduled_for: Optional[datetime] = None
 

@@ -4,6 +4,7 @@ Anthropic Service - Anthropic API integration.
 Provides:
 - Text generation using Claude models
 - Vision analysis using Claude Vision
+- Structured outputs with Pydantic model validation
 
 Used by agents for LLM calls and text generation.
 """
@@ -11,9 +12,13 @@ Used by agents for LLM calls and text generation.
 import logging
 import base64
 import httpx
-from typing import Optional, List
+from typing import Optional, List, TypeVar, Type
+from pydantic import BaseModel
 from anthropic import Anthropic, AsyncAnthropic
 from app.core.config import settings
+
+# Type variable for Pydantic models
+T = TypeVar('T', bound=BaseModel)
 
 
 logger = logging.getLogger(__name__)
@@ -83,6 +88,88 @@ class AnthropicService:
         except Exception as e:
             logger.error(f"Failed to generate text: {e}")
             raise AnthropicServiceError(f"Failed to generate text: {e}")
+    
+    async def generate_structured_output(
+        self,
+        prompt: str,
+        output_model: Type[T],
+        max_tokens: int = 4096,
+        temperature: float = 0.7,
+    ) -> T:
+        """
+        Generate structured output using Claude with Pydantic model validation.
+        
+        Uses Anthropic's structured outputs feature to guarantee schema-compliant
+        responses without manual JSON parsing or validation.
+        
+        Args:
+            prompt: The prompt to send to the LLM
+            output_model: Pydantic model class defining the expected output structure
+            max_tokens: Maximum tokens to generate
+            temperature: Sampling temperature
+        
+        Returns:
+            Validated instance of the output_model
+            
+        Raises:
+            AnthropicServiceError: If generation fails or response is invalid
+        
+        Example:
+            response = await service.generate_structured_output(
+                prompt="Extract info from: John (john@example.com)",
+                output_model=ContactInfo
+            )
+            # response is a validated ContactInfo instance
+            print(response.name, response.email)
+        """
+        try:
+            logger.debug(
+                f"Generating structured output with model: {settings.anthropic_model}, "
+                f"output schema: {output_model.__name__}"
+            )
+            
+            # Use beta.messages.parse() for automatic Pydantic handling
+            response = await self._client.beta.messages.parse(
+                model=settings.anthropic_model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                betas=["structured-outputs-2025-11-13"],
+                messages=[{"role": "user", "content": prompt}],
+                output_format=output_model,
+            )
+            
+            # Check for refusals or max_tokens reached
+            if response.stop_reason == "refusal":
+                logger.warning("Claude refused the request for safety reasons")
+                raise AnthropicServiceError(
+                    "Claude refused the request. The output may not match the schema."
+                )
+            
+            if response.stop_reason == "max_tokens":
+                logger.warning(
+                    "Response was cut off due to max_tokens limit. "
+                    "Output may be incomplete."
+                )
+                raise AnthropicServiceError(
+                    "Response exceeded max_tokens limit. Increase max_tokens and retry."
+                )
+            
+            # Parse and validate the output
+            parsed_output = response.parsed_output
+            
+            logger.debug(
+                f"Successfully generated and validated structured output: "
+                f"{output_model.__name__}"
+            )
+            
+            return parsed_output
+        
+        except AnthropicServiceError:
+            # Re-raise our custom errors
+            raise
+        except Exception as e:
+            logger.error(f"Failed to generate structured output: {e}")
+            raise AnthropicServiceError(f"Failed to generate structured output: {e}")
 
     async def analyze_image(
         self,

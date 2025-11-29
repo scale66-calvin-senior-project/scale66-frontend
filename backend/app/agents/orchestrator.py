@@ -17,6 +17,7 @@ Pipeline Flow (Updated Architecture):
 """
 
 import time
+import logging
 from typing import Optional
 
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
@@ -204,6 +205,8 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                     f"Story generation failed: {story_result.error_message}"
                 )
             
+            self.logger.info(f"Complete Story: {story_result.complete_story}")
+            self.logger.info(f"Story Rationale: {story_result.complete_story_rationale}")
             self.logger.info(f"Hook: {story_result.hook_slide_story}")
             self.logger.info(f"Body Slides:")
             for i, story in enumerate(story_result.body_slides_story, 1):
@@ -219,6 +222,7 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                     success=True,
                     hook_slide_story=story_result.hook_slide_story,
                     body_slides_story=story_result.body_slides_story,
+                    complete_story=story_result.complete_story,
                 )
             )
             
@@ -240,6 +244,7 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                 ImageGeneratorInput(
                     step_name="image_generator",
                     success=True,
+                    complete_story=story_result.complete_story,
                     hook_slide_story=story_result.hook_slide_story,
                     body_slides_story=story_result.body_slides_story,
                     hook_slide_text=text_result.hook_slide_text,
@@ -262,6 +267,8 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                 FinalizerInput(
                     step_name="finalizer",
                     success=True,
+                    format_type=format_result.format_type,
+                    complete_story=story_result.complete_story,
                     hook_slide_image=image_result.hook_slide_image,
                     body_slides_images=image_result.body_slides_images,
                     hook_slide_text=text_result.hook_slide_text,
@@ -285,26 +292,10 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             # Pipeline completion summary
             self.logger.info("")
             slide_count = len(final_result.carousel_slides_urls)
-            quality_score = sum(m.image_quality_score for m in final_result.quality_metrics) / len(final_result.quality_metrics)
             self.logger.info("╔" + "═" * 78 + "╗")
-            self.logger.info(f"║ PIPELINE COMPLETE | Duration: {duration_str:<8} | {slide_count} slides | Quality: {quality_score:.2f}      ║")
+            self.logger.info(f"║ PIPELINE COMPLETE | Duration: {duration_str:<8} | {slide_count} slides                   ║")
             self.logger.info(f"║ Carousel ID: {final_result.carousel_id}                            ║")
             self.logger.info("╚" + "═" * 78 + "╝")
-            self.logger.info("")
-            
-            # Show quality metrics summary
-            self.logger.info("Quality Metrics:")
-            for metrics in final_result.quality_metrics:
-                slide_type = "Hook" if metrics.slide_index == 0 else f"Body {metrics.slide_index}"
-                self.logger.info(
-                    f"  [{metrics.slide_index}] {slide_type}: "
-                    f"Quality={metrics.image_quality_score:.2f}, "
-                    f"Text Match={metrics.text_matches_expected}, "
-                    f"Readable={metrics.text_readable}"
-                )
-                if metrics.issues:
-                    for issue in metrics.issues:
-                        self.logger.info(f"      Issue: {issue}")
             self.logger.info("")
             
             # Show local file paths if enabled
@@ -321,13 +312,63 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                 self.logger.info("View slides in Supabase Storage > carousel-slides bucket")
             self.logger.info("")
             
+            # Display comprehensive evaluation metrics
+            self.logger.info("╔" + "═" * 78 + "╗")
+            self.logger.info("║" + " " * 22 + "EVALUATION METRICS" + " " * 38 + "║")
+            self.logger.info("╚" + "═" * 78 + "╝")
+            self.logger.info("")
+            
+            metrics = final_result.evaluation_metrics
+            
+            self.logger.info("FORMAT TYPE:")
+            self.logger.info(f"  {metrics.format_type_evaluation}")
+            self.logger.info("")
+            
+            self.logger.info("COMPLETE STORY:")
+            self.logger.info(f"  {metrics.complete_story_evaluation}")
+            self.logger.info("")
+            
+            self.logger.info("HOOK SLIDE STORY:")
+            self.logger.info(f"  {metrics.hook_slide_story_evaluation}")
+            self.logger.info("")
+            
+            self.logger.info("BODY SLIDES STORY:")
+            for i, eval_text in enumerate(metrics.body_slides_story_evaluation, 1):
+                self.logger.info(f"  [{i}] {eval_text}")
+            self.logger.info("")
+            
+            self.logger.info("HOOK SLIDE TEXT:")
+            self.logger.info(f"  {metrics.hook_slide_text_evaluation}")
+            self.logger.info("")
+            
+            self.logger.info("BODY SLIDES TEXT:")
+            for i, eval_text in enumerate(metrics.body_slides_text_evaluation, 1):
+                self.logger.info(f"  [{i}] {eval_text}")
+            self.logger.info("")
+            
+            self.logger.info("HOOK SLIDE IMAGE:")
+            self.logger.info(f"  {metrics.hook_slide_image_evaluation}")
+            self.logger.info("")
+            
+            self.logger.info("BODY SLIDES IMAGES:")
+            for i, eval_text in enumerate(metrics.body_slides_images_evaluation, 1):
+                self.logger.info(f"  [{i}] {eval_text}")
+            self.logger.info("")
+            
+            self.logger.info("BRAND ALIGNMENT:")
+            self.logger.info(f"  {metrics.brand_kit_evaluation}")
+            self.logger.info("")
+            
+            self.logger.info("═" * 80)
+            self.logger.info("")
+            
             # Return orchestrator output
             return OrchestratorOutput(
                 step_name="orchestrator",
                 success=True,
                 carousel_id=final_result.carousel_id,
                 carousel_slides_urls=final_result.carousel_slides_urls,
-                quality_metrics=final_result.quality_metrics,
+                evaluation_metrics=final_result.evaluation_metrics,
             )
             
         except ExecutionError:

@@ -62,7 +62,14 @@ from .pipeline import (
     TextGeneratorOutput,
     FinalizerInput,
     FinalizerOutput,
-    SlideQualityMetrics,
+    EvaluationMetrics,
+)
+
+# Structured output models (for Anthropic API)
+from .structured import (
+    ClaudeStoryOutput,
+    ClaudeTextOutput,
+    ClaudeEvaluationOutput,
 )
 
 # Common models
@@ -114,7 +121,11 @@ __all__ = [
     "TextGeneratorOutput",
     "FinalizerInput",
     "FinalizerOutput",
-    "SlideQualityMetrics",
+    "EvaluationMetrics",
+    # Structured outputs
+    "ClaudeStoryOutput",
+    "ClaudeTextOutput",
+    "ClaudeEvaluationOutput",
     # Common
     "MessageResponse",
     "ErrorResponse",

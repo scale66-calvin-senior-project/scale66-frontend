@@ -10,6 +10,14 @@ Requirements:
 - SUPABASE_URL, SUPABASE_SERVICE_KEY in .env
 - ANTHROPIC_API_KEY, GEMINI_API_KEY in .env
 - carousel-slides storage bucket created in Supabase
+
+Pipeline Steps:
+1. Fetch Brand Kit from database
+2. Determine carousel format (Claude)
+3. Generate story narratives (Claude)
+4. Generate text captions (Claude)
+5. Generate images WITH text rendered (Gemini 3 Pro)
+6. Validate quality and upload (Claude Vision + Supabase Storage)
 """
 
 import asyncio
@@ -29,30 +37,33 @@ from app.models.pipeline import OrchestratorInput
 
 TEST_USER_ID = "00000000-0000-0000-0000-000000000001"
 TEST_BRAND_KIT_DATA = {
-    "brand_name": "ProductivityPro",
-    "brand_niche": "Productivity and Time Management",
+    "brand_name": "Scale66",
+    "brand_niche": "AI-Powered Social Media Marketing",
     "brand_style": "professional",
     "customer_pain_points": [
-        "Overwhelmed by tasks",
-        "Struggling to focus",
-        "Poor work-life balance",
-        "Procrastination"
+        "No time to create social media content",
+        "Can't afford designers or agencies",
+        "Don't know what content drives engagement",
+        "Posts look unprofessional or generic",
+        "Social media feels overwhelming and time-consuming"
     ],
     "product_service_description": (
-        "ProductivityPro is a digital coaching service that helps busy professionals "
-        "master their time through proven frameworks, personalized strategies, and "
-        "accountability coaching."
+        "Scale66 is an AI-powered platform that helps small businesses create "
+        "professional, branded carousel posts for Instagram and TikTok in minutes. "
+        "Through a simple chat interface, businesses can generate scroll-stopping "
+        "content that drives engagement and sales—no design skills required."
     )
 }
 TEST_USER_PROMPT = (
-    "Create a carousel about the top 5 morning habits that successful entrepreneurs "
-    "use to maximize their productivity before 9 AM"
+    "Create a carousel that doesn't try to sell anything but just tells a story about the importance of social media marketing for businesses"
 )
 
 
 def check_prerequisites():
     """Verify all required setup is complete."""
-    print("Checking prerequisites...")
+    print("\n" + "=" * 80)
+    print("CHECKING PREREQUISITES")
+    print("=" * 80)
     
     missing = []
     if not settings.supabase_url:
@@ -69,6 +80,7 @@ def check_prerequisites():
         for var in missing:
             print(f"  - {var}")
         print("\nAdd these to backend/.env and try again.")
+        print("=" * 80)
         sys.exit(1)
     
     print("  Environment variables: OK")
@@ -79,22 +91,28 @@ def check_prerequisites():
         buckets = supabase.storage.list_buckets()
         bucket_names = [b.name for b in buckets]
         if 'carousel-slides' not in bucket_names:
-            print("\nWARNING: Storage bucket 'carousel-slides' not found!")
-            print("Create it in Supabase Dashboard > Storage > New bucket")
-            print("  Name: carousel-slides")
-            print("  Public: Yes")
-            response = input("\nContinue anyway? (y/n): ")
+            print("\n  WARNING: Storage bucket 'carousel-slides' not found!")
+            print("  Create it in Supabase Dashboard > Storage > New bucket")
+            print("    Name: carousel-slides")
+            print("    Public: Yes")
+            response = input("\n  Continue anyway? (y/n): ")
             if response.lower() != 'y':
+                print("=" * 80)
                 sys.exit(1)
         else:
             print("  Storage bucket: OK")
     except Exception as e:
         print(f"  WARNING: Could not verify storage bucket: {e}")
+    
+    print("=" * 80)
 
 
 async def setup_test_data():
     """Create test user and brand kit in Supabase."""
-    print("\nSetting up test data...")
+    print("\n" + "=" * 80)
+    print("SETTING UP TEST DATA")
+    print("=" * 80)
+    
     supabase = get_supabase_admin_client()
     
     # Create or update test user
@@ -128,30 +146,31 @@ async def setup_test_data():
     brand_kit_id = result.data[0]['id']
     print(f"  Created brand kit: {brand_kit_id}")
     print(f"    Brand: {TEST_BRAND_KIT_DATA['brand_name']}")
+    print("=" * 80)
     
     return brand_kit_id
 
 
 async def run_pipeline(brand_kit_id: str):
     """Run the full orchestrator pipeline."""
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 80)
     print("RUNNING FULL PIPELINE")
-    print("=" * 60)
+    print("=" * 80)
     print(f"\nBrand Kit ID: {brand_kit_id}")
     print(f"User Prompt: {TEST_USER_PROMPT}")
     print("\nPipeline Steps:")
-    print("  1. Determine carousel format (Claude)")
-    print("  2. Generate story narratives (Claude)")
-    print("  3. Extract short captions from stories (Claude)")
-    print("  4. Generate images WITH text rendered (Gemini 3 Pro)")
-    print("  5. Validate quality using Claude Vision")
-    print("  6. Upload to Supabase storage")
+    print("  1. Fetch Brand Kit from database")
+    print("  2. Determine carousel format (Claude)")
+    print("  3. Generate story narratives (Claude)")
+    print("  4. Generate text captions (Claude)")
+    print("  5. Generate images WITH text rendered (Gemini 3 Pro)")
+    print("  6. Validate quality and upload (Claude Vision + Supabase Storage)")
     print("\nOutput Locations:")
-    print(f"  - Logs: backend/logs/scale66_YYYY-MM-DD_HH-MM-SS_[run-id].log")
+    print(f"  - Logs: backend/logs/scale66_YYYY-MM-DD_HH-MM-SS.log")
     print(f"  - Local Images: backend/output/carousels/[carousel-id]/final/slide_*.png")
     print(f"  - Supabase Storage: carousel-slides bucket")
     print("\nEstimated time: 2-3 minutes")
-    print("=" * 60)
+    print("=" * 80)
     
     result = await orchestrator.run(OrchestratorInput(
         step_name="orchestrator",
@@ -165,81 +184,102 @@ async def run_pipeline(brand_kit_id: str):
 
 def display_results(result):
     """Display pipeline results."""
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 80)
     print("PIPELINE COMPLETED SUCCESSFULLY!")
-    print("=" * 60)
+    print("=" * 80)
     
     if result.success:
         print(f"\nCarousel ID: {result.carousel_id}")
         print(f"Total Slides: {len(result.carousel_slides_urls)}")
         
-        # Display quality metrics
-        if result.quality_metrics:
-            print("\n" + "-" * 60)
-            print("QUALITY METRICS")
-            print("-" * 60)
-            for metrics in result.quality_metrics:
-                slide_type = "Hook" if metrics.slide_index == 0 else f"Body {metrics.slide_index}"
-                print(f"  Slide {metrics.slide_index} ({slide_type}):")
-                print(f"    Quality Score: {metrics.image_quality_score:.2f}")
-                print(f"    Text Readable: {metrics.text_readable}")
-                print(f"    Text Matches: {metrics.text_matches_expected}")
-                if metrics.text_accuracy_score:
-                    print(f"    Text Accuracy: {metrics.text_accuracy_score:.2f}")
-                if metrics.brand_alignment_score:
-                    print(f"    Brand Alignment: {metrics.brand_alignment_score:.2f}")
-                if metrics.issues:
-                    print(f"    Issues: {', '.join(metrics.issues)}")
-                if metrics.suggestions:
-                    print(f"    Suggestions: {', '.join(metrics.suggestions[:2])}")
+        # Display evaluation metrics
+        if result.evaluation_metrics:
+            print("\n" + "=" * 80)
+            print("EVALUATION METRICS")
+            print("=" * 80)
+            
+            metrics = result.evaluation_metrics
+            
+            print("\nFORMAT TYPE:")
+            print(f"  {metrics.format_type_evaluation}")
+            
+            print("\nCOMPLETE STORY:")
+            print(f"  {metrics.complete_story_evaluation}")
+            
+            print("\nHOOK SLIDE STORY:")
+            print(f"  {metrics.hook_slide_story_evaluation}")
+            
+            print("\nBODY SLIDES STORY:")
+            for i, eval_text in enumerate(metrics.body_slides_story_evaluation, 1):
+                print(f"  [{i}] {eval_text}")
+            
+            print("\nHOOK SLIDE TEXT:")
+            print(f"  {metrics.hook_slide_text_evaluation}")
+            
+            print("\nBODY SLIDES TEXT:")
+            for i, eval_text in enumerate(metrics.body_slides_text_evaluation, 1):
+                print(f"  [{i}] {eval_text}")
+            
+            print("\nHOOK SLIDE IMAGE:")
+            print(f"  {metrics.hook_slide_image_evaluation}")
+            
+            print("\nBODY SLIDES IMAGES:")
+            for i, eval_text in enumerate(metrics.body_slides_images_evaluation, 1):
+                print(f"  [{i}] {eval_text}")
+            
+            print("\nBRAND ALIGNMENT:")
+            print(f"  {metrics.brand_kit_evaluation}")
         
-        print("\n" + "-" * 60)
+        print("\n" + "=" * 80)
         print("SUPABASE STORAGE URLS")
-        print("-" * 60)
+        print("=" * 80)
         for i, url in enumerate(result.carousel_slides_urls):
             slide_type = "Hook" if i == 0 else f"Body {i}"
             print(f"  Slide {i} ({slide_type}): {url}")
         
-        print("\n" + "-" * 60)
+        print("\n" + "=" * 80)
         print("LOCAL OUTPUT FILES")
-        print("-" * 60)
+        print("=" * 80)
         from app.core.config import settings
         if settings.save_local_output:
             from pathlib import Path
             local_dir = Path(settings.output_dir) / "carousels" / result.carousel_id / "final"
             print(f"  Directory: {local_dir}")
-            print(f"  Slides (with text): slide_0.png, slide_1.png, ...")
+            for i in range(len(result.carousel_slides_urls)):
+                slide_type = "Hook" if i == 0 else f"Body {i}"
+                print(f"    [{i}] {slide_type}: slide_{i}.png")
         else:
             print("  Local output saving is disabled")
         
-        print("\n" + "-" * 60)
+        print("\n" + "=" * 80)
         print("LOGS")
-        print("-" * 60)
+        print("=" * 80)
         if settings.log_to_file:
             from datetime import datetime
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            example_log = f"logs/scale66_{timestamp}_{result.carousel_id[:8]}.log"
-            print(f"  Log file created for this run")
-            print(f"  Check: backend/{example_log}")
-            print(f"  Contains: Pipeline execution + quality metrics")
+            print(f"  Log file: backend/logs/scale66_{timestamp}.log")
+            print(f"  Contains: Pipeline execution + evaluation metrics")
         else:
             print("  File logging is disabled (console only)")
         
-        print("\n" + "=" * 60)
+        print("\n" + "=" * 80)
         print("NEXT STEPS")
-        print("=" * 60)
+        print("=" * 80)
         print("  1. View images in Supabase Dashboard > Storage > carousel-slides")
         print("  2. Review local files in backend/output/carousels/")
-        print("  3. Check quality metrics and suggestions above")
-        print("  4. Review run-specific log file in backend/logs/")
-        print("=" * 60)
+        print("  3. Check evaluation metrics above")
+        print("  4. Review log file in backend/logs/")
+        print("=" * 80)
     else:
         print(f"\nERROR: {result.error_message}")
 
 
 async def save_to_posts(brand_kit_id: str, result):
     """Save generated carousel to posts table."""
-    print("\nSaving to posts table...")
+    print("\n" + "=" * 80)
+    print("SAVING TO DATABASE")
+    print("=" * 80)
+    
     supabase = get_supabase_admin_client()
     
     # Create a test campaign first
@@ -261,19 +301,13 @@ async def save_to_posts(brand_kit_id: str, result):
         'num_slides': len(result.carousel_slides_urls)
     }
     
-    # Add quality metrics if available
-    if result.quality_metrics:
-        overall_quality = sum(m.image_quality_score for m in result.quality_metrics) / len(result.quality_metrics)
-        carousel_metadata['overall_quality_score'] = overall_quality
-        carousel_metadata['quality_metrics'] = [
-            {
-                'slide_index': m.slide_index,
-                'image_quality_score': m.image_quality_score,
-                'text_readable': m.text_readable,
-                'text_matches_expected': m.text_matches_expected,
-            }
-            for m in result.quality_metrics
-        ]
+    # Add evaluation metrics summary if available
+    if result.evaluation_metrics:
+        carousel_metadata['evaluation_summary'] = {
+            'format_type': result.evaluation_metrics.format_type_evaluation,
+            'brand_alignment': result.evaluation_metrics.brand_kit_evaluation,
+            'complete_story': result.evaluation_metrics.complete_story_evaluation,
+        }
     
     # Now create the post with campaign_id
     post_data = {
@@ -288,15 +322,20 @@ async def save_to_posts(brand_kit_id: str, result):
     
     post = supabase.table('posts').insert(post_data).execute()
     print(f"  Created post: {post.data[0]['id']}")
+    print("=" * 80)
 
 
 async def cleanup():
     """Optional: Clean up test data."""
     response = input("\nDelete test data? (y/n): ")
     if response.lower() != 'y':
+        print("\nSkipping cleanup - test data preserved")
         return
     
-    print("\nCleaning up test data...")
+    print("\n" + "=" * 80)
+    print("CLEANING UP TEST DATA")
+    print("=" * 80)
+    
     supabase = get_supabase_admin_client()
     
     # Delete posts, campaigns, and brand kits
@@ -306,7 +345,8 @@ async def cleanup():
     print("  Deleted brand kit, campaign, and posts")
     
     # Note: Storage images remain (manual cleanup if needed)
-    print("  Storage images remain (cleanup manually if needed)")
+    print("  Note: Storage images remain (cleanup manually if needed)")
+    print("=" * 80)
 
 
 async def main():
@@ -314,14 +354,14 @@ async def main():
     # Setup logging with file output enabled
     setup_logging(log_level="INFO")
     
-    print("=" * 60)
+    print("=" * 80)
     print("FULL PIPELINE TEST")
-    print("=" * 60)
+    print("=" * 80)
     print(f"\nLogging Configuration:")
     print(f"  - Level: INFO")
     print(f"  - Console: Enabled")
     print(f"  - File: backend/logs/scale66.log")
-    print("=" * 60)
+    print("=" * 80)
     
     check_prerequisites()
     
@@ -335,9 +375,9 @@ async def main():
             await save_to_posts(brand_kit_id, result)
         
     except Exception as e:
-        print(f"\n{'=' * 60}")
+        print(f"\n{'=' * 80}")
         print(f"PIPELINE FAILED")
-        print(f"{'=' * 60}")
+        print(f"{'=' * 80}")
         print(f"\nError: {e}")
         import traceback
         traceback.print_exc()

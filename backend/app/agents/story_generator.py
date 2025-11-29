@@ -7,11 +7,11 @@ Input: StoryGeneratorInput (format_type, num_slides, brand_kit, user_prompt)
 Output: StoryGeneratorOutput (hook_slide_story, body_slides_story)
 """
 
-import json
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
 from app.models.pipeline import StoryGeneratorInput, StoryGeneratorOutput
+from app.models.structured import ClaudeStoryOutput
 from app.agents.carousel_format_decider import CarouselFormat
 from app.services.ai.anthropic_service import AnthropicServiceError
 
@@ -137,33 +137,48 @@ class StoryGenerator(BaseAgent[StoryGeneratorInput, StoryGeneratorOutput]):
                 f"with {input_data.num_slides} slides"
             )
             
-            # Call Claude with higher temperature for creativity
-            response = await self.anthropic.generate_text(
+            # Call Claude with structured output for guaranteed valid response
+            story_output = await self.anthropic.generate_structured_output(
                 prompt=full_prompt,
+                output_model=ClaudeStoryOutput,
                 max_tokens=3000,
                 temperature=0.7,
             )
             
-            # Parse and validate response
-            story = self._parse_response(response, input_data.num_slides)
+            # Validate body slide count
+            expected_body_count = input_data.num_slides - 1
+            actual_body_count = len(story_output.body_slides_story)
             
-            self.logger.debug(
-                f"Story generated: hook + {len(story['body_slides_story'])} body slides"
+            if actual_body_count != expected_body_count:
+                self.logger.warning(
+                    f"Expected {expected_body_count} body slides, got {actual_body_count}. "
+                    f"Adjusting to match expected count."
+                )
+                
+                # Handle array length mismatch
+                if actual_body_count < expected_body_count:
+                    while len(story_output.body_slides_story) < expected_body_count:
+                        story_output.body_slides_story.append("[Content continues...]")
+                else:
+                    # Too many slides - truncate
+                    story_output.body_slides_story = story_output.body_slides_story[:expected_body_count]
+            
+            self.logger.info(
+                f"Story generated: hook + {len(story_output.body_slides_story)} body slides"
             )
+            self.logger.info(f"Complete Story Rationale: {story_output.complete_story_rationale}")
             
             return StoryGeneratorOutput(
                 step_name="story_generator",
                 success=True,
-                hook_slide_story=story["hook_slide_story"],
-                body_slides_story=story["body_slides_story"],
+                complete_story=story_output.complete_story,
+                complete_story_rationale=story_output.complete_story_rationale,
+                hook_slide_story=story_output.hook_slide_story,
+                body_slides_story=story_output.body_slides_story,
             )
             
         except AnthropicServiceError as e:
             raise ExecutionError(f"LLM service error: {str(e)}")
-        except json.JSONDecodeError as e:
-            raise ExecutionError(f"Failed to parse LLM response: {str(e)}")
-        except KeyError as e:
-            raise ExecutionError(f"Missing required field in response: {str(e)}")
         except Exception as e:
             raise ExecutionError(f"Unexpected error during execution: {str(e)}")
     
@@ -225,19 +240,12 @@ STORYTELLING PRINCIPLES:
    - Optimize for mobile viewing
    - Create save-worthy or share-worthy content
 
-OUTPUT FORMAT:
-You must respond with ONLY a valid JSON object in this exact format:
-{{
-  "hook_slide_story": "<compelling first slide that stops the scroll>",
-  "body_slides_story": ["<slide 2>", "<slide 3>", "<slide 4>", ...]
-}}
-
-CRITICAL REQUIREMENTS:
-- body_slides_story array must contain exactly {input_data.num_slides - 1} slides (total carousel is {input_data.num_slides} slides including hook)
-- Each story string must be 30-150 characters
-- Do not include slide numbers in the content (e.g., don't write "Slide 1:", "Step 1:")
-- Do not include any text outside the JSON object
-- Do not use markdown code blocks"""
+OUTPUT REQUIREMENTS:
+- complete_story: A cohesive narrative (200-400 characters) that ties the entire carousel together
+- complete_story_rationale: Explanation of your strategic choices (100-200 characters)
+- hook_slide_story: Compelling first slide that stops the scroll (30-150 characters)
+- body_slides_story: Array of exactly {input_data.num_slides - 1} body slide stories (each 30-150 characters)
+- Do not include slide numbers in the content (e.g., don't write "Slide 1:", "Step 1:")"""
     
     def _build_user_prompt(self, input_data: StoryGeneratorInput) -> str:
         """
@@ -273,106 +281,15 @@ BRAND CONTEXT:
 - Product/Service Description: {brand_kit.product_service_desc}
 
 TASK:
-Generate a complete carousel story following the '{input_data.format_type}' format structure. Create 1 hook slide and exactly {body_slide_count} body slides that work together as a cohesive narrative while each slide can stand alone.
+1. First, create a COMPLETE STORY - an overarching narrative (200-400 chars) that captures the entire carousel's message and flow
+2. Explain your RATIONALE - why this complete story works for this format and brand (100-200 chars)
+3. Then, break down the complete story into individual slides:
+   - 1 hook slide (attention-grabbing opening)
+   - Exactly {body_slide_count} body slides (following the format structure)
 
-Return your story as a JSON object with the hook and an array of {body_slide_count} body slides."""
-    
-    def _parse_response(self, response: str, expected_num_slides: int) -> Dict[str, Any]:
-        """
-        Parse and validate LLM response.
-        
-        Extracts JSON from response and validates story structure.
-        
-        Args:
-            response: Raw LLM response
-            expected_num_slides: Total number of slides (including hook)
-            
-        Returns:
-            Validated story dictionary
-            
-        Raises:
-            ExecutionError: If response is invalid
-        """
-        # Clean response - remove potential markdown code blocks
-        cleaned = response.strip()
-        if cleaned.startswith("```json"):
-            cleaned = cleaned[7:]
-        if cleaned.startswith("```"):
-            cleaned = cleaned[3:]
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3]
-        cleaned = cleaned.strip()
-        
-        # Parse JSON
-        try:
-            story = json.loads(cleaned)
-        except json.JSONDecodeError:
-            # Try to extract JSON from text
-            start_idx = cleaned.find("{")
-            end_idx = cleaned.rfind("}") + 1
-            if start_idx >= 0 and end_idx > start_idx:
-                story = json.loads(cleaned[start_idx:end_idx])
-            else:
-                raise ExecutionError("No valid JSON found in response")
-        
-        # Validate required fields
-        if "hook_slide_story" not in story:
-            raise ExecutionError("Missing 'hook_slide_story' in response")
-        if "body_slides_story" not in story:
-            raise ExecutionError("Missing 'body_slides_story' in response")
-        
-        # Validate hook_slide_story
-        hook = story["hook_slide_story"]
-        if not hook or not isinstance(hook, str) or not hook.strip():
-            raise ExecutionError("hook_slide_story must be a non-empty string")
-        
-        # Check hook length
-        if len(hook.strip()) < 10:
-            self.logger.warning(f"Hook is very short ({len(hook)} chars)")
-        if len(hook.strip()) > 200:
-            self.logger.warning(
-                f"Hook is very long ({len(hook)} chars), may not be readable"
-            )
-        
-        # Validate body_slides_story
-        body_slides = story["body_slides_story"]
-        if not isinstance(body_slides, list):
-            raise ExecutionError("body_slides_story must be an array")
-        
-        expected_body_count = expected_num_slides - 1
-        actual_body_count = len(body_slides)
-        
-        if actual_body_count != expected_body_count:
-            self.logger.error(
-                f"Expected {expected_body_count} body slides, got {actual_body_count}"
-            )
-            
-            # Handle array length mismatch
-            if actual_body_count < expected_body_count:
-                # Too few slides - pad with placeholder
-                self.logger.warning("Padding missing slides with placeholders")
-                while len(body_slides) < expected_body_count:
-                    body_slides.append("[Content continues...]")
-            else:
-                # Too many slides - truncate
-                self.logger.warning(f"Truncating to {expected_body_count} slides")
-                body_slides = body_slides[:expected_body_count]
-            
-            story["body_slides_story"] = body_slides
-        
-        # Validate each body slide
-        for i, slide in enumerate(body_slides):
-            if not slide or not isinstance(slide, str) or not slide.strip():
-                self.logger.warning(f"Body slide {i+1} is empty or invalid")
-                body_slides[i] = f"[Slide {i+2} content]"
-            elif len(slide.strip()) < 10:
-                self.logger.warning(f"Body slide {i+1} is very short ({len(slide)} chars)")
-            elif len(slide.strip()) > 250:
-                self.logger.warning(
-                    f"Body slide {i+1} is very long ({len(slide)} chars), may not be readable"
-                )
-        
-        return story
+Each slide should support the complete story while being able to stand alone.
+
+Return your response with the complete story, rationale, hook, and {body_slide_count} body slides."""
 
 
 # Create singleton instance for easy import

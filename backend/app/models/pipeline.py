@@ -7,13 +7,16 @@ PIPELINE FLOW (Updated for Gemini 3 Pro Image with text generation):
 3. StoryGenerator - Creates verbose, detailed narratives
 4. TextGenerator - Converts stories into short, punchy carousel captions
 5. ImageGenerator - Generates images WITH text baked in using Gemini 3 Pro
-6. Finalizer - Validates image quality, uploads to storage, stores metrics
+6. Finalizer - Validates the entire pipeline output using Claude Vision and uploads the carousel to storage
+
+Note: For Claude structured output models, see app.models.structured
 """
 
 from typing import Optional, List, Dict
 from pydantic import BaseModel, Field
 from app.models.brand_kit import BrandKit
 from app.models.common import BasePipelineStep
+    
 
 # =============== Step 1: Orchestrator ===============
 
@@ -26,7 +29,7 @@ class OrchestratorOutput(BasePipelineStep):
     """Schema for orchestrator output."""
     carousel_id: str = Field(..., description="The ID of the generated carousel")
     carousel_slides_urls: List[str] = Field(..., description="The URLs of the carousel slides")
-    quality_metrics: Optional[List['SlideQualityMetrics']] = Field(None, description="Quality validation metrics from Finalizer")
+    evaluation_metrics: Optional['EvaluationMetrics'] = Field(None, description="Quality validation metrics from Finalizer")
     
 
 # =============== Step 2: Carousel Format Decision ===============
@@ -55,9 +58,10 @@ class StoryGeneratorOutput(BasePipelineStep):
     """Schema for story generator output - verbose, detailed narratives."""
     hook_slide_story: str = Field(..., description="The detailed hook story for the carousel")
     body_slides_story: List[str] = Field(..., description="The detailed body slides stories for the carousel")
+    complete_story: str = Field(..., description="The complete story for the carousel")
+    complete_story_rationale: str = Field(..., description="The rationale for the complete story")
 
 # =============== Step 4: Text Generation ===============
-# CHANGED: Now runs BEFORE image generation, NO image analysis
 
 class TextGeneratorInput(BasePipelineStep):
     """
@@ -68,7 +72,7 @@ class TextGeneratorInput(BasePipelineStep):
     """
     hook_slide_story: str = Field(..., description="The verbose hook story to convert into caption")
     body_slides_story: List[str] = Field(..., description="The verbose body stories to convert into captions")
-
+    complete_story: str = Field(..., description="The complete story for context")
 class TextGeneratorOutput(BasePipelineStep):
     """
     Schema for text generator output.
@@ -78,17 +82,18 @@ class TextGeneratorOutput(BasePipelineStep):
     """
     hook_slide_text: str = Field(..., description="Short, punchy hook text (3-8 words)")
     body_slides_text: List[str] = Field(..., description="Short, punchy body texts")
+    captions_rationale: List[str] = Field(..., description="The rationale for the captions of each slide")
 
 # =============== Step 5: Image Generation ===============
-# CHANGED: Now receives TEXT in addition to stories, generates images WITH text
 
 class ImageGeneratorInput(BasePipelineStep):
     """
     Schema for image generator input.
     
-    Receives both detailed stories (for context) and short captions (to render).
+    Receives both complete story, individual slide stories (for context) and short captions (to render).
     Gemini 3 Pro will generate images with text baked in.
     """
+    complete_story: str = Field(..., description="The complete story for the carousel")
     hook_slide_story: str = Field(..., description="Detailed hook story for context")
     body_slides_story: List[str] = Field(..., description="Detailed body stories for context")
     hook_slide_text: str = Field(..., description="Short text to render on hook image")
@@ -102,42 +107,45 @@ class ImageGeneratorOutput(BasePipelineStep):
     """
     hook_slide_image: str = Field(..., description="Hook slide image with text rendered (base64)")
     body_slides_images: List[str] = Field(..., description="Body slide images with text rendered (base64)")
+    images_rationale: List[str] = Field(..., description="The rationale for the images of each slide")
+    
 
 # =============== Step 6: Finalizer ===============
-# CHANGED: Now performs quality validation instead of text overlay
 
 class FinalizerInput(BasePipelineStep):
     """
     Schema for finalizer input.
     
-    Receives generated images and validates quality using Claude Vision.
-    Stores metrics for pipeline improvement (no retry logic in MVP).
+    Receives generated output from the entire pipeline and validates quality using Claude Vision.
     """
-    hook_slide_image: str = Field(..., description="Generated hook image with text (base64)")
-    body_slides_images: List[str] = Field(..., description="Generated body images with text (base64)")
-    hook_slide_text: str = Field(..., description="Expected hook text (for validation)")
-    body_slides_text: List[str] = Field(..., description="Expected body texts (for validation)")
+    format_type: str = Field(..., description="The type of carousel format")
     hook_slide_story: str = Field(..., description="Hook story (for context validation)")
     body_slides_story: List[str] = Field(..., description="Body stories (for context validation)")
+    complete_story: str = Field(..., description="Complete story (for context validation)")
+    hook_slide_text: str = Field(..., description="Expected hook text (for validation)")
+    body_slides_text: List[str] = Field(..., description="Expected body texts (for validation)")
+    hook_slide_image: str = Field(..., description="Generated hook image with text (base64)")
+    body_slides_images: List[str] = Field(..., description="Generated body images with text (base64)")
     brand_kit: Optional[BrandKit] = Field(None, description="Brand kit (for brand compliance validation)")
 
-class SlideQualityMetrics(BaseModel):
-    """Quality metrics for a single slide."""
-    slide_index: int = Field(..., description="Index of the slide (0 = hook, 1+ = body)")
-    text_readable: bool = Field(..., description="Whether text is clearly readable")
-    text_matches_expected: bool = Field(..., description="Whether rendered text matches expected text")
-    text_accuracy_score: float = Field(..., ge=0.0, le=1.0, description="Text accuracy (0-1, 1 = perfect match)")
-    image_quality_score: float = Field(..., ge=0.0, le=1.0, description="Overall image quality (0-1)")
-    brand_alignment_score: Optional[float] = Field(None, ge=0.0, le=1.0, description="Brand style alignment (0-1)")
-    issues: List[str] = Field(default_factory=list, description="List of identified issues")
-    suggestions: List[str] = Field(default_factory=list, description="Suggestions for improvement")
+class EvaluationMetrics(BaseModel):
+    """Evaluation metrics for the entire pipeline."""
+    format_type_evaluation: str = Field(..., description="The type of carousel format evaluation")
+    hook_slide_story_evaluation: str = Field(..., description="Hook story evaluation")
+    body_slides_story_evaluation: List[str] = Field(..., description="Body stories evaluation")
+    complete_story_evaluation: str = Field(..., description="Complete story evaluation")
+    hook_slide_text_evaluation: str = Field(..., description="Hook text evaluation")
+    body_slides_text_evaluation: List[str] = Field(..., description="Body texts evaluation")
+    hook_slide_image_evaluation: str = Field(..., description="Hook image evaluation")
+    body_slides_images_evaluation: List[str] = Field(..., description="Body images evaluation")
+    brand_kit_evaluation: str = Field(..., description="Brand kit evaluation")
 
 class FinalizerOutput(BasePipelineStep):
     """
     Schema for finalizer output.
     
-    Includes carousel URLs and detailed quality metrics for each slide.
+    Includes carousel URLs and detailed quality metrics for the entire pipeline.
     """
     carousel_id: str = Field(..., description="The ID of the carousel")
     carousel_slides_urls: List[str] = Field(..., description="The public URLs of uploaded carousel slides")
-    quality_metrics: List[SlideQualityMetrics] = Field(..., description="Quality validation metrics for each slide")
+    evaluation_metrics: EvaluationMetrics = Field(..., description="Quality validation metrics for the entire pipeline")
