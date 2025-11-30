@@ -3,7 +3,7 @@ Common Models - Shared response schemas used across the API.
 """
 
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from enum import Enum
 from datetime import datetime
 
@@ -53,7 +53,7 @@ class SocialPlatform(str, Enum):
 
 class BasePipelineStep(BaseModel):
     """Base class for pipeline steps."""
-    step_name: str
-    success: bool
-    error_message: Optional[str] = None
-    execution_time: Optional[int] = None
+    step_name: str = Field(default="", description="Name of the pipeline step")
+    success: bool = Field(default=True, description="Whether the step succeeded")
+    error_message: Optional[str] = Field(default=None, description="Error message if failed")
+    execution_time: Optional[int] = Field(default=None, description="Execution time in milliseconds")

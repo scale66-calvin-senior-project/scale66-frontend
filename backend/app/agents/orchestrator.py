@@ -1,19 +1,8 @@
 """
 Orchestrator Agent - Step 1 of AI Pipeline
 
-Coordinates the entire carousel generation pipeline by executing agents sequentially
-and managing state flow between steps.
-
 Input: OrchestratorInput (brand_kit_id, user_prompt)
 Output: OrchestratorOutput (carousel_id, carousel_slides_urls, quality_metrics)
-
-Pipeline Flow (Updated Architecture):
-1. Fetch BrandKit from database
-2. CarouselFormatDecider → determine format and slide count
-3. StoryGenerator → create verbose hook and body slide narratives
-4. TextGenerator → convert stories into short captions (NEW ORDER)
-5. ImageGenerator → generate images WITH text rendered by Gemini 3 Pro
-6. Finalizer → validate quality using Claude Vision and upload to storage
 """
 
 import time
@@ -44,11 +33,6 @@ from app.core.supabase import get_supabase_admin_client
 class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
     """
     Orchestrates the complete carousel generation pipeline.
-    
-    Coordinates sequential execution of all AI agents and manages state flow
-    between pipeline steps. Handles brand kit fetching, validation, and error
-    recovery.
-    
     Singleton pattern ensures single instance across application.
     """
     
@@ -98,15 +82,6 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
     async def _execute(self, input_data: OrchestratorInput) -> OrchestratorOutput:
         """
         Execute the complete carousel generation pipeline.
-        
-        Pipeline steps:
-        1. Fetch and validate brand kit from database
-        2. Determine carousel format (CarouselFormatDecider)
-        3. Generate story narratives (StoryGenerator)
-        4. Generate AI images (ImageGenerator)
-        5. Generate text overlays (TextGenerator)
-        6. Finalize and upload slides (Finalizer)
-        
         Args:
             input_data: Validated orchestrator input
             
@@ -170,8 +145,6 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             
             format_result = await carousel_format_decider.run(
                 CarouselFormatDeciderInput(
-                    step_name="carousel_format_decider",
-                    success=True,
                     user_prompt=input_data.user_prompt,
                     brand_kit=brand_kit,
                 )
@@ -191,8 +164,6 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             
             story_result = await story_generator.run(
                 StoryGeneratorInput(
-                    step_name="story_generator",
-                    success=True,
                     format_type=format_result.format_type,
                     num_slides=format_result.num_slides,
                     brand_kit=brand_kit,
@@ -218,8 +189,8 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             
             text_result = await text_generator.run(
                 TextGeneratorInput(
-                    step_name="text_generator",
-                    success=True,
+                    brand_kit=brand_kit,
+                    format_type=format_result.format_type,
                     hook_slide_story=story_result.hook_slide_story,
                     body_slides_story=story_result.body_slides_story,
                     complete_story=story_result.complete_story,
@@ -242,10 +213,10 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             
             image_result = await image_generator.run(
                 ImageGeneratorInput(
-                    step_name="image_generator",
-                    success=True,
-                    complete_story=story_result.complete_story,
+                    brand_kit=brand_kit,
+                    format_type=format_result.format_type,
                     hook_slide_story=story_result.hook_slide_story,
+                    complete_story=story_result.complete_story,
                     body_slides_story=story_result.body_slides_story,
                     hook_slide_text=text_result.hook_slide_text,
                     body_slides_text=text_result.body_slides_text,
@@ -265,16 +236,14 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             
             final_result = await finalizer.run(
                 FinalizerInput(
-                    step_name="finalizer",
-                    success=True,
                     format_type=format_result.format_type,
                     complete_story=story_result.complete_story,
-                    hook_slide_image=image_result.hook_slide_image,
-                    body_slides_images=image_result.body_slides_images,
-                    hook_slide_text=text_result.hook_slide_text,
-                    body_slides_text=text_result.body_slides_text,
                     hook_slide_story=story_result.hook_slide_story,
                     body_slides_story=story_result.body_slides_story,
+                    hook_slide_text=text_result.hook_slide_text,
+                    body_slides_text=text_result.body_slides_text,
+                    hook_slide_image=image_result.hook_slide_image,
+                    body_slides_images=image_result.body_slides_images,
                     brand_kit=brand_kit,
                 )
             )
@@ -364,8 +333,6 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             
             # Return orchestrator output
             return OrchestratorOutput(
-                step_name="orchestrator",
-                success=True,
                 carousel_id=final_result.carousel_id,
                 carousel_slides_urls=final_result.carousel_slides_urls,
                 evaluation_metrics=final_result.evaluation_metrics,

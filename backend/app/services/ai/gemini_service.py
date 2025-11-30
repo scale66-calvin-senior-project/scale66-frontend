@@ -8,7 +8,7 @@ Supports multiple Gemini image generation models:
 
 import logging
 import base64
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from google import genai
 from google.genai import types
 
@@ -57,17 +57,17 @@ class GeminiService:
     async def generate_image(
         self, 
         prompt: str,
-        aspect_ratio: str = "9:16",
+        aspect_ratio: str = "4:5",
         image_size: str = "1K",
     ) -> str:
         """
-        Generate image using configured Gemini model.
+        Generate image from text prompt.
         
         Uses generate_content API with IMAGE response modality.
         
         Args:
             prompt: Image generation prompt
-            aspect_ratio: Image aspect ratio - "1:1", "3:4", "4:3", "9:16", "16:9" (default: 9:16)
+            aspect_ratio: Image aspect ratio - "1:1", "3:4", "4:3", "4:5", "9:16", "16:9" (default: 4:5)
             image_size: Image size - "1K", "2K", or "4K" (default: 1K)
                 Note: 4K only supported on gemini-3-pro-image-preview
         
@@ -121,6 +121,101 @@ class GeminiService:
         except Exception as e:
             logger.error(f"Failed to generate image with {model_name}: {e}")
             raise GeminiServiceError(f"Failed to generate image: {e}")
+    
+    async def generate_image_with_reference(
+        self,
+        prompt: str,
+        images_base64: List[str],
+        aspect_ratio: str = "4:5",
+        image_size: str = "1K",
+    ) -> str:
+        """
+        Generate image from text prompt with reference image(s).
+        
+        Use cases:
+        - Generate image based on template/reference image
+        - Add text overlays to existing images
+        - Multi-turn generation with visual context
+        
+        Args:
+            prompt: Text instruction for image generation/editing
+            images_base64: List of base64 encoded input images (required)
+            aspect_ratio: Output image aspect ratio - "1:1", "3:4", "4:3", "4:5", "9:16", "16:9" (default: 4:5)
+            image_size: Output image size - "1K", "2K", or "4K" (default: 1K)
+        
+        Returns:
+            Base64 encoded generated image string
+        
+        Raises:
+            GeminiServiceError: If generation fails
+        """
+        model_name = settings.gemini_image_model
+        
+        try:
+            logger.debug(
+                f"Generating image with {model_name} from {len(images_base64)} input image(s) + text"
+            )
+            
+            # Build parts list: input images + text prompt
+            parts = []
+            
+            # Add input images first
+            for img_b64 in images_base64:
+                # Decode base64 to bytes for inline_data
+                img_bytes = base64.b64decode(img_b64)
+                parts.append(
+                    types.Part(
+                        inline_data=types.Blob(
+                            mime_type="image/png",
+                            data=img_bytes
+                        )
+                    )
+                )
+            
+            # Add text prompt
+            parts.append(types.Part(text=prompt))
+            
+            # Build config for IMAGE output
+            config = types.GenerateContentConfig(
+                response_modalities=["IMAGE"],
+                image_config=types.ImageConfig(
+                    aspect_ratio=aspect_ratio,
+                    image_size=image_size,
+                )
+            )
+            
+            # Generate image
+            response = self._client.models.generate_content(
+                model=model_name,
+                contents=types.Content(
+                    role="user",
+                    parts=parts
+                ),
+                config=config
+            )
+            
+            # Extract image from response
+            image_part = None
+            for part in response.candidates[0].content.parts:
+                if hasattr(part, 'inline_data') and part.inline_data:
+                    image_part = part
+                    break
+            
+            if not image_part:
+                logger.error("No image found in Gemini response")
+                raise GeminiServiceError("No image found in Gemini response")
+            
+            # Get image bytes and encode to base64
+            image_bytes = image_part.inline_data.data
+            
+            logger.debug("Image generated successfully from input image + text")
+            return base64.b64encode(image_bytes).decode("utf-8")
+                
+        except GeminiServiceError:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to generate image with {model_name}: {e}")
+            raise GeminiServiceError(f"Failed to generate image from input: {e}")
 
 # Create singleton instance
 gemini_service = GeminiService()

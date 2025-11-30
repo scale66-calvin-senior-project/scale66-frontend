@@ -1,12 +1,6 @@
 """
 Finalizer Agent - Step 6 of AI Pipeline
 
-Validates image quality using Claude Vision and uploads carousel slides to storage.
-
-Images already have text rendered by Gemini 3 Pro - no text overlay needed.
-Uses Claude Vision to validate quality, extract rendered text, and check brand alignment.
-Stores metrics for pipeline improvement (no retry logic in MVP).
-
 Input: FinalizerInput (hook_slide_image, body_slides_images, expected texts/stories, brand_kit)
 Output: FinalizerOutput (carousel_id, carousel_slides_urls, quality_metrics)
 """

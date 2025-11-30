@@ -1,8 +1,6 @@
 """
 Story Generator Agent - Step 3 of AI Pipeline
 
-Generates compelling hook and body slide narratives based on format decision and brand context.
-
 Input: StoryGeneratorInput (format_type, num_slides, brand_kit, user_prompt)
 Output: StoryGeneratorOutput (hook_slide_story, body_slides_story)
 """
@@ -18,18 +16,15 @@ from app.services.ai.anthropic_service import AnthropicServiceError
 
 # Format-specific storytelling structures for each carousel type
 FORMAT_STRUCTURES: Dict[str, str] = {
-    CarouselFormat.TOP_5: "Hook: Preview the top 5 or reveal #1 with intrigue. Body: One numbered item per slide with brief explanation (50-100 chars).",
-    CarouselFormat.STORY_CASE_STUDY: "Hook: Relatable problem statement. Body: Struggle (1-2 slides) → Turning point (1 slide) → Solution (1-2 slides) → Result/transformation (1 slide).",
-    CarouselFormat.DECISION_TREE: "Hook: Should you ___? Body: Each slide asks a yes/no question that guides decision-making, building toward the solution.",
-    CarouselFormat.COMMON_MISTAKES: "Hook: 'Are you making these mistakes?' Body: Each slide presents one mistake + how to avoid it. Format: 'Mistake: X. Instead: Y.'",
-    CarouselFormat.TRANSFORMATIVE_GRID: "Hook: Promise of transformation. Body: Each slide has left/right comparison. Format: 'Before: X | After: Y' or 'Old way: X | New way: Y'.",
-    CarouselFormat.TUTORIAL: "Hook: 'How to achieve _____ without [pain point]'. Body: Sequential steps (Step 1, Step 2, etc.) with actionable instructions.",
-    CarouselFormat.UNPOPULAR_OPINION: "Hook: Controversial/counterintuitive statement. Body: Supporting arguments, examples, and reframe (build case for the opinion).",
-    CarouselFormat.THIS_VS_THAT: "Hook: Stop doing [bad habit]. Body: Repeat pattern across slides: 'Stop: X. Start: Y.' Each slide is one shift.",
-    CarouselFormat.CHECKLIST: "Hook: 'The ultimate _____ checklist'. Body: Each slide is one checklist item with brief context or action step.",
-    CarouselFormat.TIMELINE_JOURNEY: "Hook: Where you started. Body: Chronological progression showing key milestones and lessons learned along the journey.",
-    CarouselFormat.BEFORE_VS_AFTER: "Hook: The 'before' struggle. Body: Show transformation stages, proof points, and the 'after' result.",
-    CarouselFormat.MYTH_VS_REALITY: "Hook: Common belief/myth. Body: Alternate between myth slide and reality slide. Format: 'Myth: X' then 'Reality: Y'.",
+    CarouselFormat.EDUCATIONAL_TUTORIAL: "TONE: Clear, authoritative, value-driven. HOOK: Question/problem + promise ('How to [achieve X] without [pain]'). BODY: Sequential learning steps building to mastery. Each slide = ONE discrete concept/action (40-80 chars). Use imperative verbs (Do X, Start with Y, Focus on Z). Maintain instructional clarity - readers should finish with actionable knowledge. End with summary of transformation enabled.",
+    
+    CarouselFormat.TRANSFORMATION_SHOWCASE: "TONE: Emotional, inspirational, proof-driven. HOOK: Vulnerable 'before' state or bold result claim. BODY: Journey narrative arc - starting struggle → pivotal moments → incremental wins → dramatic after state. Emphasize CONTRAST at each stage. Use sensory details and emotional language. Include concrete metrics/proof points. Build toward aspirational endpoint. Readers should FEEL the transformation, not just see it.",
+    
+    CarouselFormat.LISTICLE_TIPS: "TONE: Punchy, scannable, immediately actionable. HOOK: Numbered promise ('7 Ways to [benefit]') creating expectation. BODY: One discrete, standalone tip per slide (50-100 chars). Each must deliver instant value without context from other slides. Use parallel structure across slides. Front-load the insight, then brief why/how. Prioritize density over depth. Readers should save for future reference.",
+    
+    CarouselFormat.PROBLEM_SOLUTION_PITCH: "TONE: Empathetic, persuasive, benefit-focused. HOOK: Pain point audience immediately recognizes. BODY: Amplify problem with specificity → introduce solution as natural answer → break down benefits/features → provide social proof/results → clear next step. Use 'you' language throughout. Address objections preemptively. Build trust through understanding their struggle before pitching. Conversion-oriented - every slide moves toward action.",
+    
+    CarouselFormat.DATA_INSIGHT_AUTHORITY: "TONE: Analytical, authoritative, insight-driven. HOOK: Bold/surprising statistic that challenges assumptions. BODY: Context for data → supporting data points visualized (one per slide) → implications/analysis → actionable conclusions. Use precise numbers, cite methodology where relevant. Translate data into meaning (what it reveals, why it matters). Professional language, avoid hype. Establish thought leadership through substantiated insights, not opinions.",
 }
 
 
@@ -198,54 +193,42 @@ class StoryGenerator(BaseAgent[StoryGeneratorInput, StoryGeneratorOutput]):
             "Hook: Attention-grabbing opening. Body: Sequential content delivery."
         )
         
-        return f"""You are an expert social media content creator specializing in viral carousel posts for Instagram and TikTok. Your role is to write compelling, scroll-stopping narratives that drive engagement and deliver value.
+        return f"""You are an expert social media content creator specializing in carousel posts for Instagram and TikTok.
 
 FORMAT STRUCTURE FOR '{input_data.format_type}':
 {format_structure}
 
-STORYTELLING PRINCIPLES:
+HOW TO USE FORMAT STRUCTURE:
+1. The tone of the format structure is of paramount importance. DO NOT add emotion where knowledge is being conveyed, and vice versa.
+2. The format structure gives an overall picture of the carousel, it is your job to fill in the details and creative a cohesive and engaging story.
+3. Do not create captions or be too detailed about what goes into each carousel slide, focus primarly on the story and the flow of the carousel.
 
-1. HOOK SLIDE (First Slide):
-   - Must stop the scroll immediately (pattern interrupt, curiosity gap, bold claim)
-   - 40-80 characters ideal (must be readable in <2 seconds)
-   - Use proven hooks: "Stop scrolling if...", "The one thing...", "I went from X to Y", "Are you making this mistake?"
-   - Create curiosity gap - don't give away everything
-   - Speak directly to target audience's pain or desire
+STORY LOOP PRINCIPLE:
+Each carousel has multiple story loops with two parts:
+1. OPENING (Context): Clear, understandable setup that triggers prediction
+2. CLOSING (Reveal): Payoff that determines engagement
 
-2. BODY SLIDES (Remaining Slides):
-   - Each slide should standalone (users may not swipe through all)
-   - 50-100 characters per slide for optimal readability
-   - Deliver immediate value on each slide
-   - Use active voice and action-oriented language
-   - Build momentum toward conclusion/CTA
-   - Maintain narrative flow while keeping independence
+REVEAL OUTCOMES:
+- Worse than expected → viewer tunes out
+- Equal to expected → attention fades
+- Better than expected → dopamine release, keeps engaging
+- Unexpected but confusing → tunes out
+- Unexpected but intriguing → dopamine release, keeps engaging
 
-3. CONTENT QUALITY:
-   - Be specific, not generic (use numbers, examples, concrete details)
-   - Cut filler words ruthlessly (every word must earn its place)
-   - Use power words for emotional impact
-   - Vary sentence structure for rhythm
-   - End with actionable insight or strong conclusion
-
-4. BRAND VOICE ALIGNMENT:
-   - Embody the brand's style throughout (professional, playful, authoritative, etc.)
-   - Use industry-appropriate language
-   - Match sophistication level to target audience
-   - Maintain consistency across all slides
-
-5. SOCIAL MEDIA OPTIMIZATION:
-   - Write for scanners, not readers
-   - Front-load key information
-   - Use line breaks strategically (implied through brevity)
-   - Optimize for mobile viewing
-   - Create save-worthy or share-worthy content
+EXECUTION:
+- Set clear context so viewer's brain predicts what's next
+- Deliver reveals that are either BETTER than expected or INTRIGUING surprises
+- Avoid generic/predictable payoffs (equal to expected)
+- Chain story loops across slides to maintain momentum
+- Each loop's reveal becomes context for the next loop
+- The loops can be anywhere from 1 - 3 slides long.
 
 OUTPUT REQUIREMENTS:
-- complete_story: A cohesive narrative (200-400 characters) that ties the entire carousel together
-- complete_story_rationale: Explanation of your strategic choices (100-200 characters)
-- hook_slide_story: Compelling first slide that stops the scroll (30-150 characters)
-- body_slides_story: Array of exactly {input_data.num_slides - 1} body slide stories (each 30-150 characters)
-- Do not include slide numbers in the content (e.g., don't write "Slide 1:", "Step 1:")"""
+- complete_story: Cohesive narrative (200-400 chars) tying entire carousel together
+- complete_story_rationale: Strategic explanation (100-200 chars)
+- hook_slide_story: First slide opening the best compelling story loop (150-250 chars)
+- body_slides_story: Exactly {input_data.num_slides - 1} body slides (each 150-250 chars)
+- No slide numbers in content (don't write "Slide 1:", "Step 1:")"""
     
     def _build_user_prompt(self, input_data: StoryGeneratorInput) -> str:
         """
@@ -286,8 +269,6 @@ TASK:
 3. Then, break down the complete story into individual slides:
    - 1 hook slide (attention-grabbing opening)
    - Exactly {body_slide_count} body slides (following the format structure)
-
-Each slide should support the complete story while being able to stand alone.
 
 Return your response with the complete story, rationale, hook, and {body_slide_count} body slides."""
 

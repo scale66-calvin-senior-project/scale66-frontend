@@ -29,8 +29,8 @@ class Settings(BaseSettings):
     
     # Logging configuration
     log_level: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-    log_to_file: bool = True  # Enable file logging
-    log_file: str = "./logs/scale66.log"  # Log file path
+    log_to_file: bool = False  # Disable global log (run-specific logs created per pipeline)
+    log_file: str = "./logs/scale66.log"  # Global log file path (disabled by default)
     log_file_max_bytes: int = 10485760  # 10MB max file size
     log_file_backup_count: int = 5  # Keep 5 backup files
     
@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     # AI Services
     anthropic_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
-    anthropic_model: str = "claude-haiku-4-5"
+    anthropic_model: str = "claude-sonnet-4-5"
     
     # Gemini image generation model configuration
     # Supported models:

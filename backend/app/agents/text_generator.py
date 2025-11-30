@@ -1,21 +1,31 @@
 """
 Text Generator Agent - Step 4 of AI Pipeline
 
-Converts verbose story narratives into short, punchy carousel captions.
-
-Runs BEFORE image generation - no image analysis needed.
-Pure text transformation: detailed story → concise caption (3-8 words ideal).
-
 Input: TextGeneratorInput (hook_slide_story, body_slides_story)
 Output: TextGeneratorOutput (hook_slide_text, body_slides_text)
 """
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
 from app.models.pipeline import TextGeneratorInput, TextGeneratorOutput
 from app.models.structured import ClaudeTextOutput
+from app.agents.carousel_format_decider import CarouselFormat
 from app.services.ai.anthropic_service import AnthropicServiceError
+
+
+# Format-specific caption tone and structure guides
+FORMAT_CAPTION_GUIDES: Dict[str, str] = {
+    CarouselFormat.EDUCATIONAL_TUTORIAL: "Clear, instructional. Imperative verbs. Can be detailed to explain steps. Length varies - short headers or longer instructions as needed.",
+    
+    CarouselFormat.TRANSFORMATION_SHOWCASE: "Emotional, contrast-driven. Often minimal - let visuals tell story. Use impactful phrases for key moments. Before/after language when used.",
+    
+    CarouselFormat.LISTICLE_TIPS: "Detailed, standalone tips. Each caption complete - reader gets full value without context. Can be longer to explain thoroughly. Parallel structure across slides.",
+    
+    CarouselFormat.PROBLEM_SOLUTION_PITCH: "Persuasive, benefit-focused. 'You' language. Length adapts - short for pain points, detailed for solutions/benefits. Conversational.",
+    
+    CarouselFormat.DATA_INSIGHT_AUTHORITY: "Minimal text - data/visuals lead. When used: precise, analytical. Numbers/stats. Professional. Let research speak.",
+}
 
 
 class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
@@ -44,6 +54,9 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
         Validate input data before execution.
         
         Checks:
+        - Brand kit is complete with required fields
+        - Format type is valid
+        - Complete story is not empty
         - Hook slide story is not empty
         - Body slides stories array is valid and within limits
         - All story strings are valid
@@ -54,6 +67,33 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
         Raises:
             ValidationError: If input is invalid
         """
+        # Validate brand_kit
+        if not input_data.brand_kit:
+            raise ValidationError("brand_kit is required")
+        
+        # Check required brand kit fields
+        required_fields = {
+            "brand_name": input_data.brand_kit.brand_name,
+            "brand_niche": input_data.brand_kit.brand_niche,
+            "brand_style": input_data.brand_kit.brand_style,
+            "product_service_desc": input_data.brand_kit.product_service_desc,
+        }
+        
+        for field_name, field_value in required_fields.items():
+            if not field_value or not str(field_value).strip():
+                raise ValidationError(f"brand_kit.{field_name} is required")
+        
+        # Validate format_type
+        if not input_data.format_type or not input_data.format_type.strip():
+            raise ValidationError("format_type is required")
+        
+        # Validate complete_story
+        if not input_data.complete_story or not input_data.complete_story.strip():
+            raise ValidationError("complete_story cannot be empty")
+        
+        if len(input_data.complete_story.strip()) < 10:
+            raise ValidationError("complete_story must be at least 10 characters")
+        
         # Validate hook_slide_story
         if not input_data.hook_slide_story or not input_data.hook_slide_story.strip():
             raise ValidationError("hook_slide_story cannot be empty")
@@ -88,15 +128,11 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
     
     async def _execute(self, input_data: TextGeneratorInput) -> TextGeneratorOutput:
         """
-        Execute text generation logic using Claude Sonnet 4.5.
-        
-        Converts verbose story narratives into short, punchy carousel captions.
-        
         Args:
             input_data: Validated input data
             
         Returns:
-            Generated short captions (no styling)
+            Generated captions for the hook and body slides
             
         Raises:
             ExecutionError: If text generation fails
@@ -108,6 +144,7 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
             # Generate hook slide caption
             self.logger.debug("Generating hook slide caption")
             hook_text, hook_rationale = await self._generate_caption(
+                input_data=input_data,
                 story=input_data.hook_slide_story,
                 is_hook=True,
             )
@@ -119,6 +156,7 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
             for i, story in enumerate(input_data.body_slides_story):
                 self.logger.debug(f"Generating body slide {i+1}/{len(input_data.body_slides_story)}")
                 body_text, body_rationale = await self._generate_caption(
+                    input_data=input_data,
                     story=story,
                     is_hook=False,
                 )
@@ -152,6 +190,7 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
     
     async def _generate_caption(
         self,
+        input_data: TextGeneratorInput,
         story: str,
         is_hook: bool,
     ) -> tuple[str, str]:
@@ -159,7 +198,8 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
         Generate short, punchy caption from verbose story narrative.
         
         Args:
-            story: The verbose story content for this slide
+            input_data: Full input data for context
+            story: The story for this slide
             is_hook: Whether this is the hook slide
             
         Returns:
@@ -169,11 +209,13 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
             ExecutionError: If generation fails
         """
         try:
-            # Build comprehensive prompt
-            system_prompt = self._build_system_prompt(is_hook)
-            user_prompt = self._build_user_prompt(story, is_hook)
+            system_prompt = self._build_system_prompt(input_data.format_type, is_hook)
+            user_prompt = self._build_user_prompt(
+                complete_story=input_data.complete_story,
+                slide_story=story,
+                is_hook=is_hook
+            )
             
-            # Combine prompts for API call
             full_prompt = f"{system_prompt}\n\n{user_prompt}"
             
             self.logger.debug(f"Generating caption for {'hook' if is_hook else 'body'} slide")
@@ -182,26 +224,11 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
             text_output = await self.anthropic.generate_structured_output(
                 prompt=full_prompt,
                 output_model=ClaudeTextOutput,
-                max_tokens=500,
-                temperature=0.7,
+                max_tokens=4096,
+                temperature=0.9,
             )
             
-            # Validate caption length
             caption = text_output.caption.strip()
-            word_count = len(caption.split())
-            
-            if word_count > 12:
-                self.logger.warning(
-                    f"Caption is too long ({word_count} words), truncating to first 10 words"
-                )
-                words = caption.split()[:10]
-                caption = " ".join(words)
-            
-            if len(caption) < 3:
-                self.logger.warning(f"Caption is very short ({len(caption)} chars)")
-            
-            if word_count > 10:
-                self.logger.warning(f"Caption exceeds ideal length ({word_count} words, ideal 3-8)")
             
             self.logger.debug(
                 f"Generated caption ({len(caption)} chars): {caption}"
@@ -214,98 +241,62 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
         except Exception as e:
             raise ExecutionError(f"Unexpected error in caption generation: {str(e)}")
     
-    def _build_system_prompt(self, is_hook: bool) -> str:
+    def _build_system_prompt(self, format_type: str, is_hook: bool) -> str:
         """
-        Build comprehensive system prompt for caption generation.
+        Build system prompt for caption generation.
         
         Args:
+            format_type: The carousel format type
             is_hook: Whether this is the hook slide
             
         Returns:
             System prompt string
         """
-        slide_type = "HOOK SLIDE (First Slide)" if is_hook else "BODY SLIDE"
+        caption_guide = FORMAT_CAPTION_GUIDES.get(format_type)
         
-        return f"""You are an expert social media content creator specializing in viral carousel posts for Instagram and TikTok. Your role is to extract short, punchy captions from verbose story narratives.
+        slide_context = "HOOK (First Slide): Pattern interrupt. Stop scroll. Create curiosity." if is_hook else "BODY: Deliver value. Build on narrative flow."
+        
+        return f"""Expert carousel caption writer for Instagram/TikTok. Create captions optimized for each format's needs.
 
-CONTEXT: {slide_type}
+FORMAT: {format_type}
+CAPTION APPROACH: {caption_guide}
 
-CAPTION EXTRACTION PRINCIPLES:
+SLIDE TYPE: {slide_context}
 
-1. TEXT BREVITY:
-   - Extract the KEY INSIGHT or MAIN POINT from the story
-   - Target: 3-8 words (absolute maximum 10 words)
-   - Use power words and emotional triggers
-   - Create curiosity or reinforce value proposition
-   {'''   - Hook slides: Bold, attention-grabbing statement (e.g., "Done By 9 AM", "Stop Scrolling If...")
-   - Must create pattern interrupt and curiosity
-   - Preview value without giving everything away''' if is_hook else '''   - Body slides: Actionable insights or key takeaways
-   - Can use numbers, questions, or direct statements
-   - Each caption should standalone'''}
+CAPTION PRINCIPLES:
+- Length serves purpose: short for impact, long for clarity, minimal when visuals lead
+- Format-appropriate tone
+- Each caption serves the slide's specific role
+- Front-load key information
 
-2. CAPTION QUALITY:
-   - Avoid full sentences - use punchy phrases
-   - Be specific, not generic
-   - Cut filler words ruthlessly
-   - Front-load key information
-   - Must be instantly readable in <1 second on mobile
-
-3. SOCIAL MEDIA OPTIMIZATION:
-   - Mobile-first thinking (vertical 9:16 format)
-   - Thumb-stopping appeal
-   - Save-worthy or share-worthy phrasing
-   - Platform native aesthetic (Instagram/TikTok style)
-
-4. EXTRACTION STRATEGY:
-   - Read the full story narrative
-   - Identify the core message/insight
-   - Distill into shortest possible form
-   - Preserve emotional impact and clarity
-   - Ensure caption enhances (not duplicates) the story
-
-OUTPUT REQUIREMENTS:
-- caption: Short, punchy caption (3-10 words maximum, ideal 3-8 words)
-- rationale: Strategic explanation of why this caption works (50-150 characters)
-- Extract essence, don't summarize
-
-EXAMPLES:
-Story: "Plan your tasks the night before so you wake up with zero decision fatigue and can take immediate action at dawn"
-Output: caption="Plan Tonight, Win Tomorrow", rationale="Creates anticipation and implies immediate benefit with simple action-result pairing"
-
-Story: "Do a 20-minute focused work sprint before checking email to get deep work done before distractions hit"
-Output: caption="Deep Work Before Distractions", rationale="Establishes priority and sequence, using power words that resonate with productivity-focused audience"
-
-Remember: The caption should ENHANCE the story, not duplicate it verbatim. Focus on the KEY INSIGHT or HOOK that will stop the scroll and drive engagement."""
+OUTPUT:
+- caption: Length determined by format needs and slide purpose
+- rationale: Why this caption works for this format"""
     
-    def _build_user_prompt(self, story: str, is_hook: bool) -> str:
+    def _build_user_prompt(self, complete_story: str, slide_story: str, is_hook: bool) -> str:
         """
-        Build user prompt with story content and task.
+        Build user prompt for caption generation.
         
         Args:
-            story: The verbose story content for this slide
+            complete_story: The complete carousel story for context
+            slide_story: The story for this slide
             is_hook: Whether this is the hook slide
             
         Returns:
             User prompt string
         """
-        slide_type = "hook" if is_hook else "body"
-        
-        return f"""VERBOSE STORY NARRATIVE:
-"{story}"
+        return f"""COMPLETE STORY (context):
+"{complete_story}"
 
-TASK:
-Extract a short, punchy caption from this {slide_type} slide story.
+SLIDE STORY (focus):
+"{slide_story}"
 
-STEPS:
-1. Read the full story narrative carefully
-2. Identify the core message, key insight, or main point
-3. Distill it into the shortest possible form (3-8 words ideal)
-4. Ensure it's instantly readable and scroll-stopping
-5. Preserve emotional impact and clarity
-6. Provide a rationale explaining why your caption works
-
-Remember: The caption should ENHANCE the story, not duplicate it verbatim. Focus on the KEY INSIGHT or HOOK that will stop the scroll and drive engagement."""
+Generate caption:
+1. Use COMPLETE STORY for narrative flow and positioning
+2. Use SLIDE STORY for this slide's specific message
+3. Match format's caption approach
+4. Determine optimal length for this slide's purpose
+5. {'Hook: Create curiosity, preview value' if is_hook else 'Body: Deliver insight, maintain momentum'}"""
 
 
-# Create singleton instance for easy import
 text_generator = TextGenerator()

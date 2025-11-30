@@ -1,8 +1,6 @@
 """
 Carousel Format Decider Agent - Step 2 of AI Pipeline
 
-Analyzes user content request and brand context to determine optimal carousel format.
-
 Input: CarouselFormatDeciderInput (user_prompt, brand_kit)
 Output: CarouselFormatDeciderOutput (format_type, num_slides, format_rationale)
 """
@@ -18,34 +16,24 @@ from app.services.ai.anthropic_service import AnthropicServiceError
 
 class CarouselFormat(str, Enum):
     """Supported carousel formats optimized for social media engagement."""
-    TOP_5 = "top_5"
-    STORY_CASE_STUDY = "story_case_study"
-    DECISION_TREE = "decision_tree"
-    COMMON_MISTAKES = "common_mistakes"
-    TRANSFORMATIVE_GRID = "transformative_grid"
-    TUTORIAL = "tutorial"
-    UNPOPULAR_OPINION = "unpopular_opinion"
-    THIS_VS_THAT = "this_vs_that"
-    CHECKLIST = "checklist"
-    TIMELINE_JOURNEY = "timeline_journey"
-    BEFORE_VS_AFTER = "before_vs_after"
-    MYTH_VS_REALITY = "myth_vs_reality"
+    EDUCATIONAL_TUTORIAL = "educational_tutorial"
+    TRANSFORMATION_SHOWCASE = "transformation_showcase"
+    LISTICLE_TIPS = "listicle_tips"
+    PROBLEM_SOLUTION_PITCH = "problem_solution_pitch"
+    DATA_INSIGHT_AUTHORITY = "data_insight_authority"
 
 
 # Format descriptions for LLM context
 FORMAT_DESCRIPTIONS: Dict[str, str] = {
-    CarouselFormat.TOP_5: "Top 5 reasons/things/signs/mistakes in the product's niche. Great for quick, scannable content.",
-    CarouselFormat.STORY_CASE_STUDY: "Hook with relatable problem → struggle → turning point → solution. Builds emotional connection.",
-    CarouselFormat.DECISION_TREE: "Should you _____? Each slide asks a question, guiding towards solution. Interactive feel.",
-    CarouselFormat.COMMON_MISTAKES: "Are you making these mistakes? How to avoid them. Problem-aware audience.",
-    CarouselFormat.TRANSFORMATIVE_GRID: "Side-by-side comparisons on each slide. Visual contrast drives engagement.",
-    CarouselFormat.TUTORIAL: "How to achieve _____ without THIS STRUGGLE. Step-by-step actionable guidance.",
-    CarouselFormat.UNPOPULAR_OPINION: "Controversial take as the hook. Drives debate and shares.",
-    CarouselFormat.THIS_VS_THAT: "Stop doing A, start doing B. Repeat through slides. Clear actionable shifts.",
-    CarouselFormat.CHECKLIST: "The ultimate _____ checklist. Each slide is an item. Saves and shares.",
-    CarouselFormat.TIMELINE_JOURNEY: "How I went from A to B. Personal transformation narrative.",
-    CarouselFormat.BEFORE_VS_AFTER: "Show the struggle before and transformation after. Proof-driven.",
-    CarouselFormat.MYTH_VS_REALITY: "Myth on one slide, reality on the next. Educational and corrective.",
+    CarouselFormat.EDUCATIONAL_TUTORIAL: "Sequential step-by-step instruction teaching skill/process. Hook/problem → 6-8 learning steps (one per slide) → summary → CTA. High save rates, establishes authority, creates reference content. Use for: how-tos, tutorials, workflows, tool demos, professional development, technical explanations. Slides: 4-6.",
+    
+    CarouselFormat.TRANSFORMATION_SHOWCASE: "Visual narrative demonstrating measurable change through contrast. Before state → transformation journey → after state with results → CTA. Triggers contrast psychology, builds trust through proof (2x ROAS, 61% higher CTR). Use for: case studies, success stories, portfolio work, ROI demonstrations, customer results. Requires authentic documented results. Slides: 4-6.",
+    
+    CarouselFormat.LISTICLE_TIPS: "Numbered collection of discrete tips/insights, one per slide. Numbered headline (\"7 Ways to X\") → one item per slide → bonus/CTA. Scannable, save-worthy, satisfies completionist instinct. Use for: quick tips, recommendations, mistake lists, resource compilations, trend summaries, checklists. Slides: 3-5 (match numbered promise).",
+    
+    CarouselFormat.PROBLEM_SOLUTION_PITCH: "Conversion-focused persuasion leading with pain points. Pain identification → problem amplification + empathy → solution → benefits/features → social proof/results → CTA. Mirrors buyer journey, 116% increase in qualified leads. Use for: product launches, sales, lead generation, objection handling, service offerings. Slides: 4-6.",
+    
+    CarouselFormat.DATA_INSIGHT_AUTHORITY: "Research/statistics carousel with visualization. Bold statistic → context/methodology → supporting data points (3-5 slides) → implications → conclusions → CTA. Establishes thought leadership, high save rates, 6.60% engagement on LinkedIn, 27% boost from data visualization. Use for: industry reports, trend analysis, research findings, benchmarks. Requires genuine data. Slides: 4-6.",
 }
 
 
@@ -174,23 +162,37 @@ class CarouselFormatDecider(BaseAgent[CarouselFormatDeciderInput, CarouselFormat
 AVAILABLE FORMATS:
 {format_list}
 
-YOUR TASK:
-1. Analyze the user's content request
-2. Consider the brand's industry, target audience, and tone
-3. Select the format that best matches the content type and brand voice
-4. Determine optimal slide count (3-10 slides based on content complexity)
-5. Provide clear rationale for your decision
+SELECTION PRIORITY RULES (apply in order):
+1. If prompt explicitly mentions data/statistics/research → ALWAYS choose data_insight_authority
+2. If prompt is conversion/sales-focused → Choose problem_solution_pitch
+3. If prompt shows before/after or results → Choose transformation_showcase
+4. If prompt asks to teach/explain a process → Choose educational_tutorial
+5. If prompt wants quick tips/numbered list → Choose listicle_tips
 
-DECISION CRITERIA:
-- Match format to content intent (educate, inspire, sell, entertain)
-- Consider audience sophistication and attention span
-- Align with brand tone (professional, playful, authoritative, etc.)
-- Optimize for social media engagement patterns
-- Simpler concepts = fewer slides (3-5), complex topics = more slides (6-10)
+FORMAT DISTINCTIONS:
+- educational_tutorial = Teaching HOW (process-focused)
+- transformation_showcase = Showing RESULTS (outcome-focused)
+- listicle_tips = Multiple quick items (breadth over depth)
+- problem_solution_pitch = Selling solution (conversion-focused)
+- data_insight_authority = Establishing credibility (research-focused)
+
+KEYWORD TRIGGERS:
+- "how to", "tutorial", "guide", "teach", "explain process", "step-by-step" → educational_tutorial
+- "results", "before/after", "success story", "case study", "transformation", "prove", "show impact" → transformation_showcase
+- "tips", "list", "ways to", "mistakes", "top X", numbered collection → listicle_tips
+- "sell", "promote", "launch", "leads", "solve problem", "overcome", product/service name → problem_solution_pitch
+- "data", "research", "statistics", "trends", "analysis", "insights", "study", "report" → data_insight_authority
+
+YOUR TASK:
+1. Analyze the user's content request for keyword triggers
+2. Apply priority rules to select optimal format
+3. Consider brand context to validate format alignment
+4. Determine slide count based on format guidelines
+5. Provide clear rationale explaining format choice
 
 OUTPUT REQUIREMENTS:
 - format_type: One of the format values from above
-- num_slides: Integer between 3 and 10
+- num_slides: Integer between 3 and 10 (follow format guidelines)
 - format_rationale: 2-3 sentence explanation of why this format works best for this content and brand"""
     
     def _build_user_prompt(self, input_data: CarouselFormatDeciderInput) -> str:

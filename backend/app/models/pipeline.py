@@ -1,14 +1,6 @@
 """
 AI Pipeline Models - Pydantic schemas for internal AI agent communication.
 
-PIPELINE FLOW (Updated for Gemini 3 Pro Image with text generation):
-1. Orchestrator - Coordinates the entire pipeline
-2. CarouselFormatDecider - Determines optimal carousel format
-3. StoryGenerator - Creates verbose, detailed narratives
-4. TextGenerator - Converts stories into short, punchy carousel captions
-5. ImageGenerator - Generates images WITH text baked in using Gemini 3 Pro
-6. Finalizer - Validates the entire pipeline output using Claude Vision and uploads the carousel to storage
-
 Note: For Claude structured output models, see app.models.structured
 """
 
@@ -66,22 +58,18 @@ class StoryGeneratorOutput(BasePipelineStep):
 class TextGeneratorInput(BasePipelineStep):
     """
     Schema for text generator input.
-    
-    Takes verbose stories and creates short, punchy carousel captions.
-    NO image analysis - purely text-based transformation.
     """
-    hook_slide_story: str = Field(..., description="The verbose hook story to convert into caption")
-    body_slides_story: List[str] = Field(..., description="The verbose body stories to convert into captions")
+    brand_kit: BrandKit = Field(..., description="The brand kit")
+    format_type: str = Field(..., description="The type of carousel format")
+    hook_slide_story: str = Field(..., description="Story for the hook slide")
+    body_slides_story: List[str] = Field(..., description="Stories for the body slides")
     complete_story: str = Field(..., description="The complete story for context")
 class TextGeneratorOutput(BasePipelineStep):
     """
     Schema for text generator output.
-    
-    Short, punchy captions ready for image generation.
-    NO styling information - text will be rendered by Gemini 3 Pro.
     """
-    hook_slide_text: str = Field(..., description="Short, punchy hook text (3-8 words)")
-    body_slides_text: List[str] = Field(..., description="Short, punchy body texts")
+    hook_slide_text: str = Field(..., description="The caption for the hook slide")
+    body_slides_text: List[str] = Field(..., description="The captions for the body slides")
     captions_rationale: List[str] = Field(..., description="The rationale for the captions of each slide")
 
 # =============== Step 5: Image Generation ===============
@@ -89,15 +77,14 @@ class TextGeneratorOutput(BasePipelineStep):
 class ImageGeneratorInput(BasePipelineStep):
     """
     Schema for image generator input.
-    
-    Receives both complete story, individual slide stories (for context) and short captions (to render).
-    Gemini 3 Pro will generate images with text baked in.
     """
-    complete_story: str = Field(..., description="The complete story for the carousel")
-    hook_slide_story: str = Field(..., description="Detailed hook story for context")
-    body_slides_story: List[str] = Field(..., description="Detailed body stories for context")
-    hook_slide_text: str = Field(..., description="Short text to render on hook image")
-    body_slides_text: List[str] = Field(..., description="Short texts to render on body images")
+    brand_kit: BrandKit = Field(..., description="The brand kit")
+    format_type: str = Field(..., description="The type of carousel format")
+    hook_slide_story: str = Field(..., description="Story for the hook slide")
+    complete_story: str = Field(..., description="The complete story for context")
+    body_slides_story: List[str] = Field(..., description="Stories for the body slides")
+    hook_slide_text: str = Field(..., description="Caption for the hook slide")
+    body_slides_text: List[str] = Field(..., description="Captions for the body slides")
 
 class ImageGeneratorOutput(BasePipelineStep):
     """
