@@ -37,21 +37,21 @@ class CarouselFormatDeciderOutput(BasePipelineStep):
     num_slides: int = Field(..., ge=3, le=10, description="The number of slides in the carousel")
     format_rationale: str = Field(..., description="The rationale for the format decision")
 
-# =============== Step 3: Story Generation ===============
+# =============== Step 3: Strategy Generation ===============
 
-class StoryGeneratorInput(BasePipelineStep):
-    """Schema for story generator input."""
+class StrategyGeneratorInput(BasePipelineStep):
+    """Schema for strategy generator input."""
     format_type: str = Field(..., description="The type of carousel format")
     num_slides: int = Field(..., ge=3, le=10, description="The number of slides in the carousel")
     brand_kit: BrandKit = Field(..., description="The brand kit")
     user_prompt: str = Field(..., description="The user's content request")
 
-class StoryGeneratorOutput(BasePipelineStep):
-    """Schema for story generator output - verbose, detailed narratives."""
-    hook_slide_story: str = Field(..., description="The detailed hook story for the carousel")
-    body_slides_story: List[str] = Field(..., description="The detailed body slides stories for the carousel")
-    complete_story: str = Field(..., description="The complete story for the carousel")
-    complete_story_rationale: str = Field(..., description="The rationale for the complete story")
+class StrategyGeneratorOutput(BasePipelineStep):
+    """Schema for strategy generator output - strategic guidance for slides."""
+    hook_slide_story: str = Field(..., description="The strategic guidance for the hook slide")
+    body_slides_story: List[str] = Field(..., description="The strategic guidance for each body slide")
+    complete_story: str = Field(..., description="The complete strategic approach for the carousel")
+    complete_story_rationale: str = Field(..., description="The rationale for the strategic approach")
 
 # =============== Step 4: Text Generation ===============
 

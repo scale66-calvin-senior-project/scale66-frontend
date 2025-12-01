@@ -39,13 +39,13 @@ backend/
 │
 └── app/
     ├── agents/               # AI pipeline (orchestrator + 5 agents)
-    │   ├── base_agent.py            # Base class with error handling - IMPLEMENTED
-    │   ├── orchestrator.py          # Pipeline coordinator - IMPLEMENTED
-    │   ├── carousel_format_decider.py # Format selection - IMPLEMENTED
-    │   ├── story_generator.py       # Story/narrative generation - IMPLEMENTED
-    │   ├── text_generator.py        # Caption generation from stories - IMPLEMENTED
-    │   ├── image_generator.py       # Image gen with text (Gemini 3 Pro) - IMPLEMENTED
-    │   └── finalizer.py             # Quality validation & upload - IMPLEMENTED
+    │   ├── base_agent.py            # Base class with error handling and logging
+    │   ├── orchestrator.py          # Pipeline coordinator with run-specific logging
+    │   ├── carousel_format_decider.py # Format selection with structured outputs
+    │   ├── strategy_generator.py     # Strategic guidance generation for carousel slides
+    │   ├── text_generator.py        # Caption generation (runs before images)
+    │   ├── image_generator.py       # Image generation with template-based reference
+    │   └── finalizer.py             # Quality validation & upload (disabled for testing)
     │
     ├── api/                  # REST API endpoints
     │   ├── deps.py                  # Dependency injection
@@ -104,21 +104,21 @@ backend/
 **Sequential carousel generation orchestrated by Orchestrator:**
 
 1. **Orchestrator** - Coordinates pipeline, manages state flow, and handles BrandKit fetching
-2. **Format Decider** - Analyzes content request and selects optimal carousel format (12 format types)
-3. **Story Generator** - Creates verbose, detailed narratives for each slide
-4. **Text Generator** - Converts stories into short, punchy carousel captions (3-8 words)
-5. **Image Generator** - Generates images WITH text baked in using Gemini 3 Pro text rendering
-6. **Finalizer** - Validates image quality using Claude Vision and uploads to Supabase Storage
+2. **Format Decider** - Analyzes content request and selects optimal carousel format (5 format types)
+3. **Strategy Generator** - Creates strategic guidance for each slide defining purpose and approach
+4. **Text Generator** - Converts strategic guidance into short, punchy carousel captions
+5. **Image Generator** - Generates images WITH text baked in using template-based reference approach
+6. **Finalizer** - Validates image quality using Claude Vision and uploads to Supabase Storage (currently disabled for testing)
 
-**Key Architecture:** Text generation runs BEFORE images. Gemini 3 Pro renders text directly in images, eliminating separate text overlay processing. Finalizer validates quality and stores metrics (no retry logic in MVP).
+**Key Architecture:** Text generation runs BEFORE image generation. Hook image is generated from template reference, then body images reference the hook to maintain visual consistency. Gemini 3 Pro renders text directly in images, eliminating separate text overlay processing.
 
 **AI Models:**
 
-- Claude Sonnet 4.5 (format decisions, story generation, text generation)
-- Gemini 3 Pro Image (image generation with text rendering)
-- Claude Vision (quality validation)
+- Claude Sonnet 4.5 (format decisions, strategy generation, text generation, structured outputs)
+- Gemini 3 Pro Image (image generation with text rendering and reference-based styling)
+- Claude Vision (quality validation - disabled in current version)
 
-**Implementation Status:** Complete - Orchestrator + all 5 pipeline agents implemented
+**Implementation Status:** Complete - Orchestrator + all 5 pipeline agents implemented and tested. Finalizer temporarily disabled for development testing.
 
 ### API Endpoints
 
@@ -160,6 +160,7 @@ Base URL: `http://localhost:8000/api/v1`
 - Application-wide configuration
 - Environment-aware (development/production)
 - Console and file output with rotation
+- Run-specific log files for each pipeline execution
 
 **security.py** - Authentication
 
@@ -214,14 +215,16 @@ Base URL: `http://localhost:8000/api/v1`
 **AI Services - IMPLEMENTED:**
 
 - **Anthropic Service** - Claude API integration
-  - Text generation (Claude Sonnet 4.5)
-  - Image analysis (Claude Vision for quality validation)
+  - Text generation with structured outputs (Claude Sonnet 4.5)
+  - Image analysis (Claude Vision for quality validation - disabled in current version)
   - Async client with error handling
-- **Gemini Service** - Image generation integration with text rendering
-  - Supports gemini-3-pro-image-preview (with text generation capabilities)
+- **Gemini Service** - Image generation with reference-based styling
+  - Supports gemini-3-pro-image-preview (with text rendering and reference images)
   - Supports gemini-2.5-flash-image (faster alternative)
-  - Image generation with text overlays baked in
-  - Aspect ratio control (9:16 for social media)
+  - Template-based reference image generation
+  - Hook-to-body reference flow for visual consistency
+  - Text rendering baked directly into images
+  - Aspect ratio control (4:5 vertical for mobile)
   - Size options (1K, 2K, 4K on gemini-3-pro)
   - Base64 encoded output
 
@@ -229,7 +232,7 @@ Base URL: `http://localhost:8000/api/v1`
 
 - Email Service - Resend API (structure defined)
 - Social Media Service - Instagram/TikTok OAuth (structure defined)
-- Storage Service - Supabase Storage (implemented for carousel uploads)
+- Storage Service - Supabase Storage (structure defined - uploads disabled in current version)
 - Stripe Service - Payment processing (structure defined)
 - Image Overlay Service - DEPRECATED (replaced by Gemini 3 Pro text rendering)
 
@@ -323,12 +326,13 @@ uv run python main.py
 
 **Complete:**
 
-- Core infrastructure (config, logging, security, database)
-- AI services (Anthropic Claude + Gemini 3 Pro with text rendering)
-- Pydantic models and schemas (all entities + updated pipeline models)
-- AI pipeline (Orchestrator + all 5 agents with new architecture)
-- Base agent class with error handling and logging
-- Gemini 3 Pro integration with text-in-image generation
+- Core infrastructure (config, logging with run-specific files, security, database)
+- AI services (Anthropic with structured outputs + Gemini 3 Pro with reference-based generation)
+- Pydantic models and schemas (all entities + pipeline models with structured outputs)
+- AI pipeline (Orchestrator + all 5 agents with template-based reference flow)
+- Base agent class with error handling and enhanced logging
+- Strategic guidance principles for carousel planning
+- Template-based image generation with hook-to-body reference flow
 - Singleton pattern for services and agents
 
 **In Progress:**
@@ -336,3 +340,4 @@ uv run python main.py
 - API endpoint handlers (agent integration)
 - CRUD operations (structure defined)
 - External service integrations (email, social, payments)
+- Finalizer implementation (quality validation and storage uploads)

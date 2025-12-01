@@ -16,15 +16,7 @@ from app.services.ai.anthropic_service import AnthropicServiceError
 
 # Format-specific caption tone and structure guides
 FORMAT_CAPTION_GUIDES: Dict[str, str] = {
-    CarouselFormat.EDUCATIONAL_TUTORIAL: "Clear, instructional. Imperative verbs. Can be detailed to explain steps. Length varies - short headers or longer instructions as needed.",
-    
-    CarouselFormat.TRANSFORMATION_SHOWCASE: "Emotional, contrast-driven. Often minimal - let visuals tell story. Use impactful phrases for key moments. Before/after language when used.",
-    
     CarouselFormat.LISTICLE_TIPS: "Detailed, standalone tips. Each caption complete - reader gets full value without context. Can be longer to explain thoroughly. Parallel structure across slides.",
-    
-    CarouselFormat.PROBLEM_SOLUTION_PITCH: "Persuasive, benefit-focused. 'You' language. Length adapts - short for pain points, detailed for solutions/benefits. Conversational.",
-    
-    CarouselFormat.DATA_INSIGHT_AUTHORITY: "Minimal text - data/visuals lead. When used: precise, analytical. Numbers/stats. Professional. Let research speak.",
 }
 
 
@@ -141,6 +133,10 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
             total_slides = 1 + len(input_data.body_slides_story)
             self.logger.debug(f"Generating captions for {total_slides} slides")
             
+            # Log the caption guide being used
+            caption_guide = FORMAT_CAPTION_GUIDES.get(input_data.format_type, "Default caption approach")
+            self.logger.info(f"Caption Guide: {caption_guide}")
+            
             # Generate hook slide caption
             self.logger.debug("Generating hook slide caption")
             hook_text, hook_rationale = await self._generate_caption(
@@ -170,10 +166,6 @@ class TextGenerator(BaseAgent[TextGeneratorInput, TextGeneratorOutput]):
                 f"Caption generation completed: "
                 f"1 hook + {len(body_texts)} body captions"
             )
-            self.logger.info("Caption Rationales:")
-            self.logger.info(f"  [0] Hook: {hook_rationale}")
-            for i, rationale in enumerate(body_rationales, 1):
-                self.logger.info(f"  [{i}] Body {i}: {rationale}")
             
             return TextGeneratorOutput(
                 step_name="text_generator",

@@ -16,14 +16,14 @@ from app.models.pipeline import (
     OrchestratorInput,
     OrchestratorOutput,
     CarouselFormatDeciderInput,
-    StoryGeneratorInput,
+    StrategyGeneratorInput,
     ImageGeneratorInput,
     TextGeneratorInput,
     FinalizerInput,
 )
 from app.models.brand_kit import BrandKit
 from app.agents.carousel_format_decider import carousel_format_decider
-from app.agents.story_generator import story_generator
+from app.agents.strategy_generator import strategy_generator
 from app.agents.image_generator import image_generator
 from app.agents.text_generator import text_generator
 from app.agents.finalizer import finalizer
@@ -156,14 +156,13 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                 )
             
             self.logger.info(f"Format: {format_result.format_type} ({format_result.num_slides} slides)")
-            self.logger.info(f"Rationale: {format_result.format_rationale}")
             
-            # Step 3: Generate story narratives
+            # Step 3: Generate strategic guidance
             self.logger.info("")
-            self.logger.info("─── STEP 3/6: STORY NARRATIVES ───")
+            self.logger.info("─── STEP 3/6: STRATEGIC GUIDANCE ───")
             
-            story_result = await story_generator.run(
-                StoryGeneratorInput(
+            strategy_result = await strategy_generator.run(
+                StrategyGeneratorInput(
                     format_type=format_result.format_type,
                     num_slides=format_result.num_slides,
                     brand_kit=brand_kit,
@@ -171,17 +170,16 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                 )
             )
             
-            if not story_result.success:
+            if not strategy_result.success:
                 raise ExecutionError(
-                    f"Story generation failed: {story_result.error_message}"
+                    f"Strategy generation failed: {strategy_result.error_message}"
                 )
             
-            self.logger.info(f"Complete Story: {story_result.complete_story}")
-            self.logger.info(f"Story Rationale: {story_result.complete_story_rationale}")
-            self.logger.info(f"Hook: {story_result.hook_slide_story}")
+            self.logger.info(f"Complete Strategy: {strategy_result.complete_story}")
+            self.logger.info(f"Hook: {strategy_result.hook_slide_story}")
             self.logger.info(f"Body Slides:")
-            for i, story in enumerate(story_result.body_slides_story, 1):
-                self.logger.info(f"  {i}. {story}")
+            for i, strategy in enumerate(strategy_result.body_slides_story, 1):
+                self.logger.info(f"  {i}. {strategy}")
             
             # Step 4: Generate text captions (NEW ORDER - before images)
             self.logger.info("")
@@ -191,9 +189,9 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                 TextGeneratorInput(
                     brand_kit=brand_kit,
                     format_type=format_result.format_type,
-                    hook_slide_story=story_result.hook_slide_story,
-                    body_slides_story=story_result.body_slides_story,
-                    complete_story=story_result.complete_story,
+                    hook_slide_story=strategy_result.hook_slide_story,
+                    body_slides_story=strategy_result.body_slides_story,
+                    complete_story=strategy_result.complete_story,
                 )
             )
             
@@ -215,9 +213,9 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                 ImageGeneratorInput(
                     brand_kit=brand_kit,
                     format_type=format_result.format_type,
-                    hook_slide_story=story_result.hook_slide_story,
-                    complete_story=story_result.complete_story,
-                    body_slides_story=story_result.body_slides_story,
+                    hook_slide_story=strategy_result.hook_slide_story,
+                    complete_story=strategy_result.complete_story,
+                    body_slides_story=strategy_result.body_slides_story,
                     hook_slide_text=text_result.hook_slide_text,
                     body_slides_text=text_result.body_slides_text,
                 )
@@ -228,114 +226,54 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                     f"Image generation failed: {image_result.error_message}"
                 )
             
-            self.logger.info(f"Generated: 1 hook + {len(image_result.body_slides_images)} body images (with text rendered)")
+            self.logger.info(f"Generated: 1 hook + {len(image_result.body_slides_images)} body images")
             
-            # Step 6: Validate quality and upload
-            self.logger.info("")
-            self.logger.info("─── STEP 6/6: QUALITY VALIDATION & UPLOAD ───")
-            
-            final_result = await finalizer.run(
-                FinalizerInput(
-                    format_type=format_result.format_type,
-                    complete_story=story_result.complete_story,
-                    hook_slide_story=story_result.hook_slide_story,
-                    body_slides_story=story_result.body_slides_story,
-                    hook_slide_text=text_result.hook_slide_text,
-                    body_slides_text=text_result.body_slides_text,
-                    hook_slide_image=image_result.hook_slide_image,
-                    body_slides_images=image_result.body_slides_images,
-                    brand_kit=brand_kit,
-                )
-            )
-            
-            if not final_result.success:
-                raise ExecutionError(
-                    f"Finalization failed: {final_result.error_message}"
-                )
+            # Step 6: Validate quality and upload (DISABLED FOR TESTING)
+            # self.logger.info("")
+            # self.logger.info("─── STEP 6/6: QUALITY VALIDATION & UPLOAD ───")
+            # 
+            # final_result = await finalizer.run(
+            #     FinalizerInput(
+            #         format_type=format_result.format_type,
+            #         complete_story=strategy_result.complete_story,
+            #         hook_slide_story=strategy_result.hook_slide_story,
+            #         body_slides_story=strategy_result.body_slides_story,
+            #         hook_slide_text=text_result.hook_slide_text,
+            #         body_slides_text=text_result.body_slides_text,
+            #         hook_slide_image=image_result.hook_slide_image,
+            #         body_slides_images=image_result.body_slides_images,
+            #         brand_kit=brand_kit,
+            #     )
+            # )
+            # 
+            # if not final_result.success:
+            #     raise ExecutionError(
+            #         f"Finalization failed: {final_result.error_message}"
+            #     )
             
             # Calculate total duration
             pipeline_duration = int((time.time() - start_time) * 1000)
             duration_seconds = pipeline_duration / 1000
             duration_str = f"{int(duration_seconds // 60)}m {int(duration_seconds % 60)}s" if duration_seconds >= 60 else f"{duration_seconds:.1f}s"
             
-            # Pipeline completion summary
+            # Pipeline completion summary (early termination - no finalization)
             self.logger.info("")
-            slide_count = len(final_result.carousel_slides_urls)
+            slide_count = 1 + len(image_result.body_slides_images)
             self.logger.info("╔" + "═" * 78 + "╗")
             self.logger.info(f"║ PIPELINE COMPLETE | Duration: {duration_str:<8} | {slide_count} slides                   ║")
-            self.logger.info(f"║ Carousel ID: {final_result.carousel_id}                            ║")
+            self.logger.info(f"║ Status: Image generation complete (finalizer disabled)              ║")
             self.logger.info("╚" + "═" * 78 + "╝")
             self.logger.info("")
-            
-            # Show local file paths if enabled
-            if settings.save_local_output:
-                from pathlib import Path
-                local_dir = Path(settings.output_dir) / "carousels" / final_result.carousel_id / "final"
-                self.logger.info("Output Files:")
-                self.logger.info(f"  Location: {local_dir}/")
-                for i in range(slide_count):
-                    slide_type = "Hook" if i == 0 else f"Body {i}"
-                    self.logger.info(f"    [{i}] {slide_type}: slide_{i}.png")
-            else:
-                self.logger.info("Local output saving is disabled")
-                self.logger.info("View slides in Supabase Storage > carousel-slides bucket")
+            self.logger.info("NOTE: Finalizer disabled - images not uploaded to storage")
             self.logger.info("")
             
-            # Display comprehensive evaluation metrics
-            self.logger.info("╔" + "═" * 78 + "╗")
-            self.logger.info("║" + " " * 22 + "EVALUATION METRICS" + " " * 38 + "║")
-            self.logger.info("╚" + "═" * 78 + "╝")
-            self.logger.info("")
-            
-            metrics = final_result.evaluation_metrics
-            
-            self.logger.info("FORMAT TYPE:")
-            self.logger.info(f"  {metrics.format_type_evaluation}")
-            self.logger.info("")
-            
-            self.logger.info("COMPLETE STORY:")
-            self.logger.info(f"  {metrics.complete_story_evaluation}")
-            self.logger.info("")
-            
-            self.logger.info("HOOK SLIDE STORY:")
-            self.logger.info(f"  {metrics.hook_slide_story_evaluation}")
-            self.logger.info("")
-            
-            self.logger.info("BODY SLIDES STORY:")
-            for i, eval_text in enumerate(metrics.body_slides_story_evaluation, 1):
-                self.logger.info(f"  [{i}] {eval_text}")
-            self.logger.info("")
-            
-            self.logger.info("HOOK SLIDE TEXT:")
-            self.logger.info(f"  {metrics.hook_slide_text_evaluation}")
-            self.logger.info("")
-            
-            self.logger.info("BODY SLIDES TEXT:")
-            for i, eval_text in enumerate(metrics.body_slides_text_evaluation, 1):
-                self.logger.info(f"  [{i}] {eval_text}")
-            self.logger.info("")
-            
-            self.logger.info("HOOK SLIDE IMAGE:")
-            self.logger.info(f"  {metrics.hook_slide_image_evaluation}")
-            self.logger.info("")
-            
-            self.logger.info("BODY SLIDES IMAGES:")
-            for i, eval_text in enumerate(metrics.body_slides_images_evaluation, 1):
-                self.logger.info(f"  [{i}] {eval_text}")
-            self.logger.info("")
-            
-            self.logger.info("BRAND ALIGNMENT:")
-            self.logger.info(f"  {metrics.brand_kit_evaluation}")
-            self.logger.info("")
-            
-            self.logger.info("═" * 80)
-            self.logger.info("")
-            
-            # Return orchestrator output
+            # Return orchestrator output without finalization
             return OrchestratorOutput(
-                carousel_id=final_result.carousel_id,
-                carousel_slides_urls=final_result.carousel_slides_urls,
-                evaluation_metrics=final_result.evaluation_metrics,
+                step_name="orchestrator",
+                success=True,
+                carousel_id="temp-id-finalization-disabled",
+                carousel_slides_urls=[],
+                evaluation_metrics=None,
             )
             
         except ExecutionError:

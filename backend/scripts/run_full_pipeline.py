@@ -45,7 +45,7 @@ TEST_BRAND_KIT_DATA = {
     )
 }
 TEST_USER_PROMPT = (
-    "Create a carousel that doesn't try to sell anything but just tells a story about the importance of social media marketing for businesses"
+    "Create a carousel that gives a couple useful tips to solopreneurs on how to improve their social media presence, with a soft CTA for scale66 at the end"
 )
 
 
@@ -154,28 +154,12 @@ def display_results(result):
     print("=" * 80)
     
     if result.success:
-        print(f"Carousel ID: {result.carousel_id}")
-        print(f"Total Slides: {len(result.carousel_slides_urls)}")
-        
-        print("\n" + "=" * 80)
-        print("STORAGE URLS")
-        print("=" * 80)
-        for i, url in enumerate(result.carousel_slides_urls):
-            slide_type = "Hook" if i == 0 else f"Body {i}"
-            print(f"  [{i}] {slide_type}: {url}")
-        
-        if settings.save_local_output:
-            from pathlib import Path
-            local_dir = Path(settings.output_dir) / "carousels" / result.carousel_id / "final"
-            print("\n" + "=" * 80)
-            print("LOCAL FILES")
-            print("=" * 80)
-            print(f"  {local_dir}")
-        
+        print(f"Status: Image generation complete")
+        print(f"Note: Finalizer disabled - images not uploaded")
         print("\n" + "=" * 80)
         print("NEXT STEPS")
         print("=" * 80)
-        print("  View images: Supabase Dashboard > Storage > carousel-slides")
+        print("  Review generated images in pipeline logs")
         print("  View logs: backend/logs/")
         print("=" * 80)
     else:
@@ -183,43 +167,9 @@ def display_results(result):
 
 
 async def save_to_posts(brand_kit_id: str, result):
-    """Save generated carousel to posts table."""
-    print("\n" + "=" * 80)
-    print("SAVING TO DATABASE")
-    print("=" * 80)
-    
-    supabase = get_supabase_admin_client()
-    
-    campaign_data = {
-        'user_id': TEST_USER_ID,
-        'campaign_name': 'Test Campaign',
-        'target_audience': 'Small business owners',
-        'goals': 'Test pipeline'
-    }
-    campaign = supabase.table('campaigns').insert(campaign_data).execute()
-    campaign_id = campaign.data[0]['id']
-    print(f"  Campaign: {campaign_id}")
-    
-    carousel_metadata = {
-        'carousel_id': result.carousel_id,
-        'brand_kit_id': brand_kit_id,
-        'prompt': TEST_USER_PROMPT,
-        'num_slides': len(result.carousel_slides_urls)
-    }
-    
-    post_data = {
-        'user_id': TEST_USER_ID,
-        'campaign_id': campaign_id,
-        'carousel_slides': result.carousel_slides_urls,
-        'carousel_metadata': carousel_metadata,
-        'final_caption': TEST_USER_PROMPT,
-        'platform': 'instagram',
-        'status': 'draft'
-    }
-    
-    post = supabase.table('posts').insert(post_data).execute()
-    print(f"  Post: {post.data[0]['id']}")
-    print("=" * 80)
+    """Save generated carousel to posts table (DISABLED - no uploads without finalizer)."""
+    print("\nSkipping database save - finalizer disabled")
+    return
 
 
 async def cleanup():

@@ -19,7 +19,7 @@ Authentication:
 - All protected endpoints use get_current_user dependency
 
 AI Pipeline Flow:
-1. Orchestrator → 2. FormatDecider → 3. StoryGenerator
+1. Orchestrator → 2. FormatDecider → 3. StrategyGenerator
 → 4. ImageGenerator → 5. TextGenerator → 6. Finalizer
 """
 

@@ -185,12 +185,8 @@ class ImageGenerator(BaseAgent[ImageGeneratorInput, ImageGeneratorOutput]):
             
             self.logger.info(
                 f"Image generation completed: "
-                f"1 hook (text-only) + {len(body_images)} body images (with hook reference)"
+                f"1 hook (template-based) + {len(body_images)} body images (with hook reference)"
             )
-            self.logger.info("Image Rationales:")
-            self.logger.info(f"  [0] Hook: {hook_rationale}")
-            for i, rationale in enumerate(body_rationales, 1):
-                self.logger.info(f"  [{i}] Body {i}: {rationale}")
             
             return ImageGeneratorOutput(
                 step_name="image_generator",
