@@ -5,9 +5,12 @@ Input: OrchestratorInput (brand_kit_id, user_prompt)
 Output: OrchestratorOutput (carousel_id, carousel_slides_urls, quality_metrics)
 """
 
+import base64
 import time
 import logging
-from typing import Optional
+from datetime import datetime
+from pathlib import Path
+from typing import List, Optional
 
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
 from app.core.logging import create_run_log_file
@@ -19,14 +22,12 @@ from app.models.pipeline import (
     StrategyGeneratorInput,
     ImageGeneratorInput,
     TextGeneratorInput,
-    FinalizerInput,
 )
 from app.models.brand_kit import BrandKit
 from app.agents.carousel_format_decider import carousel_format_decider
 from app.agents.strategy_generator import strategy_generator
 from app.agents.image_generator import image_generator
 from app.agents.text_generator import text_generator
-from app.agents.finalizer import finalizer
 from app.core.supabase import get_supabase_admin_client
 
 
@@ -175,10 +176,10 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                     f"Strategy generation failed: {strategy_result.error_message}"
                 )
             
-            self.logger.info(f"Complete Strategy: {strategy_result.complete_story}")
-            self.logger.info(f"Hook: {strategy_result.hook_slide_story}")
+            self.logger.info(f"Complete Strategy: {strategy_result.complete_strategy}")
+            self.logger.info(f"Hook: {strategy_result.hook_slide_strategy}")
             self.logger.info(f"Body Slides:")
-            for i, strategy in enumerate(strategy_result.body_slides_story, 1):
+            for i, strategy in enumerate(strategy_result.body_slides_strategy, 1):
                 self.logger.info(f"  {i}. {strategy}")
             
             # Step 4: Generate text captions (NEW ORDER - before images)
@@ -189,9 +190,9 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                 TextGeneratorInput(
                     brand_kit=brand_kit,
                     format_type=format_result.format_type,
-                    hook_slide_story=strategy_result.hook_slide_story,
-                    body_slides_story=strategy_result.body_slides_story,
-                    complete_story=strategy_result.complete_story,
+                    hook_slide_strategy=strategy_result.hook_slide_strategy,
+                    body_slides_strategy=strategy_result.body_slides_strategy,
+                    complete_strategy=strategy_result.complete_strategy,
                 )
             )
             
@@ -213,9 +214,9 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
                 ImageGeneratorInput(
                     brand_kit=brand_kit,
                     format_type=format_result.format_type,
-                    hook_slide_story=strategy_result.hook_slide_story,
-                    complete_story=strategy_result.complete_story,
-                    body_slides_story=strategy_result.body_slides_story,
+                    hook_slide_strategy=strategy_result.hook_slide_strategy,
+                    complete_strategy=strategy_result.complete_strategy,
+                    body_slides_strategy=strategy_result.body_slides_strategy,
                     hook_slide_text=text_result.hook_slide_text,
                     body_slides_text=text_result.body_slides_text,
                 )
@@ -228,6 +229,16 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             
             self.logger.info(f"Generated: 1 hook + {len(image_result.body_slides_images)} body images")
             
+            # Save images locally
+            output_dir = None
+            if settings.save_local_output:
+                output_dir = self._save_images_locally(
+                    hook_image=image_result.hook_slide_image,
+                    body_images=image_result.body_slides_images,
+                    brand_kit_id=input_data.brand_kit_id,
+                )
+                self.logger.info(f"Images saved to: {output_dir}")
+            
             # Step 6: Validate quality and upload (DISABLED FOR TESTING)
             # self.logger.info("")
             # self.logger.info("─── STEP 6/6: QUALITY VALIDATION & UPLOAD ───")
@@ -235,9 +246,9 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             # final_result = await finalizer.run(
             #     FinalizerInput(
             #         format_type=format_result.format_type,
-            #         complete_story=strategy_result.complete_story,
-            #         hook_slide_story=strategy_result.hook_slide_story,
-            #         body_slides_story=strategy_result.body_slides_story,
+            #         complete_strategy=strategy_result.complete_strategy,
+            #         hook_slide_strategy=strategy_result.hook_slide_strategy,
+            #         body_slides_strategy=strategy_result.body_slides_strategy,
             #         hook_slide_text=text_result.hook_slide_text,
             #         body_slides_text=text_result.body_slides_text,
             #         hook_slide_image=image_result.hook_slide_image,
@@ -256,15 +267,15 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             duration_seconds = pipeline_duration / 1000
             duration_str = f"{int(duration_seconds // 60)}m {int(duration_seconds % 60)}s" if duration_seconds >= 60 else f"{duration_seconds:.1f}s"
             
-            # Pipeline completion summary (early termination - no finalization)
+            # Pipeline completion summary
             self.logger.info("")
             slide_count = 1 + len(image_result.body_slides_images)
             self.logger.info("╔" + "═" * 78 + "╗")
             self.logger.info(f"║ PIPELINE COMPLETE | Duration: {duration_str:<8} | {slide_count} slides                   ║")
-            self.logger.info(f"║ Status: Image generation complete (finalizer disabled)              ║")
             self.logger.info("╚" + "═" * 78 + "╝")
             self.logger.info("")
-            self.logger.info("NOTE: Finalizer disabled - images not uploaded to storage")
+            if output_dir:
+                self.logger.info(f"Output: {output_dir}")
             self.logger.info("")
             
             # Return orchestrator output without finalization
@@ -352,6 +363,44 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
         except Exception as e:
             self.logger.error(f"Failed to fetch brand kit: {e}")
             raise ExecutionError(f"Database error fetching brand kit: {str(e)}")
+    
+    def _save_images_locally(
+        self,
+        hook_image: str,
+        body_images: List[str],
+        brand_kit_id: str,
+    ) -> Path:
+        """
+        Save generated images to local output directory.
+        
+        Args:
+            hook_image: Base64 encoded hook slide image
+            body_images: List of base64 encoded body slide images
+            brand_kit_id: Brand kit ID for directory naming
+            
+        Returns:
+            Path to the output directory
+        """
+        # Create timestamped output directory
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        brand_id_short = brand_kit_id[:8]
+        output_dir = Path(settings.output_dir) / "carousels" / f"{timestamp}_{brand_id_short}"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save hook slide
+        hook_path = output_dir / "1_hook.png"
+        with open(hook_path, "wb") as f:
+            f.write(base64.b64decode(hook_image))
+        self.logger.debug(f"Saved hook slide: {hook_path}")
+        
+        # Save body slides
+        for i, img in enumerate(body_images):
+            body_path = output_dir / f"{i + 2}_body.png"
+            with open(body_path, "wb") as f:
+                f.write(base64.b64decode(img))
+            self.logger.debug(f"Saved body slide {i + 1}: {body_path}")
+        
+        return output_dir
 
 
 # Create singleton instance for easy import

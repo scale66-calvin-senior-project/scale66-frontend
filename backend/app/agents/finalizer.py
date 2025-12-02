@@ -63,9 +63,9 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
         if not input_data.format_type or not input_data.format_type.strip():
             raise ValidationError("format_type cannot be empty")
         
-        # Validate complete_story
-        if not input_data.complete_story or not input_data.complete_story.strip():
-            raise ValidationError("complete_story cannot be empty")
+        # Validate complete_strategy
+        if not input_data.complete_strategy or not input_data.complete_strategy.strip():
+            raise ValidationError("complete_strategy cannot be empty")
         
         # Validate hook_slide_image
         if not input_data.hook_slide_image or not input_data.hook_slide_image.strip():
@@ -75,9 +75,9 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
         if not input_data.hook_slide_text or not input_data.hook_slide_text.strip():
             raise ValidationError("hook_slide_text cannot be empty")
         
-        # Validate hook_slide_story (for context validation)
-        if not input_data.hook_slide_story or not input_data.hook_slide_story.strip():
-            raise ValidationError("hook_slide_story cannot be empty")
+        # Validate hook_slide_strategy (for context validation)
+        if not input_data.hook_slide_strategy or not input_data.hook_slide_strategy.strip():
+            raise ValidationError("hook_slide_strategy cannot be empty")
         
         # Validate body_slides_images
         if not input_data.body_slides_images:
@@ -99,12 +99,12 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
         if not isinstance(input_data.body_slides_text, list):
             raise ValidationError("body_slides_text must be a list")
         
-        # Validate body_slides_story (for context validation)
-        if not input_data.body_slides_story:
-            raise ValidationError("body_slides_story cannot be empty")
+        # Validate body_slides_strategy (for context validation)
+        if not input_data.body_slides_strategy:
+            raise ValidationError("body_slides_strategy cannot be empty")
         
-        if not isinstance(input_data.body_slides_story, list):
-            raise ValidationError("body_slides_story must be a list")
+        if not isinstance(input_data.body_slides_strategy, list):
+            raise ValidationError("body_slides_strategy must be a list")
         
         # Check array length match
         body_length = len(input_data.body_slides_images)
@@ -114,10 +114,10 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
                 f"body_slides_text ({len(input_data.body_slides_text)}) must have the same length"
             )
         
-        if len(input_data.body_slides_story) != body_length:
+        if len(input_data.body_slides_strategy) != body_length:
             raise ValidationError(
                 f"body_slides_images ({body_length}) and "
-                f"body_slides_story ({len(input_data.body_slides_story)}) must have the same length"
+                f"body_slides_strategy ({len(input_data.body_slides_strategy)}) must have the same length"
             )
         
         # Validate each body slide image
@@ -130,10 +130,10 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
             if not text or not isinstance(text, str) or not text.strip():
                 raise ValidationError(f"body_slides_text[{i}] is empty or invalid")
         
-        # Validate each body slide story
-        for i, story in enumerate(input_data.body_slides_story):
-            if not story or not isinstance(story, str) or not story.strip():
-                raise ValidationError(f"body_slides_story[{i}] is empty or invalid")
+        # Validate each body slide strategy
+        for i, strategy in enumerate(input_data.body_slides_strategy):
+            if not strategy or not isinstance(strategy, str) or not strategy.strip():
+                raise ValidationError(f"body_slides_strategy[{i}] is empty or invalid")
         
         self.logger.debug("Input validation passed")
     
@@ -298,9 +298,9 @@ class Finalizer(BaseAgent[FinalizerInput, FinalizerOutput]):
             # Convert ClaudeEvaluationOutput to EvaluationMetrics
             metrics = EvaluationMetrics(
                 format_type_evaluation=evaluation_output.format_type_evaluation,
-                hook_slide_story_evaluation=evaluation_output.hook_slide_story_evaluation,
-                body_slides_story_evaluation=evaluation_output.body_slides_story_evaluation,
-                complete_story_evaluation=evaluation_output.complete_story_evaluation,
+                hook_slide_strategy_evaluation=evaluation_output.hook_slide_strategy_evaluation,
+                body_slides_strategy_evaluation=evaluation_output.body_slides_strategy_evaluation,
+                complete_strategy_evaluation=evaluation_output.complete_strategy_evaluation,
                 hook_slide_text_evaluation=evaluation_output.hook_slide_text_evaluation,
                 body_slides_text_evaluation=evaluation_output.body_slides_text_evaluation,
                 hook_slide_image_evaluation=evaluation_output.hook_slide_image_evaluation,
@@ -348,15 +348,15 @@ CAROUSEL SPECIFICATIONS:
 - Total Slides: {total_slides}
 {brand_info}
 
-COMPLETE STORY:
-"{input_data.complete_story}"
+COMPLETE STRATEGY:
+"{input_data.complete_strategy}"
 
 HOOK SLIDE:
-- Story: "{input_data.hook_slide_story}"
+- Strategy: "{input_data.hook_slide_strategy}"
 - Text: "{input_data.hook_slide_text}"
 
 BODY SLIDES:
-{chr(10).join(f"- Slide {i+1} Story: \"{story}\"" for i, story in enumerate(input_data.body_slides_story))}
+{chr(10).join(f"- Slide {i+1} Strategy: \"{strategy}\"" for i, strategy in enumerate(input_data.body_slides_strategy))}
 
 {chr(10).join(f"- Slide {i+1} Text: \"{text}\"" for i, text in enumerate(input_data.body_slides_text))}
 
@@ -364,12 +364,12 @@ EVALUATION TASKS:
 
 1. FORMAT TYPE EVALUATION:
    - Is the chosen format ({input_data.format_type}) appropriate for this content?
-   - Does it align with the complete story and brand?
+   - Does it align with the complete strategy and brand?
 
-2. STORY QUALITY EVALUATION:
-   - Hook Story: Is it attention-grabbing and aligned with format?
-   - Body Stories: Do they follow the format structure? Are they cohesive?
-   - Complete Story: Does it tie everything together effectively?
+2. STRATEGY QUALITY EVALUATION:
+   - Hook Strategy: Is it attention-grabbing and aligned with format?
+   - Body Strategies: Do they follow the format structure? Are they cohesive?
+   - Complete Strategy: Does it tie everything together effectively?
 
 3. TEXT QUALITY EVALUATION:
    - Hook Text: Is it punchy, scroll-stopping, and under 10 words?
@@ -385,9 +385,9 @@ EVALUATION TASKS:
 
 OUTPUT REQUIREMENTS:
 - format_type_evaluation: Assessment of format appropriateness
-- hook_slide_story_evaluation: Assessment of hook story quality
-- body_slides_story_evaluation: List of assessments for each body story (must match number of body slides)
-- complete_story_evaluation: Assessment of complete story coherence
+- hook_slide_strategy_evaluation: Assessment of hook strategy quality
+- body_slides_strategy_evaluation: List of assessments for each body strategy (must match number of body slides)
+- complete_strategy_evaluation: Assessment of complete strategy coherence
 - hook_slide_text_evaluation: Assessment of hook text quality
 - body_slides_text_evaluation: List of assessments for each body text (must match number of body slides)
 - hook_slide_image_evaluation: Assessment of hook image suitability
@@ -405,9 +405,9 @@ Provide detailed, actionable feedback. Be constructive and specific."""
         """
         return EvaluationMetrics(
             format_type_evaluation="Evaluation not available - pipeline completed successfully",
-            hook_slide_story_evaluation="Evaluation not available",
-            body_slides_story_evaluation=["Evaluation not available"],
-            complete_story_evaluation="Evaluation not available",
+            hook_slide_strategy_evaluation="Evaluation not available",
+            body_slides_strategy_evaluation=["Evaluation not available"],
+            complete_strategy_evaluation="Evaluation not available",
             hook_slide_text_evaluation="Evaluation not available",
             body_slides_text_evaluation=["Evaluation not available"],
             hook_slide_image_evaluation="Evaluation not available",

@@ -2,7 +2,7 @@
 Strategy Generator Agent - Step 3 of AI Pipeline
 
 Input: StrategyGeneratorInput (format_type, num_slides, brand_kit, user_prompt)
-Output: StrategyGeneratorOutput (complete_story, hook_slide_story, body_slides_story)
+Output: StrategyGeneratorOutput (complete_strategy, hook_slide_strategy, body_slides_strategy)
 """
 
 from typing import Dict, List, Optional
@@ -14,12 +14,12 @@ from app.agents.carousel_format_decider import CarouselFormat
 from app.services.ai.anthropic_service import AnthropicServiceError
 
 
-# Format-specific strategic frameworks defining HOW to construct slide guidance
-FORMAT_STRUCTURES: Dict[str, str] = {
+# Format-specific strategies defining HOW to construct slide guidance
+FORMAT_STRATEGY_GUIDES: Dict[str, str] = {
     CarouselFormat.LISTICLE_TIPS: """Strategic framework for a numbered tips/insights carousel.
 
 STRATEGIC PLAN COMPONENTS:
-- Define the strategic purpose, progression logic, and value arc
+- Define the strategic purpose and value
 - Describe WHY each slide exists and what role it plays
 - Provide directional guidance for Text Generator and Image Generator
 - Focus on INTENT and OBJECTIVES, not content
@@ -37,14 +37,13 @@ HOOK SLIDE STRATEGY:
 - NO actual hook text - just strategic direction
 
 BODY SLIDE STRATEGY (per slide):
-- Define the role this slide plays in the progression
 - Describe what type of content belongs here
 - Explain why this position in the sequence matters
 - Note any special characteristics (e.g., "most surprising insight", "obvious but often forgotten")
 - NO actual tip content - just strategic direction
 
 GOOD EXAMPLE:
-Complete Strategy: "This carousel provides actionable social media tips for overwhelmed small business owners who view social media as a time sink. Tips progress from dead-simple daily habits (posting consistently) to more strategic investments (content batching, engagement strategies). The objective is to make social media feel approachable and manageable, not overwhelming. Each tip should feel like a small win they can implement today."
+Complete Strategy: "This carousel provides actionable social media tips for overwhelmed small business owners who view social media as a time sink. Tips range from dead-simple daily habits (posting consistently) to more strategic investments (content batching, engagement strategies). The objective is to make social media feel approachable and manageable, not overwhelming. Each tip should feel like a small win they can implement today."
 
 Hook Strategy: "The hook targets time-strapped business owners with a clear numbered promise. It signals 'no fluff, just actionable steps' through clean visuals and direct language. The number creates completionist drive - they'll want all X tips."
 
@@ -52,19 +51,7 @@ Slide 1 Strategy: "First tip should be the easiest quick-win - something they ca
 
 Slide 2 Strategy: "Second tip focuses on a slightly more complex topic - still actionable but requires a bit more thought. Builds on the confidence from tip 1."
 
-[Pattern continues with increasing depth/investment]
-
-BAD EXAMPLE (DO NOT DO THIS):
-- "Sarah's coffee shop made the best lattes..." (fictional narrative)
-- "Revenue up 240%..." (specific numbers)
-- "She had 200 followers..." (prescriptive details)
-- "A regular told her: 'I drove past...'" (dialogue/quotes)
-
-CHARACTERISTICS:
-- Abstract and directional, not concrete and prescriptive
-- Focuses on PURPOSE and APPROACH
-- Guides without constraining
-- No character names, no specific statistics, no quotes""",
+[More slides here...]""",
 }
 
 
@@ -174,7 +161,7 @@ class StrategyGenerator(BaseAgent[StrategyGeneratorInput, StrategyGeneratorOutpu
             )
             
             # Log the format structure being used
-            format_structure = FORMAT_STRUCTURES.get(
+            format_structure = FORMAT_STRATEGY_GUIDES.get(
                 input_data.format_type,
                 "Hook: Attention-grabbing opening. Body: Sequential content delivery."
             )
@@ -190,7 +177,7 @@ class StrategyGenerator(BaseAgent[StrategyGeneratorInput, StrategyGeneratorOutpu
             
             # Validate body slide count
             expected_body_count = input_data.num_slides - 1
-            actual_body_count = len(strategy_output.body_slides_story)
+            actual_body_count = len(strategy_output.body_slides_strategy)
             
             if actual_body_count != expected_body_count:
                 self.logger.warning(
@@ -200,23 +187,23 @@ class StrategyGenerator(BaseAgent[StrategyGeneratorInput, StrategyGeneratorOutpu
                 
                 # Handle array length mismatch
                 if actual_body_count < expected_body_count:
-                    while len(strategy_output.body_slides_story) < expected_body_count:
-                        strategy_output.body_slides_story.append("[Content continues...]")
+                    while len(strategy_output.body_slides_strategy) < expected_body_count:
+                        strategy_output.body_slides_strategy.append("[Content continues...]")
                 else:
                     # Too many slides - truncate
-                    strategy_output.body_slides_story = strategy_output.body_slides_story[:expected_body_count]
+                    strategy_output.body_slides_strategy = strategy_output.body_slides_strategy[:expected_body_count]
             
             self.logger.info(
-                f"Strategy generated: hook + {len(strategy_output.body_slides_story)} body slides"
+                f"Strategy generated: hook + {len(strategy_output.body_slides_strategy)} body slides"
             )
             
             return StrategyGeneratorOutput(
                 step_name="strategy_generator",
                 success=True,
-                complete_story=strategy_output.complete_story,
-                complete_story_rationale=strategy_output.complete_story_rationale,
-                hook_slide_story=strategy_output.hook_slide_story,
-                body_slides_story=strategy_output.body_slides_story,
+                complete_strategy=strategy_output.complete_strategy,
+                complete_strategy_rationale=strategy_output.complete_strategy_rationale,
+                hook_slide_strategy=strategy_output.hook_slide_strategy,
+                body_slides_strategy=strategy_output.body_slides_strategy,
             )
             
         except AnthropicServiceError as e:
@@ -235,12 +222,18 @@ class StrategyGenerator(BaseAgent[StrategyGeneratorInput, StrategyGeneratorOutpu
             System prompt string
         """
         # Get format-specific structure
-        format_structure = FORMAT_STRUCTURES.get(
+        format_structure = FORMAT_STRATEGY_GUIDES.get(
             input_data.format_type,
             "Provide strategic guidance for each slide's purpose and role in the carousel."
         )
         
         return f"""You are an expert social media content strategist who creates STRATEGIC PLANS for carousel creation.
+
+YOUR OUTPUT CHARACTERISTICS:
+- Abstract and directional, not concrete and prescriptive
+- Focuses on PURPOSE and APPROACH
+- Guides without constraining
+- No character names, no specific statistics, no quotes, no dialogue
 
 CRITICAL RULES:
 
@@ -248,14 +241,13 @@ CRITICAL RULES:
 
 2. You define PURPOSE and APPROACH, not narrative. You specify WHY each slide exists and what role it plays, not WHAT text or visuals appears on it.
 
-3. ABSOLUTELY PROHIBITED in your output:
-   - Fictional characters or names (no "Sarah", "John", etc.)
-   - Specific numbers or statistics (no "47k followers", "240% increase")
-   - Dialogue or quotes (no "She said: '...'")
-   - Actual slide text or captions
-   - Mini-sentence narrative style
-   - Ready-to-use content
-   - Visual styles (photorealistic, abstract, etc.)
+3. ABSOLUTELY PROHIBITED - these patterns will cause pipeline failure:
+   - Fictional characters or names ("Sarah opened her laptop...", "John's agency...")
+   - Specific numbers or statistics ("Revenue up 240%", "47k followers", "200 likes")
+   - Dialogue or quotes ("She said: '...'", "A customer told her...")
+   - Actual slide text or captions (ready-to-use content)
+   - Narrative/storytelling style (mini-sentences, plot progression)
+   - Visual style descriptions (photorealistic, abstract, minimalist)
 
 4. Your output should be ABSTRACT and DIRECTIONAL:
    - Describe the purpose, not the content
@@ -271,10 +263,9 @@ STRATEGIC FRAMEWORK FOR '{input_data.format_type}':
 ---
 
 HOW TO USE THIS FRAMEWORK:
-1. The STRATEGIC FRAMEWORK above is your PRIMARY source of truth for how to construct guidance for this format type.
+1. The STRATEGIC FRAMEWORK above shows how to structure guidance for this format type.
 2. Follow the GOOD EXAMPLE pattern - abstract, directional, purpose-focused.
-3. Avoid the BAD EXAMPLE patterns at all costs.
-4. Match your output style to the examples provided in the framework.
+3. Match your output style to the examples provided.
 
 VALUE ARC PRINCIPLE:
 Each carousel should have a clear value progression:
@@ -285,12 +276,12 @@ Each carousel should have a clear value progression:
 OUTPUT REQUIREMENTS:
 
 [PIPELINE OUTPUT - Required for downstream agents]
-- complete_story: The overarching strategic plan for the entire carousel (200-400 chars). Describes WHO this is for, WHAT value it provides, and HOW it progresses.
-- hook_slide_story: Strategic direction for the hook slide (100-200 chars). Describes what the hook should ACCOMPLISH, not what it should SAY.
-- body_slides_story: Exactly {input_data.num_slides - 1} strategic guidance entries (each 100-200 chars). Each describes the ROLE and PURPOSE of that slide position.
+- complete_strategy: The overarching strategic plan for the entire carousel (200-400 chars). Describes WHO this is for, WHAT value it provides, and HOW it progresses.
+- hook_slide_strategy: Strategic direction for the hook slide (100-200 chars). Describes what the hook should ACCOMPLISH, not what it should SAY.
+- body_slides_strategy: Exactly {input_data.num_slides - 1} strategic guidance entries (each 100-200 chars). Each describes the ROLE and PURPOSE of that slide position.
 
 [RATIONALE OUTPUT - For debugging/tuning]
-- complete_story_rationale: Why this strategic approach works for this format and brand (100-200 chars)
+- complete_strategy_rationale: Why this strategic approach works for this format and brand (100-200 chars)
 
 REMEMBER: You are providing a BLUEPRINT, not a DRAFT. Text Generator creates the words. Image Generator creates the visuals. You define the strategy that guides them both."""
     
@@ -305,11 +296,7 @@ REMEMBER: You are providing a BLUEPRINT, not a DRAFT. Text Generator creates the
             User prompt string
         """
         brand_kit = input_data.brand_kit
-        
-        # Calculate expected body slide count
         body_slide_count = input_data.num_slides - 1
-        
-        # Format customer pain points as a list
         pain_points = ", ".join(brand_kit.customer_pain_points) if brand_kit.customer_pain_points else "Not provided"
         
         return f"""CONTENT REQUEST:
@@ -318,7 +305,6 @@ REMEMBER: You are providing a BLUEPRINT, not a DRAFT. Text Generator creates the
 CAROUSEL SPECIFICATIONS:
 - Format Type: {input_data.format_type}
 - Total Slides: {input_data.num_slides} (1 hook + {body_slide_count} body slides)
-- Required Body Slide Guidance: {body_slide_count} entries
 
 BRAND CONTEXT:
 - Brand Name: {brand_kit.brand_name}
@@ -327,29 +313,7 @@ BRAND CONTEXT:
 - Customer Pain Points: {pain_points}
 - Product/Service Description: {brand_kit.product_service_desc}
 
-TASK:
-Create a STRATEGIC PLAN (not content) for this carousel:
-
-1. COMPLETE STRATEGY (200-400 chars) [output as complete_story]:
-   - WHO is this carousel for? (target audience mindset)
-   - WHAT value does it provide? (core objective)
-   - HOW does it progress? (the arc from first to last slide)
-
-2. STRATEGY RATIONALE (100-200 chars) [output as complete_story_rationale]:
-   - Why does this strategic approach work for the '{input_data.format_type}' format?
-   - How does it align with the brand context?
-
-3. HOOK SLIDE STRATEGY (100-200 chars) [output as hook_slide_story]:
-   - What should the hook ACCOMPLISH? (not what it should say)
-   - What promise or expectation does it set?
-   - Who does it target and how does it draw them in?
-
-4. BODY SLIDE STRATEGIES ({body_slide_count} entries, each 100-200 chars) [output as body_slides_story]:
-   - Why is this slide here instead of elsewhere in the carousel?
-   - What TYPE of content belongs at this position?
-   - Why does this slide exist in the sequence?
-
-REMEMBER: You are defining STRATEGY, not writing CONTENT. No fictional names, no specific numbers, no quotes, no actual slide text."""
+Based on this content request, carousel specifications, and brand context, create a strategic plan for this carousel."""
 
 
 # Create singleton instance for easy import

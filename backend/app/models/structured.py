@@ -16,26 +16,26 @@ from pydantic import BaseModel, Field
 
 class ClaudeStoryOutput(BaseModel):
     """
-    Structured output model for Story Generator using Claude.
+    Structured output model for Strategy Generator using Claude.
     
-    Used with generate_structured_output() to ensure valid story generation
+    Used with generate_structured_output() to ensure valid strategy generation
     without JSON parsing errors.
     """
-    complete_story: str = Field(
+    complete_strategy: str = Field(
         ..., 
-        description="The complete overarching narrative for the entire carousel (200-400 chars)"
+        description="The complete overarching strategic approach for the entire carousel (200-400 chars)"
     )
-    complete_story_rationale: str = Field(
+    complete_strategy_rationale: str = Field(
         ..., 
-        description="Explanation of why this story works for this format and brand (100-200 chars)"
+        description="Explanation of why this strategy works for this format and brand (100-200 chars)"
     )
-    hook_slide_story: str = Field(
+    hook_slide_strategy: str = Field(
         ..., 
-        description="The detailed hook story for the carousel (30-150 chars)"
+        description="The detailed hook strategy for the carousel (30-150 chars)"
     )
-    body_slides_story: List[str] = Field(
+    body_slides_strategy: List[str] = Field(
         ..., 
-        description="The detailed body slides stories for the carousel (each 30-150 chars)"
+        description="The detailed body slides strategies for the carousel (each 30-150 chars)"
     )
 
 
@@ -86,17 +86,17 @@ class ClaudeEvaluationOutput(BaseModel):
         ..., 
         description="Assessment of format appropriateness for the content and brand"
     )
-    hook_slide_story_evaluation: str = Field(
+    hook_slide_strategy_evaluation: str = Field(
         ..., 
-        description="Assessment of hook story quality and effectiveness"
+        description="Assessment of hook strategy quality and effectiveness"
     )
-    body_slides_story_evaluation: List[str] = Field(
+    body_slides_strategy_evaluation: List[str] = Field(
         ..., 
-        description="Assessment of each body slide story quality"
+        description="Assessment of each body slide strategy quality"
     )
-    complete_story_evaluation: str = Field(
+    complete_strategy_evaluation: str = Field(
         ..., 
-        description="Assessment of the complete story coherence and messaging"
+        description="Assessment of the complete strategy coherence and messaging"
     )
     hook_slide_text_evaluation: str = Field(
         ..., 

@@ -7,13 +7,20 @@ Run from backend directory:
 Requirements:
 - SUPABASE_URL, SUPABASE_SERVICE_KEY in .env
 - ANTHROPIC_API_KEY, GEMINI_API_KEY in .env
-- carousel-slides storage bucket created in Supabase
+
+Pipeline Steps:
+1. Fetch BrandKit from database
+2. Carousel Format Decider (Claude)
+3. Strategy Generator (Claude)
+4. Text Generator (Claude)
+5. Image Generator (Gemini)
+
+Note: Finalizer step is disabled - images are saved locally only.
 """
 
 import asyncio
 import sys
 from pathlib import Path
-from uuid import uuid4
 
 backend_path = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_path))
@@ -50,7 +57,7 @@ TEST_USER_PROMPT = (
 
 
 def check_prerequisites():
-    """Verify required environment variables and storage bucket."""
+    """Verify required environment variables."""
     print("\n" + "=" * 80)
     print("CHECKING PREREQUISITES")
     print("=" * 80)
@@ -73,17 +80,19 @@ def check_prerequisites():
     
     print("  Environment variables: OK")
     
-    supabase = get_supabase_admin_client()
+    # Verify Supabase connection
     try:
-        buckets = supabase.storage.list_buckets()
-        bucket_names = [b.name for b in buckets]
-        if 'carousel-slides' not in bucket_names:
-            print("\n  WARNING: Storage bucket 'carousel-slides' not found!")
-            print("  Create it in Supabase Dashboard > Storage")
-            sys.exit(1)
-        print("  Storage bucket: OK")
+        supabase = get_supabase_admin_client()
+        # Simple connectivity check
+        supabase.table('users').select('id').limit(1).execute()
+        print("  Supabase connection: OK")
     except Exception as e:
-        print(f"  WARNING: Could not verify storage bucket: {e}")
+        print(f"  WARNING: Supabase connection issue: {e}")
+    
+    # Check local output directory
+    output_dir = Path(settings.output_dir) if settings.output_dir else Path("output")
+    print(f"  Local output directory: {output_dir}")
+    print(f"  Save local output: {settings.save_local_output}")
     
     print("=" * 80)
 
@@ -136,6 +145,12 @@ async def run_pipeline(brand_kit_id: str):
     print("=" * 80)
     print(f"Brand Kit: {brand_kit_id}")
     print(f"Prompt: {TEST_USER_PROMPT}")
+    print("\nPipeline Steps:")
+    print("  1. Fetch BrandKit")
+    print("  2. Carousel Format Decider (Claude)")
+    print("  3. Strategy Generator (Claude)")
+    print("  4. Text Generator (Claude)")
+    print("  5. Image Generator (Gemini)")
     print("\nEstimated time: 2-3 minutes")
     print("=" * 80)
     
@@ -150,26 +165,37 @@ async def run_pipeline(brand_kit_id: str):
 def display_results(result):
     """Display pipeline results."""
     print("\n" + "=" * 80)
-    print("PIPELINE COMPLETED")
+    print("PIPELINE RESULTS")
     print("=" * 80)
     
     if result.success:
-        print(f"Status: Image generation complete")
-        print(f"Note: Finalizer disabled - images not uploaded")
-        print("\n" + "=" * 80)
-        print("NEXT STEPS")
-        print("=" * 80)
-        print("  Review generated images in pipeline logs")
-        print("  View logs: backend/logs/")
+        print(f"Status: SUCCESS")
+        print(f"Images generated and saved locally")
+        print("\n" + "-" * 40)
+        print("OUTPUT LOCATIONS:")
+        print("-" * 40)
+        
+        # Show output directory info
+        output_dir = Path(settings.output_dir) if settings.output_dir else Path("output")
+        print(f"  Images: {output_dir}/carousels/<timestamp>/")
+        print(f"  Logs:   {backend_path}/logs/")
+        
+        print("\n" + "-" * 40)
+        print("NEXT STEPS:")
+        print("-" * 40)
+        print("  1. Review generated images in output/carousels/")
+        print("  2. Check pipeline logs for detailed execution info")
         print("=" * 80)
     else:
-        print(f"\nERROR: {result.error_message}")
-
-
-async def save_to_posts(brand_kit_id: str, result):
-    """Save generated carousel to posts table (DISABLED - no uploads without finalizer)."""
-    print("\nSkipping database save - finalizer disabled")
-    return
+        print(f"Status: FAILED")
+        print(f"Error: {result.error_message}")
+        print("\n" + "-" * 40)
+        print("TROUBLESHOOTING:")
+        print("-" * 40)
+        print("  1. Check logs in backend/logs/ for details")
+        print("  2. Verify API keys are valid")
+        print("  3. Check Supabase connection")
+        print("=" * 80)
 
 
 async def cleanup():
@@ -185,11 +211,15 @@ async def cleanup():
     
     supabase = get_supabase_admin_client()
     
-    supabase.table('posts').delete().eq('user_id', TEST_USER_ID).execute()
-    supabase.table('campaigns').delete().eq('user_id', TEST_USER_ID).execute()
-    supabase.table('brand_kits').delete().eq('user_id', TEST_USER_ID).execute()
-    print("  Deleted test data")
-    print("  Note: Storage images remain")
+    try:
+        supabase.table('posts').delete().eq('user_id', TEST_USER_ID).execute()
+        supabase.table('campaigns').delete().eq('user_id', TEST_USER_ID).execute()
+        supabase.table('brand_kits').delete().eq('user_id', TEST_USER_ID).execute()
+        print("  Deleted test data from database")
+    except Exception as e:
+        print(f"  Cleanup warning: {e}")
+    
+    print("  Note: Local output files are preserved")
     print("=" * 80)
 
 
@@ -200,6 +230,8 @@ async def main():
     print("=" * 80)
     print("FULL PIPELINE TEST")
     print("=" * 80)
+    print("Testing end-to-end carousel generation pipeline")
+    print("Finalizer disabled - images saved locally only")
     
     check_prerequisites()
     brand_kit_id = await setup_test_data()
@@ -208,9 +240,6 @@ async def main():
         result = await run_pipeline(brand_kit_id)
         display_results(result)
         
-        if result.success:
-            await save_to_posts(brand_kit_id, result)
-        
     except Exception as e:
         print(f"\n{'=' * 80}")
         print(f"PIPELINE FAILED")
@@ -218,11 +247,10 @@ async def main():
         print(f"Error: {e}")
         import traceback
         traceback.print_exc()
-        print(f"Check logs: backend/logs/")
+        print(f"\nCheck logs: backend/logs/")
     finally:
         await cleanup()
 
 
 if __name__ == "__main__":
     asyncio.run(main())
-

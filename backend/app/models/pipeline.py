@@ -48,10 +48,10 @@ class StrategyGeneratorInput(BasePipelineStep):
 
 class StrategyGeneratorOutput(BasePipelineStep):
     """Schema for strategy generator output - strategic guidance for slides."""
-    hook_slide_story: str = Field(..., description="The strategic guidance for the hook slide")
-    body_slides_story: List[str] = Field(..., description="The strategic guidance for each body slide")
-    complete_story: str = Field(..., description="The complete strategic approach for the carousel")
-    complete_story_rationale: str = Field(..., description="The rationale for the strategic approach")
+    hook_slide_strategy: str = Field(..., description="The strategic guidance for the hook slide")
+    body_slides_strategy: List[str] = Field(..., description="The strategic guidance for each body slide")
+    complete_strategy: str = Field(..., description="The complete strategic approach for the carousel")
+    complete_strategy_rationale: str = Field(..., description="The rationale for the strategic approach")
 
 # =============== Step 4: Text Generation ===============
 
@@ -61,9 +61,9 @@ class TextGeneratorInput(BasePipelineStep):
     """
     brand_kit: BrandKit = Field(..., description="The brand kit")
     format_type: str = Field(..., description="The type of carousel format")
-    hook_slide_story: str = Field(..., description="Story for the hook slide")
-    body_slides_story: List[str] = Field(..., description="Stories for the body slides")
-    complete_story: str = Field(..., description="The complete story for context")
+    hook_slide_strategy: str = Field(..., description="Strategy for the hook slide")
+    body_slides_strategy: List[str] = Field(..., description="Strategies for the body slides")
+    complete_strategy: str = Field(..., description="The complete strategy for context")
 class TextGeneratorOutput(BasePipelineStep):
     """
     Schema for text generator output.
@@ -80,9 +80,9 @@ class ImageGeneratorInput(BasePipelineStep):
     """
     brand_kit: BrandKit = Field(..., description="The brand kit")
     format_type: str = Field(..., description="The type of carousel format")
-    hook_slide_story: str = Field(..., description="Story for the hook slide")
-    complete_story: str = Field(..., description="The complete story for context")
-    body_slides_story: List[str] = Field(..., description="Stories for the body slides")
+    hook_slide_strategy: str = Field(..., description="Strategy for the hook slide")
+    complete_strategy: str = Field(..., description="The complete strategy for context")
+    body_slides_strategy: List[str] = Field(..., description="Strategies for the body slides")
     hook_slide_text: str = Field(..., description="Caption for the hook slide")
     body_slides_text: List[str] = Field(..., description="Captions for the body slides")
 
@@ -106,9 +106,9 @@ class FinalizerInput(BasePipelineStep):
     Receives generated output from the entire pipeline and validates quality using Claude Vision.
     """
     format_type: str = Field(..., description="The type of carousel format")
-    hook_slide_story: str = Field(..., description="Hook story (for context validation)")
-    body_slides_story: List[str] = Field(..., description="Body stories (for context validation)")
-    complete_story: str = Field(..., description="Complete story (for context validation)")
+    hook_slide_strategy: str = Field(..., description="Hook strategy (for context validation)")
+    body_slides_strategy: List[str] = Field(..., description="Body strategies (for context validation)")
+    complete_strategy: str = Field(..., description="Complete strategy (for context validation)")
     hook_slide_text: str = Field(..., description="Expected hook text (for validation)")
     body_slides_text: List[str] = Field(..., description="Expected body texts (for validation)")
     hook_slide_image: str = Field(..., description="Generated hook image with text (base64)")
@@ -118,9 +118,9 @@ class FinalizerInput(BasePipelineStep):
 class EvaluationMetrics(BaseModel):
     """Evaluation metrics for the entire pipeline."""
     format_type_evaluation: str = Field(..., description="The type of carousel format evaluation")
-    hook_slide_story_evaluation: str = Field(..., description="Hook story evaluation")
-    body_slides_story_evaluation: List[str] = Field(..., description="Body stories evaluation")
-    complete_story_evaluation: str = Field(..., description="Complete story evaluation")
+    hook_slide_strategy_evaluation: str = Field(..., description="Hook strategy evaluation")
+    body_slides_strategy_evaluation: List[str] = Field(..., description="Body strategies evaluation")
+    complete_strategy_evaluation: str = Field(..., description="Complete strategy evaluation")
     hook_slide_text_evaluation: str = Field(..., description="Hook text evaluation")
     body_slides_text_evaluation: List[str] = Field(..., description="Body texts evaluation")
     hook_slide_image_evaluation: str = Field(..., description="Hook image evaluation")

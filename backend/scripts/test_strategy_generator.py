@@ -98,17 +98,17 @@ async def main():
                 "prompt": test_case["user_prompt"],
                 "format": test_case["format_type"],
                 "num_slides": test_case["num_slides"],
-                "complete_story": result.complete_story if result.success else "ERROR",
-                "rationale": result.complete_story_rationale if result.success else result.error_message,
-                "hook": result.hook_slide_story if result.success else None,
-                "body_slides": result.body_slides_story if result.success else None,
+                "complete_strategy": result.complete_strategy if result.success else "ERROR",
+                "rationale": result.complete_strategy_rationale if result.success else result.error_message,
+                "hook": result.hook_slide_strategy if result.success else None,
+                "body_slides": result.body_slides_strategy if result.success else None,
             })
         except Exception as e:
             results.append({
                 "prompt": test_case["user_prompt"],
                 "format": test_case["format_type"],
                 "num_slides": test_case["num_slides"],
-                "complete_story": "ERROR",
+                "complete_strategy": "ERROR",
                 "rationale": str(e),
                 "hook": None,
                 "body_slides": None,
@@ -126,7 +126,7 @@ async def main():
         
         print(f"\nPrompt:\n  {res['prompt']}")
         
-        print(f"\nComplete Strategy:\n  {res['complete_story']}")
+        print(f"\nComplete Strategy:\n  {res['complete_strategy']}")
         
         print(f"\nRationale:\n  {res['rationale']}")
         
