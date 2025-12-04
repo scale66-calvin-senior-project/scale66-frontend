@@ -1,0 +1,46 @@
+{
+	"templates": [
+		{
+			"id": "carousel-1",
+			"num_slides": 8,
+			"carousel_format": "listicle_tips",
+			"description": "Illustrated nature theme with blue/purple color palette. Features silhouette graphics of mountains, wildlife, and trees. Playful brush-style headline font on light lavender background. Best for outdoor, adventure, or nature-related content."
+		},
+		{
+			"id": "carousel-2",
+			"num_slides": 6,
+			"carousel_format": "listicle_tips",
+			"description": "Minimalist editorial design with off-white paper texture background. Classic serif typewriter font with yellow highlighter accent. Clean and sophisticated with generous whitespace. Best for productivity, business, or self-improvement content."
+		},
+		{
+			"id": "carousel-3",
+			"num_slides": 7,
+			"carousel_format": "listicle_tips",
+			"description": "Elegant cream/beige background with sophisticated mixed-weight serif typography. Orange accent color for brand elements. Ultra-clean editorial aesthetic with strong typography hierarchy. Best for creative, design, or professional development content."
+		},
+		{
+			"id": "carousel-4",
+			"num_slides": 5,
+			"carousel_format": "listicle_tips",
+			"description": "Light background with navy blue typography mixing serif and decorative script fonts. Soft blue highlight bar for emphasis and circular geometric accents. Clean, professional, and approachable. Best for coaching, social media tips, or personal branding content."
+		},
+		{
+			"id": "carousel-5",
+			"num_slides": 5,
+			"carousel_format": "listicle_tips",
+			"description": "Dark moody aesthetic with brown-toned photography background. Elegant white typography mixing serif and flowing script fonts. Premium, sophisticated feel with high contrast. Best for luxury brands, lifestyle, or aspirational content."
+		},
+		{
+			"id": "carousel-6",
+			"num_slides": 6,
+			"carousel_format": "listicle_tips",
+			"description": "Green nature photography with dark overlay. Bold yellow/cream sans-serif headlines on organic forest imagery. Fresh, eco-conscious aesthetic. Best for sustainability, wellness, nature, or environmental content."
+		},
+		{
+			"id": "carousel-7",
+			"num_slides": 5,
+			"carousel_format": "listicle_tips",
+			"description": "Warm terracotta/coral solid color background with bold white sans-serif typography. Muted accent text for variety and dotted pattern decoration. Modern, warm, and inviting. Best for marketing tips, growth strategies, or entrepreneurship content."
+		}
+	]
+}

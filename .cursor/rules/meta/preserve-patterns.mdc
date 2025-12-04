@@ -6,171 +6,108 @@ alwaysApply: true
 
 # Preserve Patterns Rule
 
-## Purpose
-
-Ensure codebase consistency by warning users when their requested changes would break established patterns, conventions, or architectural decisions.
+Ensure codebase consistency by warning when changes would break established patterns.
 
 ## When to Warn
 
-Before implementing, evaluate if the request would break:
+Before implementing, evaluate if request breaks:
 
 ### Architectural Patterns
 
-- **Frontend feature-based structure** - Moving components outside features, mixing concerns
-- **Backend service patterns** - Changing singleton usage, bypassing dependency injection
-- **API conventions** - Inconsistent endpoint structure, breaking REST patterns
-- **Database patterns** - Bypassing CRUD layer, inconsistent query patterns
+- **Frontend feature-based structure** - Components outside features, mixed concerns
+- **Backend service patterns** - Singleton misuse, bypassed dependency injection
+- **API conventions** - Inconsistent endpoints, broken REST patterns
+- **Database patterns** - Bypassed CRUD layer, inconsistent queries
 
 ### Code Organization
 
-- **Directory structure** - Files in wrong locations, breaking established hierarchy
-- **Barrel exports** - Direct file imports instead of index.ts exports
-- **Component structure** - Missing CSS modules, inconsistent file organization
-- **Naming conventions** - Breaking kebab-case, PascalCase, or camelCase rules
+- **Directory structure** - Files in wrong locations
+- **Barrel exports** - Direct imports instead of index.ts
+- **Component structure** - Missing CSS modules
+- **Naming conventions** - Broken kebab-case, PascalCase, camelCase
 
 ### Implementation Patterns
 
-- **State management** - Mixing Context with other state libs inconsistently
-- **Error handling** - Inconsistent try/catch patterns, missing error boundaries
-- **Type definitions** - Inline types instead of centralized type files
-- **Authentication** - Bypassing auth middleware, inconsistent user checks
+- **State management** - Inconsistent Context usage
+- **Error handling** - Missing error boundaries
+- **Type definitions** - Inline types vs centralized files
+- **Authentication** - Bypassed auth middleware
 
 ## Required Actions
 
-If change would break patterns, STOP and:
+If change breaks patterns, STOP and:
 
-### 1. Identify the Pattern Violation
-
-Clearly state:
-
-- Which established pattern would be broken
-- Where this pattern is used elsewhere in codebase
-- Why this pattern exists (if known)
-
-### 2. Explain Ramifications
-
-Detail the impact:
-
-- Inconsistency it would create
-- Future maintenance burden
-- Other files/components that follow the pattern
-- Potential bugs or confusion it could cause
-
-### 3. Offer Alternatives
-
-Suggest:
-
-- How to achieve the goal while preserving patterns
-- Whether pattern should be updated globally (if truly outdated)
-- Gradual migration approach if pattern change is justified
+1. **Identify Violation:** Which pattern, where it's used, why it exists
+2. **Explain Impact:** Inconsistency, maintenance burden, potential bugs
+3. **Offer Alternatives:** Pattern-preserving approach, global update if justified
 
 ## Example Scenarios
 
 ### Breaking Feature Structure
 
-User: "Move the LoginForm component to src/components/forms/"
+User: "Move LoginForm to src/components/forms/"
 
 Response:
 
-> This would break the established feature-based architecture (see [feature-modules.mdc](mdc:.cursor/rules/frontend/architecture/feature-modules.mdc)).
+> Breaks feature-based architecture ([feature-modules.mdc](mdc:.cursor/rules/frontend/architecture/feature-modules.mdc)).
 >
-> **Current Pattern:**
-> Feature components live in `features/auth/components/` and are exported via barrel files.
->
-> **What This Would Cause:**
->
-> - Inconsistency: LoginForm separated from related auth components
-> - Import changes: All files importing from `@/features/auth` would need updates
-> - Pattern violation: Every other feature keeps components co-located
->
+> **Current:** Components in `features/auth/components/`, barrel-exported.
+> **Impact:** Separates LoginForm from auth components, breaks import pattern.
 > **Alternatives:**
 >
-> 1. Keep LoginForm in `features/auth/components/` (recommended)
-> 2. If this is meant to be a shared form, create `components/common/LoginForm/`
-> 3. If restructuring all features, we should migrate all features consistently
->
-> Which approach would you prefer?
+> 1. Keep in `features/auth/components/` (recommended)
+> 2. If shared, create `components/common/LoginForm/`
 
-### Bypassing Established Layer
+### Bypassing CRUD Layer
 
-User: "Query the database directly in the API endpoint instead of using CRUD"
+User: "Query database directly in endpoint"
 
 Response:
 
-> This would bypass the established CRUD layer pattern (see [supabase-integration.mdc](mdc:.cursor/rules/backend/database/supabase-integration.mdc) and [fastapi-endpoints.mdc](mdc:.cursor/rules/backend/api/fastapi-endpoints.mdc)).
+> Bypasses CRUD layer ([supabase-integration.mdc](mdc:.cursor/rules/backend/database/supabase-integration.mdc), [fastapi-endpoints.mdc](mdc:.cursor/rules/backend/api/fastapi-endpoints.mdc)).
 >
-> **Current Pattern:**
-> All database operations go through `app/crud/` modules, keeping API endpoints focused on request handling.
->
-> **What This Would Cause:**
->
-> - Inconsistency: This endpoint handles DB queries differently than all others
-> - Duplication: Query logic that might exist in CRUD would be duplicated
-> - Maintenance: Harder to find/update database operations
-> - Testing: Different testing approach needed for this endpoint
->
+> **Current:** All DB ops through `app/crud/`.
+> **Impact:** Inconsistent data access, duplicated logic, harder maintenance.
 > **Alternatives:**
 >
-> 1. Add the query to appropriate CRUD module, call from endpoint (recommended)
-> 2. If existing CRUD doesn't fit, create new CRUD method
-> 3. If pattern is outdated for this use case, discuss broader refactor
->
-> Should I implement using the CRUD pattern?
+> 1. Add to CRUD module (recommended)
+> 2. Create new CRUD method if needed
 
-### Inconsistent Component Structure
+### Inconsistent Styling
 
-User: "Just add the styles inline, don't create a CSS module"
+User: "Add inline styles instead of CSS module"
 
 Response:
 
-> This would break the component styling pattern (see [frontend-components.mdc](mdc:.cursor/rules/frontend/components/frontend-components.mdc)).
+> Breaks component styling pattern ([frontend-components.mdc](mdc:.cursor/rules/frontend/components/frontend-components.mdc)).
 >
-> **Current Pattern:**
-> All components use CSS Modules: `ComponentName.module.css` with scoped styles.
->
-> **What This Would Cause:**
->
-> - Inconsistency: This component styled differently than all others
-> - Specificity issues: Inline styles harder to override
-> - Maintenance: Styles scattered between JSX and CSS files
-> - Team confusion: Unclear which pattern to follow
->
+> **Current:** All components use CSS Modules.
+> **Impact:** Inconsistent styling approach, specificity issues.
 > **Alternatives:**
 >
-> 1. Create `ComponentName.module.css` following existing pattern (recommended)
-> 2. If styles are truly minimal, use CSS variables in module file
-> 3. If considering Tailwind migration, should be project-wide decision
->
-> Should I create the CSS module?
+> 1. Create `ComponentName.module.css` (recommended)
+> 2. If minimal, use CSS variables in module file
 
 ## When NOT to Warn
 
-Proceed without warning when:
-
 - Change follows existing patterns
-- User explicitly acknowledges pattern break ("I know this breaks the pattern, but...")
-- Change is to a pattern file itself (rules, configs)
-- Pattern doesn't exist yet (new area of codebase)
-- User is establishing a new pattern with clear intent
+- User explicitly acknowledges pattern break
+- Change is to pattern file itself
+- Pattern doesn't exist yet
+- New pattern with clear intent
 
 ## Response Format
 
 ```
-This would break an established pattern.
+Breaks established pattern.
 
-**Current Pattern:** [Description of existing pattern]
-
-**What This Would Cause:**
-- [Impact 1]
-- [Impact 2]
-- [Impact 3]
-
+**Current Pattern:** [Description]
+**Impact:** [Consequences]
 **Alternatives:**
-1. [Pattern-preserving approach] (recommended)
+1. [Pattern-preserving] (recommended)
 2. [Alternative if justified]
-3. [Migration approach if pattern change needed]
 
-Should I proceed with [recommended approach]?
+Proceed with [recommended]?
 ```
 
 ## Key Patterns to Protect
@@ -178,24 +115,22 @@ Should I proceed with [recommended approach]?
 ### Frontend
 
 - Feature module structure (`features/*/components|hooks|services|types/`)
-- Barrel exports (index.ts in every directory)
-- Component file structure (ComponentName/, .tsx, .module.css, index.ts)
+- Barrel exports (index.ts everywhere)
+- Component structure (ComponentName/, .tsx, .module.css, index.ts)
 - CSS Modules for styling
 - Context for global state
 - Custom hooks for business logic
 
 ### Backend
 
-- Singleton pattern for services/agents
+- Singleton for services/agents
 - BaseAgent extension for AI agents
-- CRUD layer for database operations
+- CRUD layer for database ops
 - Pydantic models for request/response
 - Dependency injection via FastAPI Depends
 - User ownership verification in queries
 
 ## Pattern Rule References
-
-When warning about pattern violations, cite the relevant rule:
 
 | Pattern Area                     | Rule File                                                                                |
 | -------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -206,6 +141,4 @@ When warning about pattern violations, cite the relevant rule:
 | Singleton services               | [singleton-pattern.mdc](mdc:.cursor/rules/backend/patterns/singleton-pattern.mdc)        |
 | AI agents, BaseAgent             | [ai-agent-pattern.mdc](mdc:.cursor/rules/backend/agents/ai-agent-pattern.mdc)            |
 
-When warning, reference the rule inline:
-
-> "This breaks the feature-based architecture (see [feature-modules.mdc](mdc:.cursor/rules/frontend/architecture/feature-modules.mdc))."
+Reference inline: "Breaks feature-based architecture (see [feature-modules.mdc](mdc:.cursor/rules/frontend/architecture/feature-modules.mdc))."

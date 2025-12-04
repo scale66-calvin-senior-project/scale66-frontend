@@ -1,12 +1,4 @@
-"""
-External Services - Integrations with external APIs and services.
+from app.services.template_service import template_service
 
-This package contains:
-- ai/: AI service integrations (Anthropic, Gemini)
-- email_service: Email sending via Resend
-- storage_service: Image storage (S3/Cloudinary/Supabase Storage)
-- stripe_service: Payment processing
-- social_media_service: Instagram/TikTok API
-- image_overlay_service: Image manipulation for finalizer
-"""
+__all__ = ["template_service"]
 
