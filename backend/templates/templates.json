@@ -2,45 +2,99 @@
 	"templates": [
 		{
 			"id": "carousel-1",
-			"num_slides": 8,
+
 			"carousel_format": "listicle_tips",
-			"description": "Illustrated nature theme with blue/purple color palette. Features silhouette graphics of mountains, wildlife, and trees. Playful brush-style headline font on light lavender background. Best for outdoor, adventure, or nature-related content."
+			"description": "Illustrated nature theme with blue/purple color palette. Features silhouette graphics of mountains, wildlife, and trees. Playful brush-style headline font on light lavender background. Best for outdoor, adventure, or nature-related content.",
+			"hook": "Light lavender gradient background with illustrated navy blue silhouette of deer with antlers against layered mountain range. Flying birds and white clouds scattered across sky. Bold playful brush-style italic font in navy blue for main headline with clean sans-serif subtitle below. Website URL at bottom.",
+			"body_slides": [
+				{
+					"slide": "1_body.png",
+					"description": "Light lavender gradient background with illustrated nature elements including layered blue mountains at bottom, white clouds scattered mid-frame, and decorative bird silhouettes flying across sky. Website name at top. Bold italic brush-style headline in navy blue centered, with clean sans-serif supporting text below. Cohesive illustrated nature aesthetic."
+				}
+			],
+			"cta": "Light lavender gradient background with illustrated navy blue monkey silhouette on tree branch positioned at bottom with birds and clouds. Bold italic brush-style headline in navy blue with clean sans-serif supporting text below. Website URL at bottom. Maintains illustrated nature theme with call-to-action messaging."
 		},
 		{
 			"id": "carousel-2",
-			"num_slides": 6,
 			"carousel_format": "listicle_tips",
-			"description": "Minimalist editorial design with off-white paper texture background. Classic serif typewriter font with yellow highlighter accent. Clean and sophisticated with generous whitespace. Best for productivity, business, or self-improvement content."
+			"description": "Minimalist editorial design with off-white paper texture background. Classic serif typewriter font with yellow highlighter accent. Clean and sophisticated with generous whitespace. Best for productivity, business, or self-improvement content.",
+			"hook": "Minimalist off-white paper texture background with classic olive-toned serif typewriter font centered on slide. Large primary headline with smaller italic serif tagline below in outlined pill shape. Username handle at bottom. Clean, sophisticated editorial aesthetic with generous whitespace.",
+			"body_slides": [
+				{
+					"slide": "1_body.png",
+					"description": "Off-white paper texture background with date and name labels in small rectangular boxes at top corners. Paragraph-style content in classic olive-toned serif typewriter font centered in the middle of slide. Slide number indicator at bottom center with username handle below. Generous whitespace creates clean, sophisticated reading experience."
+				}
+			],
+			"cta": "Off-white paper texture background with bold olive-toned serif typography presenting question-style headline followed by call-to-action text. Username handle at bottom. Simple, clean editorial layout maintaining sophisticated minimalist aesthetic throughout."
 		},
 		{
 			"id": "carousel-3",
-			"num_slides": 7,
 			"carousel_format": "listicle_tips",
-			"description": "Elegant cream/beige background with sophisticated mixed-weight serif typography. Orange accent color for brand elements. Ultra-clean editorial aesthetic with strong typography hierarchy. Best for creative, design, or professional development content."
+			"description": "Elegant cream/beige background with sophisticated mixed-weight serif typography. Orange accent color for brand elements. Ultra-clean editorial aesthetic with strong typography hierarchy. Best for creative, design, or professional development content.",
+			"hook": "Elegant cream/beige solid background with large black serif headline typography mixed with elegant italic script font for emphasis words. Orange accent color in brand name at top. Black sans-serif subtitle below main headline. Sophisticated editorial design with generous whitespace and strong typographic hierarchy.",
+			"body_slides": [
+				{
+					"slide": "1_body.png",
+					"description": "Cream/beige solid background with mixed typography. Large black serif headline at top with flowing italic serif script emphasis at bottom creating call-to-action section. Orange accent text in large serif font for tagline. Brand name in orange at bottom left. Ultra-clean editorial aesthetic with strong typography hierarchy and generous whitespace."
+				},
+				{
+					"slide": "2_body.png",
+					"description": "Cream/beige solid background with orange accent numbering in top left corner. Large black serif headline centered with clean black sans-serif body copy in bullet point format below. Brand name in orange at bottom left. Ultra-clean editorial aesthetic with generous whitespace creating sophisticated, readable numbered list layout."
+				}
+			],
+			"cta": "Cream/beige solid background with large orange serif typography for main message. Clean black sans-serif supporting text below headline. Minimalist, sophisticated editorial aesthetic with generous whitespace and elegant typography maintaining design consistency."
 		},
 		{
 			"id": "carousel-4",
-			"num_slides": 5,
 			"carousel_format": "listicle_tips",
-			"description": "Light background with navy blue typography mixing serif and decorative script fonts. Soft blue highlight bar for emphasis and circular geometric accents. Clean, professional, and approachable. Best for coaching, social media tips, or personal branding content."
+			"description": "Light background with navy blue typography mixing serif and decorative script fonts. Soft blue highlight bar for emphasis and circular geometric accents. Clean, professional, and approachable. Best for coaching, social media tips, or personal branding content.",
+			"hook": "Light off-white background with navy blue decorative script number and clean sans-serif text below. Soft blue horizontal highlight bar accent. Circular navy blue geometric accent element in corner. Profile badge with avatar and title at bottom left, 'Swipe' indicator with hand icon at bottom right.",
+			"body_slides": [
+				{
+					"slide": "1_body.png",
+					"description": "Light off-white background with username handle and website URL in navy blue at top corners. Large navy blue serif 'Tip' text with decorative script number at top. Navy blue rounded rectangle frame containing bold sans-serif headline and clean body paragraph text in navy. Circular navy blue geometric accent elements in corners. Profile badge with avatar at bottom left, 'Swipe' indicator at bottom right. Clean, professional, approachable design."
+				}
+			],
+			"cta": "Solid navy blue background creating high contrast. White bold sans-serif typography for headline and body text. Light blue accent text in decorative script style. White outline icons for social actions (heart, share, bookmark) at bottom center."
 		},
 		{
 			"id": "carousel-5",
-			"num_slides": 5,
 			"carousel_format": "listicle_tips",
-			"description": "Dark moody aesthetic with brown-toned photography background. Elegant white typography mixing serif and flowing script fonts. Premium, sophisticated feel with high contrast. Best for luxury brands, lifestyle, or aspirational content."
+			"description": "Dark moody aesthetic with brown-toned photography background. Elegant white typography mixing serif and flowing script fonts. Premium, sophisticated feel with high contrast. Best for luxury brands, lifestyle, or aspirational content.",
+			"hook": "Dark moody background with brown-toned hands-holding-phone photography creating atmospheric overlay. White elegant serif headline mixed with flowing white italic script font for emphasis words. Outlined 'Read More' CTA button at center. Brand name at top left, 'page 1' indicator at bottom. Premium, sophisticated aesthetic.",
+			"body_slides": [
+				{
+					"slide": "1_body.png",
+					"description": "Dark moody background with brown-toned photography creating atmospheric overlay. Brand name at top left with circular badge at top right. White elegant serif and italic script typography at top for headline. White rounded rectangle frame containing white sans-serif body text in paragraph format. White four-point star accent at bottom center. Page number indicator at bottom left. Premium, sophisticated aesthetic with high contrast and elegant typography hierarchy."
+				}
+			],
+			"cta": "Light background with lifestyle photography element and mixed serif and script typography in black. Website URL in outlined pill-shaped CTA button at center. Brand name at top left and page indicator at bottom right. Sophisticated, elegant aesthetic with photography and typography balance."
 		},
 		{
 			"id": "carousel-6",
-			"num_slides": 6,
 			"carousel_format": "listicle_tips",
-			"description": "Green nature photography with dark overlay. Bold yellow/cream sans-serif headlines on organic forest imagery. Fresh, eco-conscious aesthetic. Best for sustainability, wellness, nature, or environmental content."
+			"description": "Green nature photography with dark overlay. Bold yellow/cream sans-serif headlines on organic forest imagery. Fresh, eco-conscious aesthetic. Best for sustainability, wellness, nature, or environmental content.",
+			"hook": "Green nature photography background showing forest tree canopy with dark overlay for readability. Bold yellow/cream all-caps sans-serif headline prominently displayed. White clean sans-serif supporting text below. Brand logo with leaf icon at top center. Arrow graphic element and social action icons (share, save) at bottom.",
+			"body_slides": [
+				{
+					"slide": "1_body.png",
+					"description": "Green forest photography background showing tall trees with dark atmospheric overlay for readability. White leaf icon logo at top left with yellow arrow graphic at top right. Bold yellow/cream all-caps sans-serif headline prominently displayed at left side with white clean sans-serif body text below in multiple paragraphs. Username handle and social action icons (share, save) at bottom. Fresh, organic, eco-conscious aesthetic with nature photography throughout."
+				}
+			],
+			"cta": "Green forest photography background with dark overlay. Bold yellow/cream all-caps 'EVENT DETAILS' headline at top. White clean sans-serif text listing event information (date, location, time) and call-to-action message. Bold yellow tagline at bottom with social action icons."
 		},
 		{
 			"id": "carousel-7",
-			"num_slides": 5,
 			"carousel_format": "listicle_tips",
-			"description": "Warm terracotta/coral solid color background with bold white sans-serif typography. Muted accent text for variety and dotted pattern decoration. Modern, warm, and inviting. Best for marketing tips, growth strategies, or entrepreneurship content."
+			"description": "Warm terracotta/coral solid color background with bold white sans-serif typography. Muted accent text for variety and dotted pattern decoration. Modern, warm, and inviting. Best for marketing tips, growth strategies, or entrepreneurship content.",
+			"hook": "Warm terracotta/coral solid color background. White bold sans-serif headline text prominently displayed with muted lighter accent text for supporting copy. Dotted pattern decoration at bottom right corner. Username handle at top. Modern, warm, inviting aesthetic with clean typography.",
+			"body_slides": [
+				{
+					"slide": "1_body.png",
+					"description": "Terracotta/coral solid background with white horizontal line at top and 'PAGE' indicator box at top right. White bold sans-serif headline prominently centered with muted lighter pink/peach accent text integrated into headline for visual variety. White clean sans-serif supporting text below in smaller size. Dotted pattern decoration at bottom corners. Modern, warm, approachable design with strong typography contrast."
+				}
+			],
+			"cta": "Terracotta/coral solid background with circular profile photo framed in white. White bold sans-serif headline asking question. Muted lighter supporting text below for call-to-action copy. Dotted pattern decoration at bottom left. Warm, personal, engaging aesthetic."
 		}
 	]
 }

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from pydantic import Field
 from app.models.brand_kit import BrandKit
 from app.models.common import BasePipelineStep
@@ -21,32 +21,60 @@ class TemplateDeciderInput(BasePipelineStep):
 
 class TemplateDeciderOutput(BasePipelineStep):
     format_type: str = Field(...)
-    num_slides: int = Field(..., ge=3, le=10)
+    num_body_slides: int = Field(..., ge=1, le=8, description="Number of body slides (content slides)")
     template_id: str = Field(...)
-    format_rationale: str = Field(...)
+    hook_slide: str = Field(..., description="Hook slide filename (e.g., '1_hook.png')")
+    body_slide: str = Field(..., description="Selected body slide filename (e.g., '1_body.png')")
+    cta_slide: Optional[str] = Field(None, description="CTA slide filename if exists (e.g., '1_cta.png')")
+    
+    @property
+    def num_slides(self) -> int:
+        """Total slides: 1 hook + num_body_slides + (1 if cta else 0)"""
+        return 1 + self.num_body_slides + (1 if self.cta_slide else 0)
 
 
 class CaptionGeneratorInput(BasePipelineStep):
     format_type: str = Field(...)
     user_prompt: str = Field(...)
     brand_kit: BrandKit = Field(...)
-    num_slides: int = Field(..., ge=3, le=10)
+    num_body_slides: int = Field(..., ge=1, le=8, description="Number of body slides")
+    template_id: str = Field(..., description="Template ID for future template access")
+    hook_slide: str = Field(..., description="Hook slide filename")
+    body_slide: str = Field(..., description="Body slide filename")
+    cta_slide: Optional[str] = Field(None, description="CTA slide filename if exists")
+    
+    @property
+    def num_slides(self) -> int:
+        """Total slides: 1 hook + num_body_slides + (1 if cta else 0)"""
+        return 1 + self.num_body_slides + (1 if self.cta_slide else 0)
 
 
 class CaptionGeneratorOutput(BasePipelineStep):
-    slides_text: List[str] = Field(...)
-    slides_rationale: List[str] = Field(...)
+    hook_text: str = Field(..., description="Hook slide caption text")
+    body_texts: List[str] = Field(..., description="Body slide caption texts")
+    cta_text: Optional[str] = Field(None, description="CTA slide caption text if exists")
 
 
 class SlideGeneratorInput(BasePipelineStep):
     format_type: str = Field(...)
-    num_slides: int = Field(..., ge=3, le=10)
+    num_body_slides: int = Field(..., ge=1, le=8, description="Number of body slides")
     brand_kit: BrandKit = Field(...)
     user_prompt: str = Field(...)
-    slides_text: List[str] = Field(...)
+    hook_text: str = Field(..., description="Hook slide caption text")
+    body_texts: List[str] = Field(..., description="Body slide caption texts")
+    cta_text: Optional[str] = Field(None, description="CTA slide caption text if exists")
     template_id: str = Field(...)
+    hook_slide: str = Field(..., description="Hook slide filename")
+    body_slide: str = Field(..., description="Body slide filename")
+    cta_slide: Optional[str] = Field(None, description="CTA slide filename if exists")
+    
+    @property
+    def num_slides(self) -> int:
+        """Total slides: 1 hook + num_body_slides + (1 if cta else 0)"""
+        return 1 + self.num_body_slides + (1 if self.cta_slide else 0)
 
 
 class SlideGeneratorOutput(BasePipelineStep):
-    slides_images: List[str] = Field(...)
-    images_rationale: List[str] = Field(...)
+    hook_image: str = Field(..., description="Hook slide image (base64)")
+    body_images: List[str] = Field(..., description="Body slide images (base64)")
+    cta_image: Optional[str] = Field(None, description="CTA slide image (base64) if exists")

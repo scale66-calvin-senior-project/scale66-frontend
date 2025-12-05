@@ -4,7 +4,6 @@ from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
 from app.models.pipeline import CaptionGeneratorInput, CaptionGeneratorOutput
 from app.models.structured import ClaudeSlidesTextOutput
 from app.agents.template_decider import CarouselFormat
-from app.services.ai.anthropic_service import AnthropicServiceError
 
 
 FORMAT_TEXT_GUIDES: Dict[str, str] = {
@@ -38,6 +37,24 @@ FORMAT_TEXT_GUIDES: Dict[str, str] = {
 
 
 class CaptionGenerator(BaseAgent[CaptionGeneratorInput, CaptionGeneratorOutput]):
+    """
+    Caption Generator Agent - Generates text captions for carousel slides.
+    
+    Input:
+        format_type: str
+        user_prompt: str
+        brand_kit: BrandKit
+        num_body_slides: int
+        template_id: str
+        hook_slide: str
+        body_slide: str
+        cta_slide: Optional[str]
+    
+    Output:
+        hook_text: str
+        body_texts: List[str]
+        cta_text: Optional[str]
+    """
     _instance: Optional['CaptionGenerator'] = None
     
     def __new__(cls):
@@ -49,72 +66,52 @@ class CaptionGenerator(BaseAgent[CaptionGeneratorInput, CaptionGeneratorOutput])
         super().__init__()
     
     async def _validate_input(self, input_data: CaptionGeneratorInput) -> None:
-        if not input_data.format_type or not input_data.format_type.strip():
-            raise ValidationError("format_type is required")
-        
-        if not input_data.user_prompt or not input_data.user_prompt.strip():
-            raise ValidationError("user_prompt cannot be empty")
-        
-        if len(input_data.user_prompt.strip()) < 10:
-            raise ValidationError("user_prompt must be at least 10 characters")
-        
-        if not input_data.brand_kit:
-            raise ValidationError("brand_kit is required")
-        
-        required_fields = {
-            "brand_name": input_data.brand_kit.brand_name,
-            "brand_niche": input_data.brand_kit.brand_niche,
-            "brand_style": input_data.brand_kit.brand_style,
-            "product_service_desc": input_data.brand_kit.product_service_desc,
-        }
-        
-        for field_name, field_value in required_fields.items():
-            if not field_value or not str(field_value).strip():
-                raise ValidationError(f"brand_kit.{field_name} is required")
-        
-        if input_data.num_slides < 3 or input_data.num_slides > 10:
-            raise ValidationError(
-                f"num_slides must be between 3 and 10, got {input_data.num_slides}"
-            )
+        pass
     
     async def _execute(self, input_data: CaptionGeneratorInput) -> CaptionGeneratorOutput:
-        try:
-            prompt = self._build_prompt(input_data)
-            
-            text_output = await self.anthropic.generate_structured_output(
-                prompt=prompt,
-                output_model=ClaudeSlidesTextOutput,
-                max_tokens=4096,
-                temperature=0.9,
-            )
-            
-            if len(text_output.slides_text) != input_data.num_slides:
-                if len(text_output.slides_text) < input_data.num_slides:
-                    while len(text_output.slides_text) < input_data.num_slides:
-                        text_output.slides_text.append("[Content continues...]")
-                        text_output.slides_rationale.append("Placeholder for missing slide")
-                else:
-                    text_output.slides_text = text_output.slides_text[:input_data.num_slides]
-                    text_output.slides_rationale = text_output.slides_rationale[:input_data.num_slides]
-            
-            return CaptionGeneratorOutput(
-                step_name="caption_generator",
-                success=True,
-                slides_text=text_output.slides_text,
-                slides_rationale=text_output.slides_rationale,
-            )
-            
-        except AnthropicServiceError as e:
-            raise ExecutionError(f"Caption generation service error: {str(e)}")
-        except Exception as e:
-            raise ExecutionError(f"Unexpected error during caption generation: {str(e)}")
+        prompt = self._build_prompt(input_data)
+        
+        text_output = await self.anthropic.generate_structured_output(
+            prompt=prompt,
+            output_model=ClaudeSlidesTextOutput,
+            max_tokens=4096,
+            temperature=0.9,
+        )
+        
+        expected_body_count = input_data.num_body_slides
+        if len(text_output.body_texts) != expected_body_count:
+            if len(text_output.body_texts) < expected_body_count:
+                while len(text_output.body_texts) < expected_body_count:
+                    text_output.body_texts.append("[Content continues...]")
+            else:
+                text_output.body_texts = text_output.body_texts[:expected_body_count]
+        
+        has_cta = input_data.cta_slide is not None
+        if has_cta and not text_output.cta_text:
+            text_output.cta_text = "Follow for more tips!"
+        
+        return CaptionGeneratorOutput(
+            step_name="caption_generator",
+            success=True,
+            hook_text=text_output.hook_text,
+            body_texts=text_output.body_texts,
+            cta_text=text_output.cta_text if has_cta else None,
+        )
     
     def _build_prompt(self, input_data: CaptionGeneratorInput) -> str:
         text_guide = FORMAT_TEXT_GUIDES.get(input_data.format_type, "")
         brand_kit = input_data.brand_kit
         pain_points = ", ".join(brand_kit.customer_pain_points) if brand_kit.customer_pain_points else "Not provided"
         
-        return f"""You are a social media caption writer. Generate {input_data.num_slides} carousel slide captions following this structure:
+        # Determine slide structure
+        has_cta = input_data.cta_slide is not None
+        
+        return f"""You are a social media caption writer. Generate carousel slide captions with the following structure:
+
+REQUIRED OUTPUT STRUCTURE:
+- hook_text: 1 attention-grabbing opening slide caption
+- body_texts: {input_data.num_body_slides} main content slide captions (array)
+{"- cta_text: 1 compelling call-to-action slide caption" if has_cta else ""}
 
 {text_guide}
 
@@ -127,7 +124,7 @@ BRAND CONTEXT:
 
 USER REQUEST: {input_data.user_prompt}
 
-Generate exactly {input_data.num_slides} slides. For each slide, provide the caption text and rationale explaining why it works for this brand and audience."""
+Generate the captions as structured above. {"The CTA should drive user action (follow, visit website, buy, engage, etc.)." if has_cta else ""}"""
 
 
 caption_generator = CaptionGenerator()

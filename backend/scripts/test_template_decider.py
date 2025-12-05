@@ -9,7 +9,7 @@ from app.models.pipeline import TemplateDeciderInput
 from app.agents.template_decider import template_decider
 
 
-USER_PROMPT = "A carousel showing solopreneurs how to get started with social media marketing"
+USER_PROMPT = "5 tip for getting started with social media marketing, just building brand awareness, not trying to sell anything or make the user do anything"
 
 BRAND_KIT = BrandKit(
    brand_name="Scale66",
@@ -31,8 +31,9 @@ async def main():
     print("TEMPLATE DECIDER OUTPUT")
     
     print(f"\n  Format Type:       {result.format_type}")
-    print(f"  Num Slides:        {result.num_slides}")
+    print(f"  Num Body Slides:   {result.num_body_slides}")
     print(f"  Template ID:       {result.template_id}")
+    print(f"  CTA Slide:         {result.cta_slide}")
     
     if result.error_message:
         print(f"\n  Error Message:     {result.error_message}")

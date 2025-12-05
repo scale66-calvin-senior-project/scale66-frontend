@@ -9,7 +9,7 @@ from app.models.pipeline import CaptionGeneratorInput
 from app.agents.caption_generator import caption_generator
 
 
-USER_PROMPT = "A carousel talking about the benefits of coffee"
+USER_PROMPT = "5 educational tips for out of the way health reasons to drink coffee"
 
 BRAND_KIT = BrandKit(
     brand_name="Joe's Coffee Corner",
@@ -24,7 +24,8 @@ BRAND_KIT = BrandKit(
 )
 
 FORMAT_TYPE = "listicle_tips"
-NUM_SLIDES = 4
+NUM_BODY_SLIDES = 5
+TEMPLATE_ID = "carousel-2"
 
 
 async def main():
@@ -32,7 +33,11 @@ async def main():
         user_prompt=USER_PROMPT,
         brand_kit=BRAND_KIT,
         format_type=FORMAT_TYPE,
-        num_slides=NUM_SLIDES
+        num_body_slides=NUM_BODY_SLIDES,
+        template_id=TEMPLATE_ID,
+        hook_slide="1_hook.png",
+        body_slide="1_body.png",
+        cta_slide="1_cta.png",
     )
     
     result = await caption_generator.run(input_data)
@@ -40,11 +45,19 @@ async def main():
     print("CAPTION GENERATOR OUTPUT")
     
     print(f"\n  Format Type:       {input_data.format_type}")
-    print(f"  Num Slides:        {len(result.slides_text)}")
+    print(f"  Num Body Slides:   {input_data.num_body_slides}")
+    print(f"  Total Slides:      {input_data.num_slides}")
     
-    print("\n  Slides Text:")
-    for i, text in enumerate(result.slides_text, 1):
+    print("\n  Hook Text:")
+    print(f"    {result.hook_text}")
+    
+    print("\n  Body Texts:")
+    for i, text in enumerate(result.body_texts, 1):
         print(f"    {i}. {text}")
+    
+    if result.cta_text:
+        print("\n  CTA Text:")
+        print(f"    {result.cta_text}")
     
     if result.error_message:
         print(f"\n  Error Message:     {result.error_message}")

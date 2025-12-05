@@ -1,12 +1,31 @@
-from typing import Dict, List, Optional
+from typing import List, Optional
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
 from app.models.pipeline import SlideGeneratorInput, SlideGeneratorOutput
-from app.agents.template_decider import CarouselFormat
-from app.services.ai.gemini_service import GeminiServiceError
 from app.services.template_service import template_service
 
 
 class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
+    """
+    Slide Generator Agent - Generates carousel slide images using AI.
+    
+    Input:
+        format_type: str
+        num_body_slides: int
+        brand_kit: BrandKit
+        user_prompt: str
+        hook_text: str
+        body_texts: List[str]
+        cta_text: Optional[str]
+        template_id: str
+        hook_slide: str
+        body_slide: str
+        cta_slide: Optional[str]
+    
+    Output:
+        hook_image: str
+        body_images: List[str]
+        cta_image: Optional[str]
+    """
     _instance: Optional['SlideGenerator'] = None
     
     def __new__(cls):
@@ -18,106 +37,64 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
         super().__init__()
     
     async def _validate_input(self, input_data: SlideGeneratorInput) -> None:
-        if not input_data.format_type or not input_data.format_type.strip():
-            raise ValidationError("format_type is required")
-        
-        if input_data.num_slides < 3 or input_data.num_slides > 10:
-            raise ValidationError(
-                f"num_slides must be between 3 and 10, got {input_data.num_slides}"
-            )
-        
-        if not input_data.brand_kit:
-            raise ValidationError("brand_kit is required")
-        
-        required_fields = {
-            "brand_name": input_data.brand_kit.brand_name,
-            "brand_niche": input_data.brand_kit.brand_niche,
-            "brand_style": input_data.brand_kit.brand_style,
-            "product_service_desc": input_data.brand_kit.product_service_desc,
-        }
-        
-        for field_name, field_value in required_fields.items():
-            if not field_value or not str(field_value).strip():
-                raise ValidationError(f"brand_kit.{field_name} is required")
-        
-        if not input_data.user_prompt or not input_data.user_prompt.strip():
-            raise ValidationError("user_prompt cannot be empty")
-        
-        if len(input_data.user_prompt.strip()) < 10:
-            raise ValidationError("user_prompt must be at least 10 characters")
-        
-        if not input_data.slides_text:
-            raise ValidationError("slides_text cannot be empty")
-        
-        if not isinstance(input_data.slides_text, list):
-            raise ValidationError("slides_text must be a list")
-        
-        if len(input_data.slides_text) != input_data.num_slides:
-            raise ValidationError(
-                f"slides_text length ({len(input_data.slides_text)}) must match "
-                f"num_slides ({input_data.num_slides})"
-            )
-        
-        for i, text in enumerate(input_data.slides_text):
-            if text is None:
-                raise ValidationError(f"slides_text[{i}] cannot be None")
-            if not isinstance(text, str):
-                raise ValidationError(f"slides_text[{i}] must be a string")
-        
-        if not input_data.template_id or not input_data.template_id.strip():
-            raise ValidationError("template_id is required")
-        
-        template = template_service.get_template(input_data.template_id)
-        if not template:
-            raise ValidationError(f"Template '{input_data.template_id}' not found")
+        pass
     
     async def _execute(self, input_data: SlideGeneratorInput) -> SlideGeneratorOutput:
-        try:
-            template_base64 = self._load_template_image(input_data.template_id)
-            
-            slides_images: List[str] = []
-            images_rationale: List[str] = []
-            
-            first_image, first_rationale = await self._generate_slide_image(
+        hook_template_base64 = self._load_template_image(
+            input_data.template_id, 
+            input_data.hook_slide
+        )
+        hook_image = await self._generate_slide_image(
+            input_data=input_data,
+            slide_index=0,
+            slide_text=input_data.hook_text,
+            template_image_base64=hook_template_base64,
+            previous_slide_base64=None,
+        )
+        
+        body_template_base64 = self._load_template_image(
+            input_data.template_id, 
+            input_data.body_slide
+        )
+        
+        body_images: List[str] = []
+        previous_body_slide = None
+        
+        for i, body_text in enumerate(input_data.body_texts):
+            body_image = await self._generate_slide_image(
                 input_data=input_data,
-                slide_index=0,
-                slide_text=input_data.slides_text[0],
-                template_image_base64=template_base64,
+                slide_index=i + 1,
+                slide_text=body_text,
+                template_image_base64=body_template_base64,
+                previous_slide_base64=previous_body_slide,
+            )
+            body_images.append(body_image)
+            previous_body_slide = body_image
+        
+        cta_image = None
+        if input_data.cta_slide and input_data.cta_text:
+            cta_template_base64 = self._load_template_image(
+                input_data.template_id, 
+                input_data.cta_slide
+            )
+            cta_image = await self._generate_slide_image(
+                input_data=input_data,
+                slide_index=input_data.num_slides - 1,
+                slide_text=input_data.cta_text,
+                template_image_base64=cta_template_base64,
                 previous_slide_base64=None,
             )
-            slides_images.append(first_image)
-            images_rationale.append(first_rationale)
-            
-            for i in range(1, input_data.num_slides):
-                slide_image, slide_rationale = await self._generate_slide_image(
-                    input_data=input_data,
-                    slide_index=i,
-                    slide_text=input_data.slides_text[i],
-                    template_image_base64=template_base64,
-                    previous_slide_base64=slides_images[i - 1],
-                )
-                slides_images.append(slide_image)
-                images_rationale.append(slide_rationale)
-            
-            return SlideGeneratorOutput(
-                step_name="slide_generator",
-                success=True,
-                slides_images=slides_images,
-                images_rationale=images_rationale,
-            )
-            
-        except GeminiServiceError as e:
-            raise ExecutionError(f"Slide generation service error: {str(e)}")
-        except Exception as e:
-            raise ExecutionError(f"Unexpected error during slide generation: {str(e)}")
+        
+        return SlideGeneratorOutput(
+            step_name="slide_generator",
+            success=True,
+            hook_image=hook_image,
+            body_images=body_images,
+            cta_image=cta_image,
+        )
     
-    def _load_template_image(self, template_id: str) -> str:
-        try:
-            image_base64 = template_service.get_template_image_base64(template_id, slide_number=1)
-            return image_base64
-            
-        except Exception as e:
-            raise ExecutionError(f"Template loading failed: {str(e)}")
+    def _load_template_image(self, template_id: str, slide_filename: str) -> str:
+        return template_service.get_template_image_base64(template_id, slide_filename)
     
     async def _generate_slide_image(
         self,
@@ -126,34 +103,25 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
         slide_text: str,
         template_image_base64: str,
         previous_slide_base64: Optional[str],
-    ) -> tuple[str, str]:
-        try:
-            prompt = self._build_slide_prompt(
-                input_data=input_data,
-                slide_index=slide_index,
-                slide_text=slide_text,
-                has_previous_slide=previous_slide_base64 is not None,
-            )
-            
-            # For first slide, only use template. For subsequent slides, use both template and previous slide
-            images_to_reference = [template_image_base64]
-            if previous_slide_base64 is not None:
-                images_to_reference.append(previous_slide_base64)
-            
-            image_base64 = await self.gemini.generate_image_with_reference(
-                prompt=prompt,
-                images_base64=images_to_reference,
-                image_size="1K",
-            )
-            
-            rationale = f"Slide {slide_index+1} generated with text: '{slide_text[:50]}...'"
-            
-            return image_base64, rationale
-            
-        except GeminiServiceError as e:
-            raise ExecutionError(f"Slide {slide_index+1} generation failed: {str(e)}")
-        except Exception as e:
-            raise ExecutionError(f"Unexpected slide {slide_index+1} generation error: {str(e)}")
+    ) -> str:
+        has_previous_slide = previous_slide_base64 is not None
+        
+        prompt = self._build_slide_prompt(
+            input_data=input_data,
+            slide_index=slide_index,
+            slide_text=slide_text,
+            has_previous_slide=has_previous_slide,
+        )
+        
+        images_to_reference = [template_image_base64]
+        if has_previous_slide:
+            images_to_reference.append(previous_slide_base64)
+        
+        return await self.gemini.generate_image_with_reference(
+            prompt=prompt,
+            images_base64=images_to_reference,
+            image_size="1K",
+        )
     
     def _build_slide_prompt(
         self,
@@ -164,8 +132,6 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
     ) -> str:
         brand_kit = input_data.brand_kit
         
-        # Build reference images explanation
-        reference_explanation = ""
         if has_previous_slide:
             reference_explanation = """
 REFERENCE IMAGES PROVIDED:
@@ -181,8 +147,7 @@ You have been provided with TWO reference images:
    - Shows the actual formatting and content structure used
    - Use this for: format consistency, content structure patterns, visual continuity
    - CRITICAL: Match the formatting approach used in the previous slide
-   - If the previous slide used certain highlighted areas, maintain that pattern
-"""
+   - If the previous slide used certain highlighted areas, maintain that pattern"""
         else:
             reference_explanation = """
 REFERENCE IMAGE PROVIDED:
@@ -191,8 +156,7 @@ You have been provided with ONE reference image:
 1. TEMPLATE IMAGE:
    - Shows the visual style, layout structure, and design elements to replicate
    - Contains YELLOW HIGHLIGHTED areas showing modifiable zones
-   - Use this for: design style, layout, color scheme, typography, spacing
-"""
+   - Use this for: design style, layout, color scheme, typography, spacing"""
         
         return f"""You are a professional carousel slide designer. Your task is to create a carousel slide for a social media carousel post using a template-based approach.
 {reference_explanation}

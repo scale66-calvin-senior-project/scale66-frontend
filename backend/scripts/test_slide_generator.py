@@ -11,29 +11,35 @@ from app.models.pipeline import SlideGeneratorInput
 from app.agents.slide_generator import slide_generator
 
 
-USER_PROMPT = "A carousel showing solopreneurs how to get started with social media marketing"
+USER_PROMPT = "A carousel talking about the benefits of coffee"
 
 BRAND_KIT = BrandKit(
-    brand_name="Scale66",
-    brand_niche="Social Media Marketing for online businesses",
-    brand_style="professional",
-    customer_pain_points=["I don't know how to get started with social media marketing", "I don't have the time to manage social media", "I don't have the budget to hire a marketing agency"],
-    product_service_desc="Helps speed up the process of social media marketing for brand awareness at the fraction of the cost of a marketing agency"
+    brand_name="Joe's Coffee Corner",
+    brand_niche="Local artisanal coffee shop",
+    brand_style="friendly and community-focused",
+    customer_pain_points=[
+        "Not sure where to find fresh, locally roasted coffee",
+        "Looking for a cozy spot to relax or work",
+        "Frustrated with long waits and impersonal service at big chains"
+    ],
+    product_service_desc="A neighborhood coffee shop serving freshly roasted coffee, homemade pastries, and providing a welcoming space for the community"
 )
 
 FORMAT_TYPE = "listicle_tips"
-NUM_SLIDES = 7
-TEMPLATE_ID = "carousel-3"
+NUM_BODY_SLIDES = 5
+TEMPLATE_ID = "carousel-2"
 
-SLIDES_TEXT = [
-    "If you're a solopreneur, you need to know these 6 tips to get started with social media marketing",
-    "Identify what you want to achieve with social media—whether it's brand awareness, lead generation, or sales. Then research and document your ideal customer profile, including demographics, interests, pain points, and where they spend time online.",
-    "Not all platforms are created equal. Select 2-3 platforms where your target audience is most active. Focus on quality over quantity—it's better to master one platform than to spread yourself thin across many.",
-    "Plan the types of content you'll post, posting frequency, and themes. A mix of educational, entertaining, and promotional content typically performs best. Consistency in posting schedule helps build audience engagement.",
-    "Use a clear profile picture, compelling bio with keywords, and link to your website. Make sure your brand voice and visual style are consistent across all platforms to build recognition.",
-    "Don't just broadcast—interact with your audience. Respond to comments, answer questions, and engage with content from accounts in your niche. Building relationships is key to growing organically.",
-    "Encourage customers to share their experiences with your product or service. Repost their content and give them credit. This builds trust, increases engagement, and provides authentic social proof."
+HOOK_TEXT = "Coffee isn't just delicious—it's secretly boosting your health in ways you never knew"
+
+BODY_TEXTS = [
+    "Coffee contains powerful antioxidants that help protect your liver from damage and reduce risk of cirrhosis and liver cancer by up to 40 percent",
+    "Regular coffee consumption is linked to lower rates of Parkinson's disease because caffeine helps protect dopamine-producing neurons in your brain",
+    "Coffee can significantly reduce your risk of developing type 2 diabetes by improving insulin sensitivity and helping regulate blood sugar levels over time",
+    "The caffeine in coffee enhances physical performance by increasing adrenaline levels and breaking down body fat to use as fuel during exercise",
+    "Coffee drinkers have up to 20 percent lower risk of depression and significantly reduced suicide risk due to caffeine's mood-boosting effects on neurotransmitters",
 ]
+
+CTA_TEXT = "Visit Joe's Coffee Corner to enjoy freshly roasted coffee that tastes amazing and supports your health—your body will thank you"
 
 
 async def main():
@@ -41,9 +47,14 @@ async def main():
         user_prompt=USER_PROMPT,
         brand_kit=BRAND_KIT,
         format_type=FORMAT_TYPE,
-        num_slides=NUM_SLIDES,
+        num_body_slides=NUM_BODY_SLIDES,
         template_id=TEMPLATE_ID,
-        slides_text=SLIDES_TEXT
+        hook_text=HOOK_TEXT,
+        body_texts=BODY_TEXTS,
+        cta_text=CTA_TEXT,
+        hook_slide="1_hook.png",
+        body_slide="1_body.png",
+        cta_slide="1_cta.png",
     )
     
     result = await slide_generator.run(input_data)
@@ -52,20 +63,33 @@ async def main():
     
     print(f"\n  Format Type:       {input_data.format_type}")
     print(f"  Template ID:       {input_data.template_id}")
-    print(f"  Num Slides:        {len(result.slides_images)}")
-    
-    output_dir = Path(__file__).parent.parent / "output" / "slides"
-    output_dir.mkdir(parents=True, exist_ok=True)
+    print(f"  Num Body Slides:   {input_data.num_body_slides}")
+    print(f"  Total Slides:      {input_data.num_slides}")
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    carousel_dir = Path(__file__).parent.parent / "output" / "carousels" / f"carousel_{timestamp}"
+    carousel_dir.mkdir(parents=True, exist_ok=True)
     
+    print(f"\n  Carousel Folder:   {carousel_dir}")
     print(f"\n  Saved Images:")
-    for i, image_base64 in enumerate(result.slides_images, 1):
-        image_data = base64.b64decode(image_base64)
-        filename = f"slide_{timestamp}_{i}.png"
-        filepath = output_dir / filename
-        filepath.write_bytes(image_data)
-        print(f"    {i}. {filepath}")
+    
+    # Save hook
+    hook_path = carousel_dir / "1_hook.png"
+    hook_path.write_bytes(base64.b64decode(result.hook_image))
+    print(f"    1. {hook_path}")
+    
+    # Save body slides
+    for i, body_image in enumerate(result.body_images, 2):
+        body_path = carousel_dir / f"{i}_body.png"
+        body_path.write_bytes(base64.b64decode(body_image))
+        print(f"    {i}. {body_path}")
+    
+    # Save CTA if exists
+    if result.cta_image:
+        cta_num = len(result.body_images) + 2
+        cta_path = carousel_dir / f"{cta_num}_cta.png"
+        cta_path.write_bytes(base64.b64decode(result.cta_image))
+        print(f"    {cta_num}. {cta_path}")
     
     if result.error_message:
         print(f"\n  Error Message:     {result.error_message}")
