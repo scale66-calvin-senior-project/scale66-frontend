@@ -7,7 +7,7 @@ class ClaudeFormatSelectionOutput(BaseModel):
     num_body_slides: int = Field(..., ge=1, le=8, description="Number of body/content slides needed (1-8). Hook and CTA are separate.")
     cta_slide: bool = Field(..., description="Whether to include a CTA slide")
 
-class GeminiTemplateSelectionOutput(BaseModel):
+class ClaudeTemplateSelectionOutput(BaseModel):
     template_id: str = Field(..., description="The selected template ID (e.g., 'carousel-1', 'carousel-2', etc.)")
 
 class ClaudeSlidesTextOutput(BaseModel):

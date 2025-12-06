@@ -26,7 +26,7 @@ BRAND_KIT = BrandKit(
 )
 
 FORMAT_TYPE = "listicle_tips"
-NUM_BODY_SLIDES = 5
+NUM_BODY_SLIDES = 3
 TEMPLATE_ID = "carousel-2"
 
 HOOK_TEXT = "Coffee isn't just delicious—it's secretly boosting your health in ways you never knew"
@@ -35,8 +35,7 @@ BODY_TEXTS = [
     "Coffee contains powerful antioxidants that help protect your liver from damage and reduce risk of cirrhosis and liver cancer by up to 40 percent",
     "Regular coffee consumption is linked to lower rates of Parkinson's disease because caffeine helps protect dopamine-producing neurons in your brain",
     "Coffee can significantly reduce your risk of developing type 2 diabetes by improving insulin sensitivity and helping regulate blood sugar levels over time",
-    "The caffeine in coffee enhances physical performance by increasing adrenaline levels and breaking down body fat to use as fuel during exercise",
-    "Coffee drinkers have up to 20 percent lower risk of depression and significantly reduced suicide risk due to caffeine's mood-boosting effects on neurotransmitters",
+
 ]
 
 CTA_TEXT = "Visit Joe's Coffee Corner to enjoy freshly roasted coffee that tastes amazing and supports your health—your body will thank you"

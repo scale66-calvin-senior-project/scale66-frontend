@@ -1,41 +1,10 @@
-from typing import Dict, List, Optional
-from enum import Enum
+from typing import List, Optional
 
 from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
 from app.models.pipeline import TemplateDeciderInput, TemplateDeciderOutput
 from app.models.structured import ClaudeFormatSelectionOutput, ClaudeTemplateSelectionOutput
 from app.services.template_service import template_service, TemplateMetadata
-
-
-class CarouselFormat(str, Enum):
-    LISTICLE_TIPS = "listicle_tips"
-
-
-FORMAT_DESCRIPTIONS: Dict[str, str] = {
-    CarouselFormat.LISTICLE_TIPS: """Numbered collection of discrete, standalone tips/insights, one per slide.
-
-STRUCTURE: Numbered headline ("7 Ways to X") -> one item per slide -> bonus/CTA
-CHARACTERISTICS: Scannable, save-worthy, satisfies completionist instinct
-
-IDEAL FOR PROMPTS LIKE:
-- "7 best habits before bed"
-- "5 ways to grow social media quickly"
-- "10 habits of successful people"
-- "10 ways to grow brand awareness just starting out"
-
-KEY CRITERIA (ALL must apply):
-1. Content breaks into discrete, standalone items (each tip works independently)
-2. Items are relatively unrelated to each other (no narrative thread required)
-3. Natural numbered framing ("X ways to...", "X tips for...", "X mistakes...")
-4. Each slide delivers complete value without needing other slides
-
-NOT SUITABLE FOR:
-- Sequential stories or journeys with a narrative arc
-- Before/after transformations requiring context buildup
-- Deep-dive explanations of a single concept
-- Personal stories or case studies
-- Content requiring progressive revelation""",
-}
+from app.constants import FORMAT_DESCRIPTIONS
 
 
 class TemplateDecider(BaseAgent[TemplateDeciderInput, TemplateDeciderOutput]):
