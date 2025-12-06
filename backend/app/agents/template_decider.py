@@ -188,38 +188,65 @@ Select the optimal carousel format, determine the number of body slides needed, 
         format_type: str,
         templates: List[TemplateMetadata]
     ) -> str:
-        template_options = "\n".join([
-            f"- {t.id}: {t.description}"
-            for t in templates
-        ])
+        template_details = []
+        for t in templates:
+            body_desc = ""
+            if t.body_slides:
+                body_descriptions = "\n     ".join([
+                    f"Body Slide {i+1}: {slide.description}"
+                    for i, slide in enumerate(t.body_slides)
+                ])
+                body_desc = f"\n   - Body Slides:\n     {body_descriptions}"
+            
+            cta_desc = f"\n   - CTA Slide: {t.cta}" if t.cta else ""
+            
+            template_detail = f"""Template: {t.id}
+   - Overview: {t.description}
+   - Hook Slide: {t.hook}{body_desc}{cta_desc}"""
+            template_details.append(template_detail)
         
+        template_info = "\n\n".join(template_details)
         valid_ids = [t.id for t in templates]
-        
         brand_kit = input_data.brand_kit
         
         return f"""You are an expert social media visual designer selecting the optimal TEMPLATE for a carousel.
 
 The carousel format has been decided: {format_type}
 
-Now select the best visual template based on the brand context and content topic.
+Now select the best visual template based on the brand context and content topic by analyzing the detailed visual descriptions provided.
 
 ---
 
-AVAILABLE TEMPLATES:
-{template_options}
+AVAILABLE TEMPLATES WITH DETAILED DESCRIPTIONS:
+
+{template_info}
 
 ---
 
 SELECTION CRITERIA:
 
-1. BRAND ALIGNMENT
-   - Does the template's visual style match the brand's personality?
-   - Consider: brand niche, brand style, target audience
+1. VISUAL STYLE ALIGNMENT
+   - Does the template's described visual style match the brand's personality?
+   - Consider typography, color palette, layout, and design elements from descriptions
+   - Match design style to brand: Modern, classic, playful, sophisticated, minimal, bold
 
-2. CONTENT FIT
+2. BRAND ALIGNMENT
+   - Does the template's visual language match the brand's personality and niche?
+   - Brand Niche: {brand_kit.brand_niche}
+   - Brand Style: {brand_kit.brand_style}
+   - Consider: Would the target audience resonate with this aesthetic?
+
+3. CONTENT FIT
    - Does the template's aesthetic suit the content topic?
-   - Some templates are better for professional content, others for casual/creative
-   - Consider the tone and style of the content being created
+   - Professional content benefits from: Clean, sophisticated, editorial designs
+   - Creative/casual content benefits from: Playful, bold, illustrated designs
+   - Luxury/premium content benefits from: High contrast, elegant, refined designs
+   - Educational content benefits from: Clear hierarchy, readable, organized layouts
+   - Nature/wellness content benefits from: Organic, fresh, calming aesthetics
+
+4. CONSISTENCY ACROSS SLIDES
+   - Do hook, body, and CTA descriptions show visual consistency?
+   - Is the design system cohesive and professional?
 
 ---
 
@@ -232,7 +259,12 @@ BRAND CONTEXT:
 - Brand Style: {brand_kit.brand_style}
 - Product/Service Description: {brand_kit.product_service_desc}
 
-Select the best template for this content. You MUST choose a template_id from: {valid_ids}"""
+---
+
+TASK:
+Based on the detailed visual descriptions provided, select the template that best matches the brand's visual identity and suits the content topic.
+
+You MUST choose a template_id from: {valid_ids}"""
 
 
 template_decider = TemplateDecider()
