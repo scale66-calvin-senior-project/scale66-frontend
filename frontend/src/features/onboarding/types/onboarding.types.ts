@@ -1,9 +1,21 @@
 /**
  * Onboarding Types
- * TODO: Define interfaces
  */
 
+export interface OnboardingData {
+  brandName?: string;
+  brandNiche?: string;
+  brandStyle?: string;
+  customerPainPoints?: string;
+  productService?: string;
+  socialMediaLinks?: {
+    instagram?: string;
+    tiktok?: string;
+  };
+}
+
 export interface OnboardingStep {
-  id: string;
-  // TODO: Add more fields
+  id: number;
+  title: string;
+  description?: string;
 }

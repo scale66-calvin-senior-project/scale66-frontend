@@ -1,9 +1,14 @@
+'use client';
+
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useAuthModal } from "@/context/AuthModalContext";
 import styles from "./Navbar.module.css";
 
 export default function Navbar() {
+  const { openModal } = useAuthModal();
+
   return (
     <nav className={styles.navbar} aria-label="Primary">
       <Link href="/" className={styles.brand}>
@@ -28,7 +33,7 @@ export default function Navbar() {
           </div>
         </li>
       </ul>
-      <Link href="/waitlist" className={styles.cta}>Start Marketing</Link>
+      <button onClick={() => openModal('signup')} className={styles.cta}>Start Marketing</button>
     </nav>
   );
 }

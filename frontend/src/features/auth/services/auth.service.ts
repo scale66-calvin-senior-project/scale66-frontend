@@ -1,36 +1,57 @@
+import { signInWithPassword, signUp, signOut, getCurrentUser as getSupabaseUser } from '@/lib/supabase';
 import type { LoginCredentials, SignupData, User } from '../types';
 
 /**
  * Auth Service
  * 
- * TODO: Implement authentication API calls
- * - Login
- * - Signup
- * - Logout
- * - OAuth (Google, Apple)
- * - Token refresh
- * - Password reset
+ * Handles authentication using Supabase
  */
 
 export const authService = {
   async login(credentials: LoginCredentials): Promise<User> {
-    // TODO: Implement login
-    throw new Error('Not implemented');
+    const result = await signInWithPassword(credentials.email, credentials.password);
+    
+    if (!result.user) {
+      throw new Error('No user returned from sign in');
+    }
+
+    return {
+      id: result.user.id,
+      email: result.user.email || '',
+      name: result.user.user_metadata?.name || result.user.user_metadata?.full_name,
+    };
   },
 
   async signup(data: SignupData): Promise<User> {
-    // TODO: Implement signup
-    throw new Error('Not implemented');
+    const result = await signUp(data.email, data.password);
+    
+    if (!result.user) {
+      throw new Error('No user returned from sign up');
+    }
+
+    return {
+      id: result.user.id,
+      email: result.user.email || '',
+      name: data.name || result.user.user_metadata?.name || result.user.user_metadata?.full_name,
+    };
   },
 
   async logout(): Promise<void> {
-    // TODO: Implement logout
-    throw new Error('Not implemented');
+    await signOut();
   },
 
   async getCurrentUser(): Promise<User | null> {
-    // TODO: Implement get current user
-    throw new Error('Not implemented');
+    const user = await getSupabaseUser();
+    
+    if (!user) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      email: user.email || '',
+      name: user.user_metadata?.name || user.user_metadata?.full_name,
+    };
   },
 
   async loginWithGoogle(): Promise<User> {

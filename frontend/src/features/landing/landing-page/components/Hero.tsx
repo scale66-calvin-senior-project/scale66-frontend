@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuthModal } from "@/context/AuthModalContext";
 import styles from "./Hero.module.css";
 
 const ANIMATION_PHRASES = [
@@ -19,6 +20,7 @@ const PAUSE_DURATION = 2000; // 2 seconds pause after typing
 
 export default function Hero() {
   const router = useRouter();
+  const { openModal } = useAuthModal();
   const [displayText, setDisplayText] = useState("");
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
   const [isTyping, setIsTyping] = useState(true);
@@ -96,7 +98,7 @@ export default function Hero() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      router.push('/waitlist');
+      openModal('signup');
     }
   };
 
@@ -145,7 +147,11 @@ export default function Hero() {
             </div>
           )}
         </div>
-        <Link href="/waitlist" className={styles.play} aria-label="Get Started">
+        <button
+          onClick={() => openModal('signup')}
+          className={styles.play}
+          aria-label="Get Started"
+        >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
             <defs>
               <linearGradient id="sendGrad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
@@ -156,7 +162,7 @@ export default function Hero() {
             <path d="M2.4 3.2l18 7.3c.9.4.9 1.7 0 2.1l-18 7.3c-1 .4-1.9-.6-1.5-1.5l3.1-6.7c.1-.3.1-.7 0-1L.9 4.7c-.4-.9.6-1.9 1.5-1.5z" fill="url(#sendGrad)" stroke="#5a79ff" strokeOpacity="0.45" strokeWidth="1"/>
             <path d="M9.8 12.5l9.1-2.9" stroke="#5a79ff" strokeOpacity="0.5" strokeWidth="1.2" strokeLinecap="round"/>
           </svg>
-        </Link>
+        </button>
       </div>
 
       <div className={styles.cta}>
@@ -164,9 +170,24 @@ export default function Hero() {
       </div>
 
       <div className={styles.chips}>
-        <button className={styles.chip}>Brand Awareness</button>
-        <button className={styles.chip}>Lead Generation</button>
-        <button className={styles.chip}>Conversion Optimization</button>
+        <button 
+          className={styles.chip}
+          onClick={() => openModal('signup')}
+        >
+          Brand Awareness
+        </button>
+        <button 
+          className={styles.chip}
+          onClick={() => openModal('signup')}
+        >
+          Lead Generation
+        </button>
+        <button 
+          className={styles.chip}
+          onClick={() => openModal('signup')}
+        >
+          Conversion Optimization
+        </button>
       </div>
 
       <div className={styles.trusted}>✓ Used by 50+ businesses • 30-day money-back guarantee • Cancel anytime</div>

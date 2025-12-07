@@ -1,9 +1,13 @@
+'use client';
+
 import React from "react";
 import Link from "next/link";
 import { FaPlug, FaBrain, FaChartLine, FaRocket } from "react-icons/fa";
+import { useAuthModal } from "@/context/AuthModalContext";
 import styles from "./Features.module.css";
 
 export default function Features() {
+  const { openModal } = useAuthModal();
   const features = [
     {
       title: "Get Professional Content in 5 Minutes",
@@ -52,9 +56,9 @@ export default function Features() {
 
         <div className={styles.cta}>
           <h3 className={styles.ctaHeading}>Ready to Transform Your Business?</h3>
-          <Link href="/waitlist" className={styles.ctaButton}>
+          <button onClick={() => openModal('signup')} className={styles.ctaButton}>
             Get Started Now
-          </Link>
+          </button>
         </div>
       </div>
     </section>
