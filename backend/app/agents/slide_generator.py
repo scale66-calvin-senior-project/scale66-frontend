@@ -138,59 +138,62 @@ REFERENCE IMAGES PROVIDED:
 You have been provided with TWO reference images:
 
 1. TEMPLATE IMAGE (First Image):
-   - Shows the visual style, layout structure, and design elements to replicate
-   - Contains YELLOW HIGHLIGHTED areas showing modifiable zones
-   - Use this for: design style, layout, color scheme, typography, spacing
+   - A STYLE REFERENCE ONLY - shows the aesthetic, layout, and design to replicate
+   - IGNORE all text, words, and semantic content in this image
+   - Extract ONLY: visual style, layout structure, color palette, typography style, spacing patterns, design elements
+   - The actual content/meaning in this template is IRRELEVANT and must be replaced
 
 2. PREVIOUS SLIDE (Second Image):
    - The immediately preceding slide in this carousel series
-   - Shows the actual formatting and content structure used
-   - Use this for: format consistency, content structure patterns, visual continuity
-   - CRITICAL: Match the formatting approach used in the previous slide
-   - If the previous slide used certain highlighted areas, maintain that pattern"""
+   - Shows the formatting and content structure pattern established for this series
+   - IGNORE the specific words/content shown - extract ONLY the format pattern
+   - Use this to maintain visual continuity and structural consistency across slides"""
         else:
             reference_explanation = """
 REFERENCE IMAGE PROVIDED:
 You have been provided with ONE reference image:
 
 1. TEMPLATE IMAGE:
-   - Shows the visual style, layout structure, and design elements to replicate
-   - Contains YELLOW HIGHLIGHTED areas showing modifiable zones
-   - Use this for: design style, layout, color scheme, typography, spacing"""
+   - A STYLE REFERENCE ONLY - shows the aesthetic, layout, and design to replicate
+   - IGNORE all text, words, and semantic content in this image
+   - Extract ONLY: visual style, layout structure, color palette, typography style, spacing patterns, design elements
+   - The actual content/meaning in this template is IRRELEVANT and must be replaced"""
         
-        return f"""You are a professional carousel slide designer. Your task is to create a carousel slide for a social media carousel post using a template-based approach.
+        return f"""You are a professional carousel slide designer. Your task is to create a carousel slide for a social media carousel post using a style-reference approach.
+
 {reference_explanation}
-TEMPLATE IMAGE INTERPRETATION:
-The template image contains YELLOW HIGHLIGHTED areas and NON-HIGHLIGHTED areas.
 
-YELLOW HIGHLIGHTED AREAS (Modifiable Zones):
-- These areas are marked in bright yellow shading showing template placeholder content
-- The yellow shading is SEMI-TRANSPARENT, allowing you to see the background texture beneath
-- Your task: REPLACE the content in these areas with new content from the Brand Kit or Caption
-- CRITICAL: The yellow highlighting itself must be COMPLETELY REMOVED from the final output
-- Background texture visible under yellow areas should be PRESERVED (the texture is part of the design)
-- Original template text/details visible under yellow shading must be IGNORED and REPLACED
+CRITICAL INSTRUCTION - IGNORE REFERENCE IMAGE CONTENT:
+The reference image(s) provided contain existing text, labels, and visual content. You MUST:
+- COMPLETELY IGNORE the semantic meaning, words, and content shown in the reference images
+- DO NOT copy, replicate, or be influenced by any text, labels, or information displayed
+- The reference content is placeholder/example material and has NO relevance to this carousel
+- Treat the reference as a "visual mockup" showing ONLY style, not content
 
-NON-HIGHLIGHTED AREAS (Preserve Exactly):
-- All areas WITHOUT yellow highlighting must remain COMPLETELY UNCHANGED (see EXCEPTION CASES below)
-- Preserve: background texture, layout structure, spacing, borders, decorative elements, color scheme
-- Do not modify positioning, sizing, or styling of non-highlighted elements
+WHAT TO EXTRACT FROM REFERENCE IMAGES:
+Extract and replicate ONLY these aesthetic and structural elements:
+1. TYPOGRAPHY STYLE: Font family, font weight, text sizing hierarchy, letter spacing, line height
+2. LAYOUT STRUCTURE: Positioning of content blocks, spatial relationships, margins, padding
+3. COLOR PALETTE: Background colors, text colors, accent colors, gradients, overlays
+4. DESIGN ELEMENTS: Borders, shapes, decorative elements, background textures, visual effects
+5. VISUAL HIERARCHY: Size relationships, emphasis patterns, visual flow, readability structure
+6. SPACING PATTERNS: White space distribution, content density, breathing room between elements
 
-EXCEPTION CASES - When Non-Highlighted Areas CAN Be Modified:
-Only modify non-highlighted areas in these specific scenarios:
-1. TEXT OVERFLOW: If caption content cannot fit within highlighted boundaries while maintaining readability, you may extend text into adjacent non-highlighted areas
-   - Only overflow when absolutely necessary for legibility
-   - Maintain the template's typography style when extending
-   - Ensure overflow text respects the overall layout and doesn't disrupt other elements
-2. VISUAL CONSISTENCY: If maintaining carousel series consistency requires matching elements established in previous slides
-   - Example: If slide 1 established a visual element for brand consistency, subsequent slides may replicate it
-   
+WHAT TO COMPLETELY IGNORE IN REFERENCE IMAGES:
+DO NOT use or be influenced by:
+- Any words, text, or labels shown in the reference
+- The specific content or messaging displayed
+- Placeholder information or example data
+- The semantic meaning or context of reference content
+- Email addresses, social handles, dates, or any specific information shown
 
-CONTENT SOURCES (Priority Order):
-1. CAPTION TEXT (Primary content for main highlighted areas):
+CONTENT SOURCES (ONLY Use These):
+All semantic content MUST come exclusively from these sources:
+
+1. CAPTION TEXT (Primary Content):
 {slide_text}
 
-2. BRAND KIT INFORMATION (For contextual highlighted areas ONLY):
+2. BRAND KIT INFORMATION (Contextual Use Only):
    - Brand Name: {brand_kit.brand_name}
    - Brand Style: {brand_kit.brand_style}
    - Niche: {brand_kit.brand_niche}
@@ -199,51 +202,68 @@ CONTENT SOURCES (Priority Order):
    CRITICAL: This is the COMPLETE Brand Kit. If information is not listed above, it does NOT exist.
    Do NOT create or infer any additional brand information (emails, websites, social handles, etc.)
 
-CONTENT PLACEMENT RULES:
-1. Main highlighted content areas: Use ONLY the CAPTION TEXT provided above
-2. Smaller highlighted areas (dates, labels, handles): Use Brand Kit information ONLY if contextually appropriate
-3. If no relevant Brand Kit information exists for a highlighted area: LEAVE IT MATCHING THE BACKGROUND (empty/clean)
-4. Slide number areas: Use the actual slide number ({slide_index + 1})
-5. CRITICAL - NO FABRICATION: Do NOT invent, create, or add ANY information not explicitly provided in Caption or Brand Kit
-   - Do NOT create email addresses, phone numbers, websites, or contact information
-   - Do NOT add generic labels like "carousel post", "social media", dates, or placeholder text
-   - Do NOT fill highlighted areas just because they exist - empty/clean areas are PREFERRED over irrelevant content
-6. IMPORTANT: Err on the side of minimalism - leave highlighted areas empty rather than adding irrelevant information
+CONTENT PLACEMENT STRATEGY:
+1. Primary content areas: Use the CAPTION TEXT provided above
+2. Secondary/contextual areas: Use Brand Kit information ONLY if contextually appropriate
+3. Slide numbering: Use the actual slide number ({slide_index})
+4. Empty spaces: Leave clean/empty rather than adding irrelevant content
+5. ABSOLUTE RULE - NO FABRICATION: Do NOT invent ANY information not explicitly provided
+   - Do NOT create contact information, social handles, emails, phone numbers, websites
+   - Do NOT add generic filler like "carousel post", "social media", dates, or placeholder text
+   - Do NOT copy content from the reference images
+   - Empty/minimal design is PREFERRED over fabricated or irrelevant information
 
-DESIGN CONSTRAINTS:
-- Maintain exact typography style (font family, weight, sizing hierarchy) from the reference
-- Preserve precise positioning and spacing of all content areas
-- Keep the same color palette (background, text colors, accent colors)
-- Maintain visual hierarchy and readability from the template design
-- All highlighted areas must have yellow shading removed in final output
+STYLE PRESERVATION RULES:
+These elements from the reference MUST be preserved:
+- Exact typography style (font characteristics, sizing hierarchy)
+- Precise layout structure and positioning patterns
+- Complete color palette and visual scheme
+- Spacing, padding, and margin patterns
+- Design elements, borders, textures, decorative features
+- Visual hierarchy and readability approach
+
+STYLE MODIFICATION EXCEPTIONS:
+Only deviate from the reference style in these cases:
+1. DIRECT CONTRADICTION: When reference style completely contradicts the new content requirements
+   - Example: Reference has room for 3 bullet points, but caption requires 5 points
+   - Action: Adapt spacing/sizing to accommodate while preserving overall aesthetic
+2. CONTENT INCOMPATIBILITY: When reference layout cannot physically accommodate the new content
+   - Example: Reference designed for short text, but caption is lengthy
+   - Action: Adjust layout minimally to fit content while maintaining style consistency
+3. BRAND ALIGNMENT: When reference aesthetic contradicts brand kit specifications
+   - Example: Reference is playful, but brand style is "professional, corporate"
+   - Action: Adapt design to align with brand while preserving layout structure
+
+In ALL other cases, preserve the reference aesthetic exactly.
 
 FORMAT CONSISTENCY (When Previous Slide Provided):
-If a previous slide is provided as reference:
-- MATCH the content structure and formatting approach used in the previous slide
-- If previous slide numbered the caption (e.g., "1. Point"), use the same numbering format
-- If previous slide used certain highlighted areas (top corners, bottom areas), maintain that pattern
+When a previous slide is provided:
+- MATCH the content structure and formatting pattern established
+- If previous slide numbered items (e.g., "1. Point"), maintain that numbering system
+- If previous slide positioned brand name in top-right, maintain that placement
 - Ensure visual and structural continuity across the carousel series
-- The previous slide shows you the EXACT format to follow for this series
+- The previous slide establishes the EXACT format pattern to follow
+- REMEMBER: Ignore the specific words in previous slide, extract only the format pattern
 
-EXECUTION STEPS:
-1. (If provided) Examine the previous slide to understand the format and structure being used
-2. Identify all yellow highlighted areas in the template image
-3. Preserve the background texture visible under the yellow shading
-4. Remove all yellow highlighting from those areas
-5. Replace placeholder content with appropriate content from Caption or Brand Kit ONLY
-6. Leave highlighted areas empty if no relevant content is available (DO NOT FABRICATE)
-7. Keep all non-highlighted areas exactly as shown in the template
-8. Match the format consistency established by the previous slide (if provided)
-9. Ensure visual consistency with the carousel series
+EXECUTION CHECKLIST:
+1. (If provided) Examine previous slide to extract the format pattern being used
+2. Analyze reference image to extract ONLY aesthetic style (ignore all text/content)
+3. Identify layout structure, typography style, color palette, spacing patterns
+4. Replace ALL content areas with new content from Caption and Brand Kit
+5. Preserve the aesthetic style precisely (fonts, colors, spacing, layout)
+6. Ensure NO content from reference images appears in the output
+7. Verify NO fabricated information has been added
+8. Match format consistency with previous slide (if provided)
+9. Maintain visual continuity for carousel series
 
 OUTPUT REQUIREMENTS:
-- Generate a clean, professional carousel slide
-- NO yellow highlighting visible in the final image
-- Cohesive visual style matching the template
-- Format consistency matching the previous slide (if provided)
-- Content contains ONLY information from Caption or Brand Kit - NO fabricated information
-- Empty highlighted areas are acceptable and preferred over irrelevant content
-- Professional typography and spacing maintained throughout"""
+- Professional carousel slide with reference aesthetic style
+- ALL content derived exclusively from Caption and Brand Kit
+- ZERO content copied or influenced by reference image text/labels
+- Precise preservation of typography, layout, colors, and spacing from reference
+- Format consistency with previous slides in series
+- NO fabricated information - empty spaces preferred over irrelevant content
+- Clean, cohesive design that matches the reference style but contains entirely new content"""
 
 
 slide_generator = SlideGenerator()

@@ -11,34 +11,31 @@ from app.models.pipeline import SlideGeneratorInput
 from app.agents.slide_generator import slide_generator
 
 
-USER_PROMPT = "A carousel talking about the benefits of coffee"
+USER_PROMPT = "A carousel talking about the benefits of social connection"
 
 BRAND_KIT = BrandKit(
-    brand_name="Joe's Coffee Corner",
-    brand_niche="Local artisanal coffee shop",
-    brand_style="friendly and community-focused",
+    brand_name="Hiver",
+    brand_niche="Event discovery and social connection platform",
+    brand_style="vibrant and community-driven",
     customer_pain_points=[
-        "Not sure where to find fresh, locally roasted coffee",
-        "Looking for a cozy spot to relax or work",
-        "Frustrated with long waits and impersonal service at big chains"
+        "Struggling to find local events and activities happening nearby",
+        "Feeling isolated and lacking meaningful in-person social connections",
+        "Event organizers having difficulty reaching their target audience"
     ],
-    product_service_desc="A neighborhood coffee shop serving freshly roasted coffee, homemade pastries, and providing a welcoming space for the community"
+    product_service_desc="An app that connects businesses organizing events with people looking to attend, fostering genuine in-person social connections and building vibrant local communities"
 )
 
 FORMAT_TYPE = "listicle_tips"
 NUM_BODY_SLIDES = 3
-TEMPLATE_ID = "carousel-2"
+TEMPLATE_ID = "carousel-4"
 
-HOOK_TEXT = "Coffee isn't just delicious—it's secretly boosting your health in ways you never knew"
+HOOK_TEXT = "Social connection isn't just nice to have—it's transforming your health in powerful ways you never realized"
 
 BODY_TEXTS = [
-    "Coffee contains powerful antioxidants that help protect your liver from damage and reduce risk of cirrhosis and liver cancer by up to 40 percent",
-    "Regular coffee consumption is linked to lower rates of Parkinson's disease because caffeine helps protect dopamine-producing neurons in your brain",
-    "Coffee can significantly reduce your risk of developing type 2 diabetes by improving insulin sensitivity and helping regulate blood sugar levels over time",
-
+    "Strong social connections can increase your lifespan by up to 50 percent, making social interaction as important to longevity as quitting smoking or exercising regularly",
+    "Regular in-person social interaction reduces stress hormones and inflammation, lowering your risk of heart disease, depression, and cognitive decline as you age",
+    "Face-to-face social connections boost your immune system by releasing feel-good hormones that help your body fight off illness and recover faster from health challenges",
 ]
-
-CTA_TEXT = "Visit Joe's Coffee Corner to enjoy freshly roasted coffee that tastes amazing and supports your health—your body will thank you"
 
 
 async def main():
@@ -50,10 +47,8 @@ async def main():
         template_id=TEMPLATE_ID,
         hook_text=HOOK_TEXT,
         body_texts=BODY_TEXTS,
-        cta_text=CTA_TEXT,
         hook_slide="1_hook.png",
         body_slide="1_body.png",
-        cta_slide="1_cta.png",
     )
     
     result = await slide_generator.run(input_data)
