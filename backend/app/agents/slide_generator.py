@@ -130,140 +130,70 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
         slide_text: str,
         has_previous_slide: bool = False,
     ) -> str:
-        brand_kit = input_data.brand_kit
-        
         if has_previous_slide:
-            reference_explanation = """
-REFERENCE IMAGES PROVIDED:
-You have been provided with TWO reference images:
+            reference_explanation = """REFERENCE IMAGES:
+1. Template (First): Style reference showing aesthetic, layout, typography, colors, spacing
+2. Previous Slide (Second): Formatting pattern for series continuity
 
-1. TEMPLATE IMAGE (First Image):
-   - A STYLE REFERENCE ONLY - shows the aesthetic, layout, and design to replicate
-   - IGNORE all text, words, and semantic content in this image
-   - Extract ONLY: visual style, layout structure, color palette, typography style, spacing patterns, design elements
-   - The actual content/meaning in this template is IRRELEVANT and must be replaced
-
-2. PREVIOUS SLIDE (Second Image):
-   - The immediately preceding slide in this carousel series
-   - Shows the formatting and content structure pattern established for this series
-   - IGNORE the specific words/content shown - extract ONLY the format pattern
-   - Use this to maintain visual continuity and structural consistency across slides"""
+IGNORE all text/content in both images - extract ONLY visual style and format patterns."""
         else:
-            reference_explanation = """
-REFERENCE IMAGE PROVIDED:
-You have been provided with ONE reference image:
+            reference_explanation = """REFERENCE IMAGE:
+Template: Style reference showing aesthetic, layout, typography, colors, spacing. While none of the content should be copied or reffered to, as much of the visual style should be preserved as possible.
 
-1. TEMPLATE IMAGE:
-   - A STYLE REFERENCE ONLY - shows the aesthetic, layout, and design to replicate
-   - IGNORE all text, words, and semantic content in this image
-   - Extract ONLY: visual style, layout structure, color palette, typography style, spacing patterns, design elements
-   - The actual content/meaning in this template is IRRELEVANT and must be replaced"""
+IGNORE all text/content - extract ONLY visual style."""
         
-        return f"""You are a professional carousel slide designer. Your task is to create a carousel slide for a social media carousel post using a style-reference approach.
+        return f"""Create a carousel slide using the template as a style reference.
 
 {reference_explanation}
 
-CRITICAL INSTRUCTION - IGNORE REFERENCE IMAGE CONTENT:
-The reference image(s) provided contain existing text, labels, and visual content. You MUST:
-- COMPLETELY IGNORE the semantic meaning, words, and content shown in the reference images
-- DO NOT copy, replicate, or be influenced by any text, labels, or information displayed
-- The reference content is placeholder/example material and has NO relevance to this carousel
-- Treat the reference as a "visual mockup" showing ONLY style, not content
+CRITICAL: IGNORE TEMPLATE CONTENT
+- DO NOT copy any words, text, labels, or information from the template
+- Template content is placeholder material - completely irrelevant
+- Use template ONLY for visual style
 
-WHAT TO EXTRACT FROM REFERENCE IMAGES:
-Extract and replicate ONLY these aesthetic and structural elements:
-1. TYPOGRAPHY STYLE: Font family, font weight, text sizing hierarchy, letter spacing, line height
-2. LAYOUT STRUCTURE: Positioning of content blocks, spatial relationships, margins, padding
-3. COLOR PALETTE: Background colors, text colors, accent colors, gradients, overlays
-4. DESIGN ELEMENTS: Borders, shapes, decorative elements, background textures, visual effects
-5. VISUAL HIERARCHY: Size relationships, emphasis patterns, visual flow, readability structure
-6. SPACING PATTERNS: White space distribution, content density, breathing room between elements
+HIERARCHY OF REFERENCES:
+1. PRIMARY REFERENCE: Previous Slide. The styling and the format of the previous slide should be STRICTLY preserved in the new slide. 
+2. SECONDARY REFERENCE: Template. The template should be used to augment the previous slides formatting pattern and provide a more complete visual style. If no previous slide is provided, then the template should be used as the primary reference.
 
-WHAT TO COMPLETELY IGNORE IN REFERENCE IMAGES:
-DO NOT use or be influenced by:
-- Any words, text, or labels shown in the reference
-- The specific content or messaging displayed
-- Placeholder information or example data
-- The semantic meaning or context of reference content
-- Email addresses, social handles, dates, or any specific information shown
+EXTRACT FROM TEMPLATE:
+- Typography: fonts, weights, sizing, spacing, hierarchy
+- Layout: positioning, structure, margins, padding
+- Colors: backgrounds, text, accents, gradients
+- Design: borders, shapes, textures, effects
+- Spacing: white space, density, flow
 
-CONTENT SOURCES (ONLY Use These):
-All semantic content MUST come exclusively from these sources:
-
-1. CAPTION TEXT (Primary Content):
+CONTENT SOURCE:
+Use ONLY this caption text for primary content areas:
 {slide_text}
 
-2. BRAND KIT INFORMATION (Contextual Use Only):
-   - Brand Name: {brand_kit.brand_name}
-   - Brand Style: {brand_kit.brand_style}
-   - Niche: {brand_kit.brand_niche}
-   - Product/Service: {brand_kit.product_service_desc}
-   
-   CRITICAL: This is the COMPLETE Brand Kit. If information is not listed above, it does NOT exist.
-   Do NOT create or infer any additional brand information (emails, websites, social handles, etc.)
+CONTENT PLACEMENT:
+- Primary area: Fill with caption text above.{f'''
+- When using template as primary reference: Follow the template's existing content structure and style in the main area. You may form additional words or labels beyond the caption if needed to match the template's format and improve visual coherence.''' if not has_previous_slide else ''}
 
-CONTENT PLACEMENT STRATEGY:
-1. Primary content areas: Use the CAPTION TEXT provided above
-2. Secondary/contextual areas: Use Brand Kit information ONLY if contextually appropriate
-3. Slide numbering: Use the actual slide number ({slide_index})
-4. Empty spaces: Leave clean/empty rather than adding irrelevant content
-5. ABSOLUTE RULE - NO FABRICATION: Do NOT invent ANY information not explicitly provided
-   - Do NOT create contact information, social handles, emails, phone numbers, websites
-   - Do NOT add generic filler like "carousel post", "social media", dates, or placeholder text
-   - Do NOT copy content from the reference images
-   - Empty/minimal design is PREFERRED over fabricated or irrelevant information
+REMOVE IRRELEVANT CONTENT:
+- IMPORTANT: Remove all branding information and logos from the template. If this step is not followed, the slide will not be accepted.
+- Remove ALL text, labels, and words from the template that don't relate to the caption or this carousel
+- Remove ALL images, logos, icons, or graphics that aren't relevant to the current content
+- Remove social handles, email addresses, website URLs, dates, or any specific information from the template
+- If an element doesn't support or relate to the caption above, it should be removed entirely
+- Blend removed areas seamlessly into the background to maintain clean design
+- When in doubt, remove the content.
 
-STYLE PRESERVATION RULES:
-These elements from the reference MUST be preserved:
-- Exact typography style (font characteristics, sizing hierarchy)
-- Precise layout structure and positioning patterns
-- Complete color palette and visual scheme
-- Spacing, padding, and margin patterns
-- Design elements, borders, textures, decorative features
-- Visual hierarchy and readability approach
+PRESERVE TEMPLATE STYLE:
+- Match typography, layout, colors, spacing exactly
+- Only adapt if caption length requires it. Use your formating expertise to make the slide look more coherent and visually appealing.
+- Maintain visual hierarchy and readability
 
-STYLE MODIFICATION EXCEPTIONS:
-Only deviate from the reference style in these cases:
-1. DIRECT CONTRADICTION: When reference style completely contradicts the new content requirements
-   - Example: Reference has room for 3 bullet points, but caption requires 5 points
-   - Action: Adapt spacing/sizing to accommodate while preserving overall aesthetic
-2. CONTENT INCOMPATIBILITY: When reference layout cannot physically accommodate the new content
-   - Example: Reference designed for short text, but caption is lengthy
-   - Action: Adjust layout minimally to fit content while maintaining style consistency
-3. BRAND ALIGNMENT: When reference aesthetic contradicts brand kit specifications
-   - Example: Reference is playful, but brand style is "professional, corporate"
-   - Action: Adapt design to align with brand while preserving layout structure
+{f'''SERIES CONTINUITY:
+- Match formatting pattern from previous slide.
+- Keep numbering/structure consistent
+- Ignore previous slide's words - extract format only''' if has_previous_slide else ''}
 
-In ALL other cases, preserve the reference aesthetic exactly.
-
-FORMAT CONSISTENCY (When Previous Slide Provided):
-When a previous slide is provided:
-- MATCH the content structure and formatting pattern established
-- If previous slide numbered items (e.g., "1. Point"), maintain that numbering system
-- If previous slide positioned brand name in top-right, maintain that placement
-- Ensure visual and structural continuity across the carousel series
-- The previous slide establishes the EXACT format pattern to follow
-- REMEMBER: Ignore the specific words in previous slide, extract only the format pattern
-
-EXECUTION CHECKLIST:
-1. (If provided) Examine previous slide to extract the format pattern being used
-2. Analyze reference image to extract ONLY aesthetic style (ignore all text/content)
-3. Identify layout structure, typography style, color palette, spacing patterns
-4. Replace ALL content areas with new content from Caption and Brand Kit
-5. Preserve the aesthetic style precisely (fonts, colors, spacing, layout)
-6. Ensure NO content from reference images appears in the output
-7. Verify NO fabricated information has been added
-8. Match format consistency with previous slide (if provided)
-9. Maintain visual continuity for carousel series
-
-OUTPUT REQUIREMENTS:
-- Professional carousel slide with reference aesthetic style
-- ALL content derived exclusively from Caption and Brand Kit
-- ZERO content copied or influenced by reference image text/labels
-- Precise preservation of typography, layout, colors, and spacing from reference
-- Format consistency with previous slides in series
-- NO fabricated information - empty spaces preferred over irrelevant content
-- Clean, cohesive design that matches the reference style but contains entirely new content"""
+OUTPUT:
+- Professional slide matching template aesthetic
+- ALL content from caption only
+- NO template text/labels copied
+- Clean design with precise style preservation"""
 
 
 slide_generator = SlideGenerator()

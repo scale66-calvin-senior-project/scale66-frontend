@@ -2,22 +2,22 @@ from typing import List, Optional
 
 from app.agents.base_agent import BaseAgent
 from app.models.pipeline import TemplateDeciderInput, TemplateDeciderOutput
-from app.models.structured import ClaudeFormatSelectionOutput, ClaudeTemplateSelectionOutput
+from app.models.structured import ClaudeTemplateSelectionOutput
 from app.services.template_service import template_service, TemplateMetadata
-from app.constants import FORMAT_DESCRIPTIONS
 
 
 class TemplateDecider(BaseAgent[TemplateDeciderInput, TemplateDeciderOutput]):
     """
-    Template Decider Agent - Selects carousel format and template.
+    Template Decider Agent - Selects visual template based on format.
     
     Input:
         user_prompt: str
         brand_kit: BrandKit
-    
-    Output:
         format_type: str
         num_body_slides: int
+        include_cta: bool
+    
+    Output:
         template_id: str
         hook_slide: str
         body_slide: str
@@ -37,26 +37,15 @@ class TemplateDecider(BaseAgent[TemplateDeciderInput, TemplateDeciderOutput]):
         pass
     
     async def _execute(self, input_data: TemplateDeciderInput) -> TemplateDeciderOutput:
-        format_prompt = self._build_format_selection_prompt(input_data)
+        matching_templates = template_service.get_templates_for_format(input_data.format_type)
         
-        format_output = await self.anthropic.generate_structured_output(
-            prompt=format_prompt,
-            output_model=ClaudeFormatSelectionOutput,
-            max_tokens=500,
-            temperature=0.3,
-        )
-        
-        selected_format = format_output.format_type
-        matching_templates = template_service.get_templates_for_format(selected_format)
-        
-        template_prompt = self._build_template_selection_prompt(
+        prompt = self._build_prompt(
             input_data=input_data,
-            format_type=selected_format,
             templates=matching_templates
         )
         
         template_output = await self.anthropic.generate_structured_output(
-            prompt=template_prompt,
+            prompt=prompt,
             output_model=ClaudeTemplateSelectionOutput,
             max_tokens=500,
             temperature=0.3,
@@ -68,93 +57,24 @@ class TemplateDecider(BaseAgent[TemplateDeciderInput, TemplateDeciderOutput]):
             selected_template = matching_templates[0]
             selected_template_id = selected_template.id
         
-        num_body_slides = format_output.num_body_slides
         selected_body_slide = selected_template.body_slides[0].slide if selected_template.body_slides else "1_body.png"
         
         cta_slide_filename = None
-        if format_output.cta_slide and selected_template.cta_slide:
+        if input_data.include_cta and selected_template.cta_slide:
             cta_slide_filename = selected_template.cta_slide
         
         return TemplateDeciderOutput(
             step_name="template_decider",
             success=True,
-            format_type=selected_format,
-            num_body_slides=num_body_slides,
             template_id=selected_template_id,
             hook_slide=selected_template.hook_slide,
             body_slide=selected_body_slide,
             cta_slide=cta_slide_filename,
         )
     
-    def _build_format_selection_prompt(self, input_data: TemplateDeciderInput) -> str:
-        format_list = "\n".join([
-            f"### {fmt.value}\n{desc}"
-            for fmt, desc in FORMAT_DESCRIPTIONS.items()
-        ])
-        
-        brand_kit = input_data.brand_kit
-        pain_points = ", ".join(brand_kit.customer_pain_points) if brand_kit.customer_pain_points else "Not provided"
-        
-        return f"""You are an expert social media marketing strategist selecting the optimal carousel FORMAT for a content request.
-
-AVAILABLE FORMATS:
-{format_list}
-
----
-
-DECISION FRAMEWORK:
-
-1. ANALYZE THE USER'S REQUEST
-   - What type of content are they asking for?
-   - Does it naturally break into discrete items, or is it a continuous narrative?
-   - Is there an implied structure (list, story, comparison, etc.)?
-   - How many distinct points/tips/items does this content naturally contain?
-
-2. EVALUATE FORMAT FIT
-   - Check EACH criterion in the format's "KEY CRITERIA" section
-   - A format is a STRONG fit only if ALL criteria are met
-   - Select the format that best matches the content structure
-
-3. DETERMINE NUMBER OF BODY SLIDES
-   - Body slides are the main content slides (not including hook or CTA)
-   - Count the natural number of distinct points/tips/items in the user's request
-   - Range: 1-8 body slides (most common: 3-7)
-   - Examples: "5 tips" = 5 body slides, "7 ways" = 7 body slides, "best practices" = 4-6 body slides
-   - If user specifies a number (e.g., "5 tips"), use that number
-   - If not specified, choose based on topic complexity and content depth
-
-4. DECIDE IF CTA SLIDE IS NEEDED
-   - CTA (Call-To-Action) slides drive specific user actions: engagement, sales, follows, website visits, conversions
-   - INCLUDE CTA (true) when:
-     * Content is promotional or marketing-focused
-     * Brand has clear product/service to promote
-     * Goal is to drive action (sign up, buy, follow, visit website)
-     * Customer pain points suggest need for solution/offer
-   - SKIP CTA (false) when:
-     * Purely educational or informational content
-     * Storytelling or brand awareness focus
-     * No clear action or conversion goal
-     * Content is meant to provide value without asking for anything
-   - Consider brand context and customer journey stage
-
----
-
-CONTENT REQUEST:
-"{input_data.user_prompt}"
-
-BRAND CONTEXT:
-- Brand Name: {brand_kit.brand_name}
-- Brand Niche: {brand_kit.brand_niche}
-- Brand Style: {brand_kit.brand_style}
-- Customer Pain Points: {pain_points}
-- Product/Service Description: {brand_kit.product_service_desc}
-
-Select the optimal carousel format, determine the number of body slides needed, and decide if a CTA slide should be included. You MUST choose from the available format values listed above."""
-    
-    def _build_template_selection_prompt(
+    def _build_prompt(
         self,
         input_data: TemplateDeciderInput,
-        format_type: str,
         templates: List[TemplateMetadata]
     ) -> str:
         template_details = []
@@ -180,7 +100,7 @@ Select the optimal carousel format, determine the number of body slides needed, 
         
         return f"""You are an expert social media visual designer selecting the optimal TEMPLATE for a carousel.
 
-The carousel format has been decided: {format_type}
+The carousel format has been decided: {input_data.format_type}
 
 Now select the best visual template based on the brand context and content topic by analyzing the detailed visual descriptions provided.
 

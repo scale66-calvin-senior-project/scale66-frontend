@@ -19,24 +19,26 @@ BRAND_KIT = BrandKit(
    product_service_desc="Helps speed up the process of social media marketing for brand awareness at the fraction of the cost of a marketing agency"
 )
 
+FORMAT_TYPE = "listicle_tips"
+NUM_BODY_SLIDES = 5
+INCLUDE_CTA = False
+
 
 async def main():
     input_data = TemplateDeciderInput(
         user_prompt=USER_PROMPT,
-        brand_kit=BRAND_KIT
+        brand_kit=BRAND_KIT,
+        format_type=FORMAT_TYPE,
+        num_body_slides=NUM_BODY_SLIDES,
+        include_cta=INCLUDE_CTA,
     )
     
     result = await template_decider.run(input_data)
     
-    print("TEMPLATE DECIDER OUTPUT")
-    
-    print(f"\n  Format Type:       {result.format_type}")
-    print(f"  Num Body Slides:   {result.num_body_slides}")
-    print(f"  Template ID:       {result.template_id}")
-    print(f"  CTA Slide:         {result.cta_slide}")
-    
-    if result.error_message:
-        print(f"\n  Error Message:     {result.error_message}")
+    print(f"Template ID:  {result.template_id}")
+    print(f"Hook Slide:   {result.hook_slide}")
+    print(f"Body Slide:   {result.body_slide}")
+    print(f"CTA Slide:    {result.cta_slide}")
 
 
 if __name__ == "__main__":

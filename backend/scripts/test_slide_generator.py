@@ -29,7 +29,7 @@ FORMAT_TYPE = "listicle_tips"
 NUM_BODY_SLIDES = 3
 TEMPLATE_ID = "carousel-4"
 
-HOOK_TEXT = "Social connection isn't just nice to have—it's transforming your health in powerful ways you never realized"
+HOOK_TEXT = "3 things you never knew about social connection"
 
 BODY_TEXTS = [
     "Strong social connections can increase your lifespan by up to 50 percent, making social interaction as important to longevity as quitting smoking or exercising regularly",

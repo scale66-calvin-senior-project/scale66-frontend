@@ -14,23 +14,30 @@ class OrchestratorOutput(BasePipelineStep):
     carousel_slides_urls: List[str] = Field(...)
 
 
-class TemplateDeciderInput(BasePipelineStep):
+class FormatDeciderInput(BasePipelineStep):
     user_prompt: str = Field(...)
     brand_kit: BrandKit = Field(...)
 
 
-class TemplateDeciderOutput(BasePipelineStep):
+class FormatDeciderOutput(BasePipelineStep):
     format_type: str = Field(...)
     num_body_slides: int = Field(..., ge=1, le=8, description="Number of body slides (content slides)")
+    include_cta: bool = Field(..., description="Whether to include a CTA slide")
+
+
+class TemplateDeciderInput(BasePipelineStep):
+    user_prompt: str = Field(...)
+    brand_kit: BrandKit = Field(...)
+    format_type: str = Field(...)
+    num_body_slides: int = Field(..., ge=1, le=8, description="Number of body slides")
+    include_cta: bool = Field(..., description="Whether to include a CTA slide")
+
+
+class TemplateDeciderOutput(BasePipelineStep):
     template_id: str = Field(...)
     hook_slide: str = Field(..., description="Hook slide filename (e.g., '1_hook.png')")
     body_slide: str = Field(..., description="Selected body slide filename (e.g., '1_body.png')")
     cta_slide: Optional[str] = Field(None, description="CTA slide filename if exists (e.g., '1_cta.png')")
-    
-    @property
-    def num_slides(self) -> int:
-        """Total slides: 1 hook + num_body_slides + (1 if cta else 0)"""
-        return 1 + self.num_body_slides + (1 if self.cta_slide else 0)
 
 
 class CaptionGeneratorInput(BasePipelineStep):

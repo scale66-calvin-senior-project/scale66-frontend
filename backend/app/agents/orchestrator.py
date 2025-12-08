@@ -8,11 +8,13 @@ from app.core.config import settings
 from app.models.pipeline import (
     OrchestratorInput,
     OrchestratorOutput,
+    FormatDeciderInput,
     TemplateDeciderInput,
     CaptionGeneratorInput,
     SlideGeneratorInput,
 )
 from app.models.brand_kit import BrandKit
+from app.agents.format_decider import format_decider
 from app.agents.template_decider import template_decider
 from app.agents.caption_generator import caption_generator
 from app.agents.slide_generator import slide_generator
@@ -36,19 +38,31 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
     async def _execute(self, input_data: OrchestratorInput) -> OrchestratorOutput:
         brand_kit = await self._fetch_brand_kit(input_data.brand_kit_id)
         
-        template_result = await template_decider.run(
-            TemplateDeciderInput(
+        # Step 1: Format Decision
+        format_result = await format_decider.run(
+            FormatDeciderInput(
                 user_prompt=input_data.user_prompt,
                 brand_kit=brand_kit,
             )
         )
         
-        caption_result = await caption_generator.run(
-            CaptionGeneratorInput(
-                format_type=template_result.format_type,
+        # Step 2: Template Decision
+        template_result = await template_decider.run(
+            TemplateDeciderInput(
                 user_prompt=input_data.user_prompt,
                 brand_kit=brand_kit,
-                num_body_slides=template_result.num_body_slides,
+                format_type=format_result.format_type,
+                num_body_slides=format_result.num_body_slides,
+                include_cta=format_result.include_cta,
+            )
+        )
+        
+        caption_result = await caption_generator.run(
+            CaptionGeneratorInput(
+                format_type=format_result.format_type,
+                user_prompt=input_data.user_prompt,
+                brand_kit=brand_kit,
+                num_body_slides=format_result.num_body_slides,
                 template_id=template_result.template_id,
                 hook_slide=template_result.hook_slide,
                 body_slide=template_result.body_slide,
@@ -58,8 +72,8 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
         
         slide_result = await slide_generator.run(
             SlideGeneratorInput(
-                format_type=template_result.format_type,
-                num_body_slides=template_result.num_body_slides,
+                format_type=format_result.format_type,
+                num_body_slides=format_result.num_body_slides,
                 brand_kit=brand_kit,
                 user_prompt=input_data.user_prompt,
                 hook_text=caption_result.hook_text,
