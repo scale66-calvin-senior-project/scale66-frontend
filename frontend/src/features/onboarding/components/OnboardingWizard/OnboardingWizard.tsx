@@ -9,7 +9,9 @@ import { Step3 } from '../Step3';
 import { Step4 } from '../Step4';
 import { Step5 } from '../Step5';
 import { Step6 } from '../Step6';
+import { Step6_5 } from '../Step6_5';
 import { Step7 } from '../Step7';
+import { onboardingService } from '../../services';
 import type { OnboardingData } from '../../types';
 import styles from './OnboardingWizard.module.css';
 
@@ -24,13 +26,31 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
   const [currentStep, setCurrentStep] = useState(1);
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({});
 
-  const handleNext = (stepData?: Partial<OnboardingData>) => {
-    if (stepData) {
-      setOnboardingData((prev) => ({ ...prev, ...stepData }));
+  const handleNext = async (stepData?: Partial<OnboardingData>) => {
+    // Merge new step data with existing data
+    const updatedData = stepData 
+      ? { ...onboardingData, ...stepData }
+      : onboardingData;
+    
+    setOnboardingData(updatedData);
+
+    // Save to Supabase on each step
+    try {
+      await onboardingService.saveBrandKit(updatedData);
+    } catch (error) {
+      console.error('Error saving onboarding data:', error);
+      // Continue even if save fails - don't block user progress
     }
 
-    if (currentStep < TOTAL_STEPS) {
-      setCurrentStep((prev) => prev + 1);
+    // Skip Step6 (social media handles) - go directly from Step5 to Step6_5
+    let nextStep = currentStep + 1;
+    if (currentStep === 5) {
+      // Skip Step6, go to Step6_5 (which is now step 6)
+      nextStep = 6;
+    }
+
+    if (nextStep <= TOTAL_STEPS) {
+      setCurrentStep(nextStep);
     } else {
       handleComplete();
     }
@@ -38,7 +58,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
 
   const handleBack = () => {
     if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
+      // Skip Step6 (social media handles) when going back
+      let prevStep = currentStep - 1;
+      if (currentStep === 6) {
+        // If on Step6_5, go back to Step5 (skip Step6)
+        prevStep = 5;
+      }
+      setCurrentStep(prevStep);
     }
   };
 
@@ -48,8 +74,15 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
   };
 
   const handleSkip = () => {
-    if (currentStep < TOTAL_STEPS) {
-      setCurrentStep((prev) => prev + 1);
+    // Skip Step6 (social media handles) - go directly from Step5 to Step6_5
+    let nextStep = currentStep + 1;
+    if (currentStep === 5) {
+      // Skip Step6, go to Step6_5 (which is now step 6)
+      nextStep = 6;
+    }
+
+    if (nextStep <= TOTAL_STEPS) {
+      setCurrentStep(nextStep);
     } else {
       handleComplete();
     }
@@ -67,8 +100,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
         return <Step4 onNext={handleNext} onBack={handleBack} onSkip={handleSkip} initialData={onboardingData} />;
       case 5:
         return <Step5 onNext={handleNext} onBack={handleBack} onSkip={handleSkip} initialData={onboardingData} />;
+      // Step6 (social media handles) is skipped - not shown in flow
       case 6:
-        return <Step6 onNext={handleNext} onBack={handleBack} onSkip={handleSkip} initialData={onboardingData} />;
+        return <Step6_5 onNext={handleNext} onBack={handleBack} initialData={onboardingData} />;
       case 7:
         return <Step7 onBack={handleBack} onComplete={handleComplete} />;
       default:
@@ -77,8 +111,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
   };
 
   return (
-    <div className={styles.wizard}>
-      <ProgressIndicator currentStep={currentStep} totalSteps={TOTAL_STEPS} />
+    <div className={`${styles.wizard} ${currentStep === 7 ? styles.step7Active : ''}`}>
+      {currentStep !== 7 && <ProgressIndicator currentStep={currentStep} totalSteps={TOTAL_STEPS} />}
       <div className={styles.content}>
         {renderStep()}
       </div>

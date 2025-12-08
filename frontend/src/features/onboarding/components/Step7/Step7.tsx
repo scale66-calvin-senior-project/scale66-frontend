@@ -16,14 +16,11 @@ export const Step7: React.FC<Step7Props> = ({ onBack, onComplete }) => {
       period: "per month",
       description: "For agencies and enterprise businesses",
       features: [
+        "Everything in Growth plan",
         "Unlimited AI-generated posts",
         "All social platforms",
         "Real-time trend monitoring",
-        "Dedicated account manager",
         "Advanced brand customization",
-        "Team collaboration tools",
-        "API access",
-        "White-label options",
       ],
       popular: false,
       borderColor: "rgba(255, 165, 0, 0.8)",
@@ -35,6 +32,7 @@ export const Step7: React.FC<Step7Props> = ({ onBack, onComplete }) => {
       period: "per month",
       description: "Ideal for growing businesses",
       features: [
+        "Everything in Starter plan",
         "200 AI-generated posts per month",
         "5 social platforms",
         "Advanced trend analysis",
@@ -49,7 +47,7 @@ export const Step7: React.FC<Step7Props> = ({ onBack, onComplete }) => {
     },
     {
       name: "Starter",
-      price: "$49.99",
+      price: "$99.99",
       period: "per month",
       description: "Perfect for small businesses getting started",
       features: [
@@ -68,12 +66,7 @@ export const Step7: React.FC<Step7Props> = ({ onBack, onComplete }) => {
 
   return (
     <div className={styles.step}>
-      <div className={styles.progressBar}>
-        <div className={styles.progressFill} style={{ width: '99.66%' }} />
-      </div>
-      
       <h1 className={styles.title}>Let&apos;s Scale</h1>
-      <p className={styles.subtitle}>Try for free for 11 days</p>
 
       <div className={styles.plans}>
         {plans.map((plan, index) => (
@@ -112,24 +105,14 @@ export const Step7: React.FC<Step7Props> = ({ onBack, onComplete }) => {
               }}
               onClick={onComplete}
             >
-              Try for Free
+              Get Started
             </button>
-
-            <p className={styles.pricingText}>
-              11 Days Free then {plan.price}/{plan.period.split(' ')[1]}
-            </p>
           </div>
         ))}
       </div>
 
       <div className={styles.footer}>
-        <p className={styles.footerText}>We will 66* x your growth!</p>
-      </div>
-
-      <div className={styles.actions}>
-        <button className={styles.backButton} onClick={onBack}>
-          Back
-        </button>
+        <p className={styles.footerText}>We will 10x your growth!</p>
       </div>
     </div>
   );

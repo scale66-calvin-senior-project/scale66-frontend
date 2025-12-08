@@ -24,6 +24,11 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onError }) =>
     e.preventDefault();
     setError(null);
 
+    if (!formData.name || formData.name.trim().length === 0) {
+      setError('Name is required');
+      return;
+    }
+
     if (formData.password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -40,6 +45,19 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onError }) =>
       await authService.signup(formData);
       onSuccess?.();
     } catch (err) {
+      // Log detailed error information
+      console.error('[SIGNUP FORM] Error during signup:', {
+        error: err,
+        errorType: err instanceof Error ? err.constructor.name : typeof err,
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+        formData: {
+          email: formData.email,
+          name: formData.name,
+        },
+        timestamp: new Date().toISOString(),
+      });
+
       const errorMessage = err instanceof Error ? err.message : 'An error occurred during signup';
       setError(errorMessage);
       onError?.(err as Error);
@@ -60,7 +78,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onError }) =>
 
       <div className={styles.inputGroup}>
         <label htmlFor="name" className={styles.label}>
-          Name (Optional)
+          Name
         </label>
         <input
           id="name"
@@ -69,6 +87,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onError }) =>
           placeholder="Enter your name"
           value={formData.name}
           onChange={handleChange('name')}
+          required
           disabled={isLoading}
         />
       </div>

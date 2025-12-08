@@ -1,17 +1,37 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { LoginForm } from '@/features/auth';
+import styles from '../auth-page.module.css';
+
 /**
  * Login Page
  * 
- * TODO: Implement login functionality
- * - Import LoginForm component from @/features/auth
- * - Handle authentication flow
- * - Redirect to dashboard on success
+ * User login page with email/password authentication
+ * Redirects to dashboard on success
  */
 export default function LoginPage() {
+  const router = useRouter();
+
+  const handleSuccess = () => {
+    router.push('/dashboard');
+  };
+
   return (
-    <div>
-      <h1>Login</h1>
-      <p>TODO: Implement login form</p>
+    <div className={styles.authPage}>
+      <div className={styles.authContainer}>
+        <h1 className={styles.authTitle}>Welcome Back</h1>
+        <p className={styles.authSubtitle}>Sign in to continue to Scale66</p>
+        <LoginForm onSuccess={handleSuccess} />
+        <div className={styles.authFooter}>
+          <p className={styles.authFooterText}>
+            Don&apos;t have an account?{' '}
+            <a href="/signup" className={styles.authLink}>
+              Sign up
+            </a>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
-

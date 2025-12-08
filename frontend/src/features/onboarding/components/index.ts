@@ -26,6 +26,9 @@ export type { Step5Props } from './Step5';
 export { Step6 } from './Step6';
 export type { Step6Props } from './Step6';
 
+export { Step6_5 } from './Step6_5';
+export type { Step6_5Props } from './Step6_5';
+
 export { Step7 } from './Step7';
 export type { Step7Props } from './Step7';
 

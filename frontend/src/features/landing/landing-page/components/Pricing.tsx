@@ -1,12 +1,8 @@
-'use client';
-
 import React from "react";
 import Link from "next/link";
-import { useAuthModal } from "@/context/AuthModalContext";
 import styles from "./Pricing.module.css";
 
 export default function Pricing() {
-  const { openModal } = useAuthModal();
   const plans = [
     {
       name: "Agency",
@@ -92,12 +88,9 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <button
-                onClick={() => openModal('signup')}
-                className={styles.planButton}
-              >
+              <Link href="/signup" className={styles.planButton}>
                 Try for Free
-              </button>
+              </Link>
             </div>
           ))}
         </div>

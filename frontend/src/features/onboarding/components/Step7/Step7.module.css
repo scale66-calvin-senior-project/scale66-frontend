@@ -5,23 +5,10 @@
   text-align: center;
   gap: 32px;
   width: 100%;
-  padding-bottom: 40px;
-}
-
-.progressBar {
-  width: 100%;
-  height: 4px;
-  background: rgba(81, 81, 81, 0.2);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-bottom: 24px;
-}
-
-.progressFill {
-  height: 100%;
-  background: rgba(81, 81, 81, 0.8);
-  border-radius: 2px;
-  transition: width 0.3s ease;
+  min-height: 100vh;
+  padding: 120px 24px 40px;
+  background: linear-gradient(135deg, #ffffff 0%, #FFF1F0 25%, #C2E7FF 50%, #FFF1F0 75%, #ffffff 100%);
+  background-attachment: fixed;
 }
 
 .title {
@@ -42,15 +29,19 @@
 
 .plans {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 32px;
   width: 100%;
   max-width: 1200px;
-  margin-top: 24px;
+  margin: 24px auto 0;
+  padding: 0 24px;
+  align-items: stretch;
 }
 
 .plan {
   position: relative;
+  display: flex;
+  flex-direction: column;
   padding: 40px 32px;
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.35);
@@ -65,6 +56,8 @@
   transition: all 0.3s ease;
   text-align: left;
   overflow: visible;
+  max-width: 380px;
+  margin: 0 auto;
 }
 
 .plan:hover {
@@ -139,14 +132,15 @@
 .features {
   list-style: none;
   padding: 0;
-  margin: 0 0 32px;
+  margin: 0;
+  flex: 1;
 }
 
 .feature {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 12px 0;
+  gap: 20px;
+  padding: 6px 0;
   font-size: 15px;
   color: rgba(81, 81, 81, 0.75);
   line-height: 1.5;
@@ -178,6 +172,7 @@
   transition: transform 0.15s ease, box-shadow 0.2s ease;
   cursor: pointer;
   font-family: inherit;
+  margin-top: auto;
   margin-bottom: 16px;
 }
 
@@ -234,6 +229,27 @@
   transform: translateY(-1px);
 }
 
+@media (max-width: 1200px) {
+  .plans {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    padding: 0 16px;
+    max-width: 1000px;
+  }
+  
+  .plan {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 968px) {
+  .plans {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    max-width: 500px;
+  }
+}
+
 @media (max-width: 768px) {
   .title {
     font-size: 40px;
@@ -246,6 +262,7 @@
   .plans {
     grid-template-columns: 1fr;
     gap: 24px;
+    padding: 0 16px;
   }
 
   .plan {

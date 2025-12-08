@@ -1,13 +1,9 @@
-'use client';
-
 import React from "react";
 import Link from "next/link";
 import { FaUser } from "react-icons/fa";
-import { useAuthModal } from "@/context/AuthModalContext";
 import styles from "./Results.module.css";
 
 export default function Results() {
-  const { openModal } = useAuthModal();
   const testimonials = [
     {
       name: "Sarah Chen",
@@ -77,9 +73,9 @@ export default function Results() {
 
         <div className={styles.cta}>
           <h3 className={styles.ctaHeading}>Join These Success Stories</h3>
-          <button onClick={() => openModal('signup')} className={styles.ctaButton}>
+          <Link href="/signup" className={styles.ctaButton}>
             Get Started Now
-          </button>
+          </Link>
         </div>
       </div>
     </section>

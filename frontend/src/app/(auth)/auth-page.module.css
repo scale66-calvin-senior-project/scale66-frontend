@@ -1,0 +1,77 @@
+.authPage {
+  width: 100%;
+}
+
+.authContainer {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,1) inset,
+    0 -1px 0 rgba(255,255,255,0.8) inset,
+    0 20px 60px rgba(0,0,0,0.15),
+    0 40px 120px rgba(194, 231, 255, 0.2);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  padding: 48px 40px;
+}
+
+.authTitle {
+  font-size: 36px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #515151;
+  font-weight: 700;
+  margin: 0 0 12px;
+  text-align: center;
+}
+
+.authSubtitle {
+  font-size: 16px;
+  line-height: 1.5;
+  color: rgba(81, 81, 81, 0.75);
+  margin: 0 0 32px;
+  text-align: center;
+}
+
+.authFooter {
+  text-align: center;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  margin-top: 24px;
+}
+
+.authFooterText {
+  font-size: 14px;
+  color: rgba(81, 81, 81, 0.75);
+  margin: 0;
+}
+
+.authLink {
+  background: none;
+  border: none;
+  color: rgba(90, 121, 255, 0.9);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.authLink:hover {
+  color: rgba(90, 121, 255, 1);
+}
+
+@media (max-width: 768px) {
+  .authContainer {
+    padding: 40px 24px;
+  }
+
+  .authTitle {
+    font-size: 28px;
+  }
+
+  .authSubtitle {
+    font-size: 14px;
+  }
+}

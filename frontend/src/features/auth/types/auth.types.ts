@@ -18,10 +18,9 @@ export interface LoginCredentials {
 }
 
 export interface SignupData {
-  // TODO: Define signup data
   email: string;
   password: string;
-  name?: string;
+  name: string;
 }
 
 export interface AuthState {

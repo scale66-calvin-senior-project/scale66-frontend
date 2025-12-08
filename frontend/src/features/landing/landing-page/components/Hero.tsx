@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuthModal } from "@/context/AuthModalContext";
 import styles from "./Hero.module.css";
 
 const ANIMATION_PHRASES = [
@@ -20,7 +19,6 @@ const PAUSE_DURATION = 2000; // 2 seconds pause after typing
 
 export default function Hero() {
   const router = useRouter();
-  const { openModal } = useAuthModal();
   const [displayText, setDisplayText] = useState("");
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
   const [isTyping, setIsTyping] = useState(true);
@@ -98,7 +96,7 @@ export default function Hero() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      openModal('signup');
+      router.push('/signup');
     }
   };
 
@@ -147,8 +145,8 @@ export default function Hero() {
             </div>
           )}
         </div>
-        <button
-          onClick={() => openModal('signup')}
+        <Link
+          href="/signup"
           className={styles.play}
           aria-label="Get Started"
         >
@@ -162,7 +160,7 @@ export default function Hero() {
             <path d="M2.4 3.2l18 7.3c.9.4.9 1.7 0 2.1l-18 7.3c-1 .4-1.9-.6-1.5-1.5l3.1-6.7c.1-.3.1-.7 0-1L.9 4.7c-.4-.9.6-1.9 1.5-1.5z" fill="url(#sendGrad)" stroke="#5a79ff" strokeOpacity="0.45" strokeWidth="1"/>
             <path d="M9.8 12.5l9.1-2.9" stroke="#5a79ff" strokeOpacity="0.5" strokeWidth="1.2" strokeLinecap="round"/>
           </svg>
-        </button>
+        </Link>
       </div>
 
       <div className={styles.cta}>
@@ -172,19 +170,19 @@ export default function Hero() {
       <div className={styles.chips}>
         <button 
           className={styles.chip}
-          onClick={() => openModal('signup')}
+          onClick={() => router.push('/signup')}
         >
           Brand Awareness
         </button>
         <button 
           className={styles.chip}
-          onClick={() => openModal('signup')}
+          onClick={() => router.push('/signup')}
         >
           Lead Generation
         </button>
         <button 
           className={styles.chip}
-          onClick={() => openModal('signup')}
+          onClick={() => router.push('/signup')}
         >
           Conversion Optimization
         </button>

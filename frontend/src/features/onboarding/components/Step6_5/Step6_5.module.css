@@ -3,12 +3,13 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 32px;
+  gap: 40px;
   width: 100%;
+  padding-bottom: 40px;
 }
 
 .title {
-  font-size: 48px;
+  font-size: 56px;
   line-height: 1.1;
   letter-spacing: -0.02em;
   color: #515151;
@@ -20,122 +21,159 @@
   font-size: 18px;
   line-height: 1.5;
   color: rgba(81, 81, 81, 0.75);
-  max-width: 500px;
   margin: 0;
-}
-
-.inputsContainer {
-  width: 100%;
   max-width: 600px;
+}
+
+.insightsContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  width: 100%;
+  max-width: 900px;
   margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
 }
 
-.inputGroup {
-  width: 100%;
-}
-
-.inputWrapper {
-  position: relative;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.input {
-  flex: 1;
-  padding: 18px 24px;
-  padding-right: 50px;
+.insightCard {
+  padding: 32px 24px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow:
     0 1px 0 rgba(255,255,255,0.6) inset,
     0 -1px 0 rgba(255,255,255,0.4) inset,
     0 8px 32px rgba(0,0,0,0.08),
-    0 20px 60px rgba(194, 231, 255, 0.12);
+    0 20px 60px rgba(194, 231, 255, 0.1);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
-  color: #515151;
-  font-size: 18px;
-  font-family: inherit;
-  outline: none;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(20px);
 }
 
-.input:focus {
-  border-color: rgba(194, 231, 255, 0.6);
+.insightCard.visible {
+  animation: slideUp 0.6s ease forwards;
+}
+
+@keyframes slideUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.insightCard:hover {
+  transform: translateY(-4px);
   box-shadow:
     0 1px 0 rgba(255,255,255,1) inset,
     0 -1px 0 rgba(255,255,255,0.8) inset,
-    0 14px 40px rgba(0,0,0,0.06),
-    0 24px 80px rgba(194, 231, 255, 0.2);
+    0 20px 50px rgba(0,0,0,0.05),
+    0 35px 100px rgba(194, 231, 255, 0.2);
 }
 
-.input::placeholder {
-  color: rgba(81, 81, 81, 0.5);
-}
-
-.removeButton {
-  position: absolute;
-  right: 12px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.3);
+.insightIcon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
   color: rgba(81, 81, 81, 0.8);
-  font-size: 24px;
-  font-weight: 300;
-  line-height: 1;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
-.removeButton:hover {
-  background: rgba(255, 100, 100, 0.3);
-  color: rgba(200, 50, 50, 0.9);
-  transform: scale(1.1);
+.insightIcon svg {
+  width: 100%;
+  height: 100%;
 }
 
-.addButton {
-  padding: 14px 24px;
+.insightTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(81, 81, 81, 0.8);
+  margin: 0 0 12px;
+}
+
+.insightValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #515151;
+  margin: 0;
+}
+
+.kpisContainer {
+  width: 100%;
+  max-width: 900px;
+  margin-top: 32px;
+}
+
+.kpisTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: #515151;
+  margin: 0 0 24px;
+}
+
+.kpisGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.kpiCard {
+  padding: 24px 20px;
   border-radius: 20px;
-  border: 1px dashed rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(30px) saturate(180%);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
-  color: rgba(81, 81, 81, 0.8);
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
-  margin-top: 8px;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.3s ease;
 }
 
-.addButton:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(194, 231, 255, 0.6);
-  transform: translateY(-1px);
+.kpiCard.visible {
+  animation: scaleIn 0.5s ease forwards;
+}
+
+@keyframes scaleIn {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.kpiCard:hover {
+  transform: scale(1.05);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.kpiValue {
+  font-size: 32px;
+  font-weight: 700;
+  color: #515151;
+  margin-bottom: 8px;
+}
+
+.kpiLabel {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(81, 81, 81, 0.8);
+  margin-bottom: 4px;
+}
+
+.kpiDescription {
+  font-size: 14px;
+  color: rgba(81, 81, 81, 0.6);
+  margin: 0;
 }
 
 .actions {
   display: flex;
   gap: 16px;
-  margin-top: 24px;
+  margin-top: 32px;
 }
 
-.backButton,
-.skipButton {
+.backButton {
   padding: 14px 32px;
   border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.5);
@@ -150,8 +188,7 @@
   font-family: inherit;
 }
 
-.backButton:hover,
-.skipButton:hover {
+.backButton:hover {
   background: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
 }
@@ -188,16 +225,21 @@
 
 @media (max-width: 768px) {
   .title {
-    font-size: 36px;
+    font-size: 40px;
   }
 
   .subtitle {
     font-size: 16px;
   }
 
-  .textarea {
-    font-size: 16px;
-    padding: 16px 20px;
+  .insightsContainer {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .kpisGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
 
   .actions {
@@ -207,7 +249,6 @@
   }
 
   .backButton,
-  .skipButton,
   .nextButton {
     width: 100%;
   }
