@@ -7,18 +7,6 @@ from app.constants import FORMAT_DESCRIPTIONS
 
 
 class FormatDecider(BaseAgent[FormatDeciderInput, FormatDeciderOutput]):
-    """
-    Format Decider Agent - Selects carousel format and slide count.
-    
-    Input:
-        user_prompt: str
-        brand_kit: BrandKit
-    
-    Output:
-        format_type: str
-        num_body_slides: int
-        include_cta: bool
-    """
     _instance: Optional['FormatDecider'] = None
     
     def __new__(cls):

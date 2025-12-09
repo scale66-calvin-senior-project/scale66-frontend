@@ -1,31 +1,10 @@
-from typing import List, Optional
-from app.agents.base_agent import BaseAgent, ValidationError, ExecutionError
+from typing import List, Optional, Literal
+from app.agents.base_agent import BaseAgent
 from app.models.pipeline import SlideGeneratorInput, SlideGeneratorOutput
 from app.services.template_service import template_service
 
 
 class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
-    """
-    Slide Generator Agent - Generates carousel slide images using AI.
-    
-    Input:
-        format_type: str
-        num_body_slides: int
-        brand_kit: BrandKit
-        user_prompt: str
-        hook_text: str
-        body_texts: List[str]
-        cta_text: Optional[str]
-        template_id: str
-        hook_slide: str
-        body_slide: str
-        cta_slide: Optional[str]
-    
-    Output:
-        hook_image: str
-        body_images: List[str]
-        cta_image: Optional[str]
-    """
     _instance: Optional['SlideGenerator'] = None
     
     def __new__(cls):
@@ -50,6 +29,7 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
             slide_text=input_data.hook_text,
             template_image_base64=hook_template_base64,
             previous_slide_base64=None,
+            slide_type="hook",
         )
         
         body_template_base64 = self._load_template_image(
@@ -67,6 +47,7 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
                 slide_text=body_text,
                 template_image_base64=body_template_base64,
                 previous_slide_base64=previous_body_slide,
+                slide_type="body",
             )
             body_images.append(body_image)
             previous_body_slide = body_image
@@ -83,6 +64,7 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
                 slide_text=input_data.cta_text,
                 template_image_base64=cta_template_base64,
                 previous_slide_base64=None,
+                slide_type="cta",
             )
         
         return SlideGeneratorOutput(
@@ -103,19 +85,23 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
         slide_text: str,
         template_image_base64: str,
         previous_slide_base64: Optional[str],
+        slide_type: Literal["hook", "body", "cta"],
     ) -> str:
         has_previous_slide = previous_slide_base64 is not None
+        is_body_slide = slide_type == "body"
         
         prompt = self._build_slide_prompt(
             input_data=input_data,
             slide_index=slide_index,
             slide_text=slide_text,
             has_previous_slide=has_previous_slide,
+            slide_type=slide_type,
         )
         
-        images_to_reference = [template_image_base64]
         if has_previous_slide:
-            images_to_reference.append(previous_slide_base64)
+            images_to_reference = [previous_slide_base64]
+        else:
+            images_to_reference = [template_image_base64]
         
         return await self.gemini.generate_image_with_reference(
             prompt=prompt,
@@ -129,71 +115,36 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
         slide_index: int,
         slide_text: str,
         has_previous_slide: bool = False,
+        slide_type: Literal["hook", "body", "cta"] = "body",
     ) -> str:
         if has_previous_slide:
-            reference_explanation = """REFERENCE IMAGES:
-1. Template (First): Style reference showing aesthetic, layout, typography, colors, spacing
-2. Previous Slide (Second): Formatting pattern for series continuity
+            return f"""Create a carousel slide by EXACTLY replicating the previous slide's visual style.
 
-IGNORE all text/content in both images - extract ONLY visual style and format patterns."""
+RULES FOR USING THE PREVIOUS SLIDE:
+1. PRESERVE EXACTLY the same visual style and formatting from the previous slide.
+2. ONLY Change the content of the slide to match the new content.
+
+CONTENT RULES:
+Use PRIMARILY this text: {slide_text}{f"""
+
+NUMBERING RULES:
+- Continue the numbering sequence from previous slide (IF PRESENT)
+- Use number (IF NEEDED): {slide_index}
+- Match exact numbering style and placement""" if slide_type == "body" else ""}"""
         else:
-            reference_explanation = """REFERENCE IMAGE:
-Template: Style reference showing aesthetic, layout, typography, colors, spacing. While none of the content should be copied or reffered to, as much of the visual style should be preserved as possible.
+            return f"""Create a carousel slide using the template as style reference.
 
-IGNORE all text/content - extract ONLY visual style."""
-        
-        return f"""Create a carousel slide using the template as a style reference.
+RULES FOR USING THE TEMPLATE:
+1. PRESERVE the template's exact visual style and formatting while removing any branding.
+2. REMOVE ALL branding such as logos, social handles, website URLs, names, dates, etc.
 
-{reference_explanation}
+CONTENT RULES:
+Use PRIMARILY this text: {slide_text}{f"""
 
-CRITICAL: IGNORE TEMPLATE CONTENT
-- DO NOT copy any words, text, labels, or information from the template
-- Template content is placeholder material - completely irrelevant
-- Use template ONLY for visual style
-
-HIERARCHY OF REFERENCES:
-1. PRIMARY REFERENCE: Previous Slide. The styling and the format of the previous slide should be STRICTLY preserved in the new slide. 
-2. SECONDARY REFERENCE: Template. The template should be used to augment the previous slides formatting pattern and provide a more complete visual style. If no previous slide is provided, then the template should be used as the primary reference.
-
-EXTRACT FROM TEMPLATE:
-- Typography: fonts, weights, sizing, spacing, hierarchy
-- Layout: positioning, structure, margins, padding
-- Colors: backgrounds, text, accents, gradients
-- Design: borders, shapes, textures, effects
-- Spacing: white space, density, flow
-
-CONTENT SOURCE:
-Use ONLY this caption text for primary content areas:
-{slide_text}
-
-CONTENT PLACEMENT:
-- Primary area: Fill with caption text above.{f'''
-- When using template as primary reference: Follow the template's existing content structure and style in the main area. You may form additional words or labels beyond the caption if needed to match the template's format and improve visual coherence.''' if not has_previous_slide else ''}
-
-REMOVE IRRELEVANT CONTENT:
-- IMPORTANT: Remove all branding information and logos from the template. If this step is not followed, the slide will not be accepted.
-- Remove ALL text, labels, and words from the template that don't relate to the caption or this carousel
-- Remove ALL images, logos, icons, or graphics that aren't relevant to the current content
-- Remove social handles, email addresses, website URLs, dates, or any specific information from the template
-- If an element doesn't support or relate to the caption above, it should be removed entirely
-- Blend removed areas seamlessly into the background to maintain clean design
-- When in doubt, remove the content.
-
-PRESERVE TEMPLATE STYLE:
-- Match typography, layout, colors, spacing exactly
-- Only adapt if caption length requires it. Use your formating expertise to make the slide look more coherent and visually appealing.
-- Maintain visual hierarchy and readability
-
-{f'''SERIES CONTINUITY:
-- Match formatting pattern from previous slide.
-- Keep numbering/structure consistent
-- Ignore previous slide's words - extract format only''' if has_previous_slide else ''}
-
-OUTPUT:
-- Professional slide matching template aesthetic
-- ALL content from caption only
-- NO template text/labels copied
-- Clean design with precise style preservation"""
+NUMBERING RULES:
+- ONLY add numbering if template shows clear numbering format
+- If present, use number: {slide_index}
+- Match template's numbering style exactly""" if slide_type == "body" else ""}"""
 
 
 slide_generator = SlideGenerator()

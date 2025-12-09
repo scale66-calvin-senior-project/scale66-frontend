@@ -7,24 +7,6 @@ from app.constants import FORMAT_TEXT_GUIDES
 
 
 class CaptionGenerator(BaseAgent[CaptionGeneratorInput, CaptionGeneratorOutput]):
-    """
-    Caption Generator Agent - Generates text captions for carousel slides.
-    
-    Input:
-        format_type: str
-        user_prompt: str
-        brand_kit: BrandKit
-        num_body_slides: int
-        template_id: str
-        hook_slide: str
-        body_slide: str
-        cta_slide: Optional[str]
-    
-    Output:
-        hook_text: str
-        body_texts: List[str]
-        cta_text: Optional[str]
-    """
     _instance: Optional['CaptionGenerator'] = None
     
     def __new__(cls):

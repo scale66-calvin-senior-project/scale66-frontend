@@ -7,22 +7,6 @@ from app.services.template_service import template_service, TemplateMetadata
 
 
 class TemplateDecider(BaseAgent[TemplateDeciderInput, TemplateDeciderOutput]):
-    """
-    Template Decider Agent - Selects visual template based on format.
-    
-    Input:
-        user_prompt: str
-        brand_kit: BrandKit
-        format_type: str
-        num_body_slides: int
-        include_cta: bool
-    
-    Output:
-        template_id: str
-        hook_slide: str
-        body_slide: str
-        cta_slide: Optional[str]
-    """
     _instance: Optional['TemplateDecider'] = None
     
     def __new__(cls):
