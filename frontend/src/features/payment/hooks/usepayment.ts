@@ -22,10 +22,21 @@ export const usePayment = () => {
     setError(null);
 
     try {
+      // Store plan ID in localStorage so we can retrieve it on payment success
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('selected_plan_id', planId);
+      }
+
       // Check if using direct Payment Links (simpler approach)
       const paymentLink = env.stripePaymentLinks[planId];
       
       if (paymentLink) {
+        // Store plan ID in localStorage - this will be used on payment success page
+        // as a fallback if the Payment Link doesn't include plan_id in redirect URL
+        // The Payment Link should be configured in Stripe Dashboard with success URL:
+        // https://yourdomain.com/payment/success?plan_id={planId}
+        // But localStorage ensures it works even if not configured
+        
         // Redirect directly to Stripe Payment Link
         // Using globalThis.location for external redirect (client-side only)
         if (typeof globalThis !== 'undefined' && globalThis.location) {

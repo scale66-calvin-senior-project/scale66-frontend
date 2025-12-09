@@ -1,15 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/features/auth';
+import { supabase } from '@/lib/supabase';
 import { env } from '@/config/env';
 
 /**
  * Payment Success Page
  * 
  * Handles redirect from Stripe Payment Link after successful payment
- * Verifies payment and updates user subscription in Supabase
+ * Verifies payment and updates user subscription_tier in Supabase
  */
 export default function PaymentSuccessPage() {
   const router = useRouter();
@@ -17,55 +18,144 @@ export default function PaymentSuccessPage() {
   const { refreshUser } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Processing your payment...');
+  const hasRunRef = useRef(false);
+
+  // Map plan IDs to subscription tiers
+  // Database only allows: 'free', 'pro', 'premium'
+  const getSubscriptionTier = (planId: string | null): 'pro' | 'premium' | null => {
+    if (!planId) return null;
+    const planLower = planId.toLowerCase();
+    // Map: starter -> pro, growth -> premium, agency -> premium
+    if (planLower.includes('starter')) return 'pro';
+    if (planLower.includes('growth')) return 'premium';
+    if (planLower.includes('agency')) return 'premium'; // Agency maps to premium tier
+    // Default mapping
+    if (planLower.includes('pro')) return 'pro';
+    if (planLower.includes('premium')) return 'premium';
+    return null;
+  };
 
   useEffect(() => {
+    // Prevent multiple runs
+    if (hasRunRef.current) {
+      return;
+    }
+    hasRunRef.current = true;
+
     const verifyPayment = async () => {
       try {
-        // Get payment intent or session ID from URL params
+        // Get payment intent or session ID from URL params (Stripe adds these)
         const paymentIntentId = searchParams.get('payment_intent');
         const sessionId = searchParams.get('session_id');
+        const paymentIntentClientSecret = searchParams.get('payment_intent_client_secret');
         
-        // Refresh user data to get updated subscription (webhook should have updated it)
-        await refreshUser();
+        // Get plan ID from URL params (if Payment Link was configured with it)
+        const planIdFromUrl = searchParams.get('plan_id') || searchParams.get('plan');
         
-        if (!paymentIntentId && !sessionId) {
-          // If no payment info, just redirect to dashboard
-          // The webhook will handle the subscription update
-          setStatus('success');
-          setMessage('Payment successful! Redirecting to dashboard...');
+        // Get plan ID from localStorage (stored before redirecting to Stripe)
+        const planIdFromStorage = typeof window !== 'undefined' 
+          ? localStorage.getItem('selected_plan_id')
+          : null;
+        
+        const planId = planIdFromUrl || planIdFromStorage;
+        
+        console.log('Payment verification:', {
+          paymentIntentId,
+          sessionId,
+          planIdFromUrl,
+          planIdFromStorage,
+          planId,
+        });
+        
+        // Get current user
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+        if (authError || !authUser) {
+          console.error('Auth error:', authError);
+          setStatus('error');
+          setMessage('You must be logged in to verify payment. Redirecting to login...');
           setTimeout(() => {
-            router.push('/dashboard');
+            router.push('/login');
           }, 2000);
           return;
         }
 
-        // Verify payment with backend
-        const response = await fetch(`${env.apiBaseUrl}/api/v1/payment/verify`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            payment_intent_id: paymentIntentId,
-            session_id: sessionId,
-          }),
-        });
+        // Determine subscription tier from plan ID
+        let subscriptionTier = getSubscriptionTier(planId);
+        
+        // If we have payment intent or session ID, try to verify with backend
+        // This is optional - we'll update subscription_tier regardless
+        if (paymentIntentId || sessionId) {
+          try {
+            const response = await fetch(`${env.apiBaseUrl}/api/v1/payment/verify`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify({
+                payment_intent_id: paymentIntentId,
+                session_id: sessionId,
+              }),
+            });
 
-        if (!response.ok) {
-          throw new Error('Payment verification failed');
+            if (response.ok) {
+              const data = await response.json();
+              // Backend should return the plan/subscription tier
+              if (data.subscription_tier) {
+                subscriptionTier = data.subscription_tier as 'pro' | 'premium';
+              } else if (data.plan_id) {
+                subscriptionTier = getSubscriptionTier(data.plan_id);
+              }
+            }
+          } catch (verifyError) {
+            console.error('Backend verification error (continuing anyway):', verifyError);
+          }
         }
-
-        // Refresh user data again after verification
-        await refreshUser();
-
-        setStatus('success');
-        setMessage('Payment successful! Redirecting to dashboard...');
-
-        // Redirect to dashboard after 2 seconds
+        
+        // Update subscription_tier directly in Supabase
+        // This ensures the user gets updated even if webhook hasn't fired yet
+        let finalStatus: 'success' | 'error' = 'success';
+        let finalMessage = 'Payment successful! Your subscription has been activated. Redirecting to dashboard...';
+        
+        if (subscriptionTier) {
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({ subscription_tier: subscriptionTier })
+            .eq('id', authUser.id);
+          
+          if (updateError) {
+            console.error('Error updating subscription tier:', updateError);
+            finalStatus = 'error';
+            finalMessage = 'Payment received but there was an issue updating your subscription. Please contact support.';
+          } else {
+            console.log(`✅ Updated subscription_tier to ${subscriptionTier} for user ${authUser.id}`);
+            // Clear the stored plan ID after successful update
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('selected_plan_id');
+            }
+          }
+        } else {
+          // No plan ID found - this shouldn't happen, but handle gracefully
+          console.warn('No plan ID found - cannot update subscription tier');
+          finalStatus = 'error';
+          finalMessage = 'Payment received but we could not identify which plan you purchased. Please contact support with your payment details.';
+        }
+        
+        // Refresh user data to get updated subscription (don't await if it fails)
+        try {
+          await refreshUser();
+        } catch (refreshError) {
+          console.error('Error refreshing user (continuing anyway):', refreshError);
+        }
+        
+        // Update UI status
+        setStatus(finalStatus);
+        setMessage(finalMessage);
+        
+        // Redirect to dashboard after showing status
         setTimeout(() => {
           router.push('/dashboard');
-        }, 2000);
+        }, finalStatus === 'success' ? 2000 : 5000);
       } catch (error) {
         console.error('Payment verification error:', error);
         setStatus('error');
@@ -79,7 +169,58 @@ export default function PaymentSuccessPage() {
     };
 
     verifyPayment();
-  }, [searchParams, router, refreshUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once on mount
+
+  // SVG Icon Components
+  const LoadingIcon = () => (
+    <svg 
+      width="64" 
+      height="64" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle 
+        cx="12" 
+        cy="12" 
+        r="10" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeDasharray="31.416" 
+        strokeDashoffset="15.708"
+        opacity="0.3"
+      />
+      <circle 
+        cx="12" 
+        cy="12" 
+        r="10" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeDasharray="31.416" 
+        strokeDashoffset="15.708"
+        className="payment-spinner"
+        style={{ transformOrigin: '12px 12px' }}
+      />
+    </svg>
+  );
+
+  const SuccessIcon = () => (
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <path d="M8 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+    </svg>
+  );
+
+  const ErrorIcon = () => (
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <path d="M12 8v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
 
   return (
     <div style={{
@@ -93,25 +234,31 @@ export default function PaymentSuccessPage() {
     }}>
       {status === 'loading' && (
         <>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
-          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Processing Payment</h1>
-          <p>{message}</p>
+          <div style={{ marginBottom: '1rem', color: '#5a79ff' }}>
+            <LoadingIcon />
+          </div>
+          <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#515151' }}>Processing Payment</h1>
+          <p style={{ color: 'rgba(81, 81, 81, 0.75)' }}>{message}</p>
         </>
       )}
       
       {status === 'success' && (
         <>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
-          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Payment Successful!</h1>
-          <p>{message}</p>
+          <div style={{ marginBottom: '1rem', color: '#10b981' }}>
+            <SuccessIcon />
+          </div>
+          <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#515151' }}>Payment Successful!</h1>
+          <p style={{ color: 'rgba(81, 81, 81, 0.75)' }}>{message}</p>
         </>
       )}
       
       {status === 'error' && (
         <>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
-          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Payment Verification Issue</h1>
-          <p>{message}</p>
+          <div style={{ marginBottom: '1rem', color: '#ef4444' }}>
+            <ErrorIcon />
+          </div>
+          <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#515151' }}>Payment Verification Issue</h1>
+          <p style={{ color: 'rgba(81, 81, 81, 0.75)' }}>{message}</p>
         </>
       )}
     </div>

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import { ProgressIndicator } from '../ProgressIndicator';
 import { Step1 } from '../Step1';
 import { Step2 } from '../Step2';
@@ -19,11 +20,12 @@ const TOTAL_STEPS = 7;
 
 export interface OnboardingWizardProps {
   onComplete?: (data: OnboardingData) => void;
+  initialStep?: number; // Optional initial step (1-7)
 }
 
-export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
+export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, initialStep }) => {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(initialStep || 1);
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({});
 
   const handleNext = async (stepData?: Partial<OnboardingData>) => {
@@ -39,6 +41,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
       await onboardingService.saveBrandKit(updatedData);
     } catch (error) {
       console.error('Error saving onboarding data:', error);
+      // If session is invalid, redirect to login
+      if (error instanceof Error && error.message.includes('session is invalid')) {
+        router.push('/login');
+        return;
+      }
       // Continue even if save fails - don't block user progress
     }
 
@@ -68,7 +75,21 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
     }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    // Mark onboarding as completed in the database
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('users')
+          .update({ onboarding_completed: true })
+          .eq('id', user.id);
+      }
+    } catch (error) {
+      console.error('Error marking onboarding as completed:', error);
+      // Continue anyway - don't block user
+    }
+    
     onComplete?.(onboardingData);
     router.push('/dashboard');
   };

@@ -23,9 +23,21 @@ export default function DashboardPage() {
     // Wait for auth to load
     if (isLoading) return;
 
-    // Redirect if not authenticated (middleware should catch this, but double-check)
+    // Only redirect if we're absolutely sure there's no session
+    // Double-check with Supabase directly before redirecting
     if (!isAuthenticated) {
-      router.push('/');
+      import('@/lib/supabase').then(({ supabase }) => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!session) {
+            console.log('No session found, redirecting to landing page');
+            router.push('/');
+          } else {
+            console.log('Session found but auth context not loaded yet, waiting...');
+            // Session exists but auth context hasn't loaded it yet
+            // Give it a moment to sync
+          }
+        });
+      });
     }
   }, [isAuthenticated, isLoading, router]);
 

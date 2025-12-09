@@ -42,6 +42,7 @@ export const authService = {
           name: data.name,
           full_name: data.name,
         },
+        emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/confirm-email`,
       },
     });
 

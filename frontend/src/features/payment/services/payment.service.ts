@@ -13,8 +13,8 @@ class PaymentService {
   async createCheckoutSession(request: CheckoutSessionRequest): Promise<CheckoutSessionResponse> {
     const { data } = await apiClient.post<CheckoutSessionResponse>('/api/v1/payment/checkout', {
       plan_id: request.planId,
-      success_url: request.successUrl || `${window.location.origin}/dashboard?payment=success`,
-      cancel_url: request.cancelUrl || `${window.location.origin}/onboarding?payment=cancelled`,
+      success_url: request.successUrl || `${window.location.origin}/payment/success?plan_id=${request.planId}`,
+      cancel_url: request.cancelUrl || `${window.location.origin}/welcome?step=7&payment=cancelled`,
     });
     return data;
   }

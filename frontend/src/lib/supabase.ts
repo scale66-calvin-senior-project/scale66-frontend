@@ -36,6 +36,11 @@ export const getSession = async (): Promise<Session | null> => {
 	} = await supabase.auth.getSession();
 	if (error) {
 		console.error("Error getting session:", error);
+		// If JWT contains invalid user ID, clear the session
+		if (error.message?.includes('sub claim') || error.message?.includes('does not exist')) {
+			console.error('JWT contains invalid user ID - clearing session');
+			await supabase.auth.signOut();
+		}
 		return null;
 	}
 	return session;
@@ -52,6 +57,11 @@ export const getCurrentUser = async (): Promise<User | null> => {
 	} = await supabase.auth.getUser();
 	if (error) {
 		console.error("Error getting user:", error);
+		// If JWT contains invalid user ID, clear the session
+		if (error.message?.includes('sub claim') || error.message?.includes('does not exist')) {
+			console.error('JWT contains invalid user ID - clearing session');
+			await supabase.auth.signOut();
+		}
 		return null;
 	}
 	return user;
