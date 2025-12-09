@@ -1,1 +1,1 @@
-export * from './usepayment';
+export { usePayment } from './usepayment';

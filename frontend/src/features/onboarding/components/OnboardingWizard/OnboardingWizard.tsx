@@ -10,7 +10,7 @@ import { Step4 } from '../Step4';
 import { Step5 } from '../Step5';
 import { Step6 } from '../Step6';
 import { Step6_5 } from '../Step6_5';
-import { Step7 } from '../Step7';
+import { PricingCards } from '@/features/payment';
 import { onboardingService } from '../../services';
 import type { OnboardingData } from '../../types';
 import styles from './OnboardingWizard.module.css';
@@ -104,7 +104,19 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
       case 6:
         return <Step6_5 onNext={handleNext} onBack={handleBack} initialData={onboardingData} />;
       case 7:
-        return <Step7 onBack={handleBack} onComplete={handleComplete} />;
+        return (
+          <PricingCards
+            onBack={handleBack}
+            onComplete={(planId) => {
+              // Save selected plan to onboarding data
+              setOnboardingData((prev) => ({
+                ...prev,
+                paywallSelection: { plan: planId as 'agency' | 'growth' | 'starter' },
+              }));
+              handleComplete();
+            }}
+          />
+        );
       default:
         return null;
     }

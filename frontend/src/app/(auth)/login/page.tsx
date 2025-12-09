@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/features/auth';
 import { LoginForm } from '@/features/auth';
 import styles from '../auth-page.module.css';
 
@@ -12,9 +13,15 @@ import styles from '../auth-page.module.css';
  */
 export default function LoginPage() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
 
-  const handleSuccess = () => {
-    router.push('/dashboard');
+  const handleSuccess = async () => {
+    // Refresh user data to ensure auth context is updated
+    await refreshUser();
+    // Small delay to ensure cookies are set
+    setTimeout(() => {
+      router.push('/dashboard');
+    }, 100);
   };
 
   return (
