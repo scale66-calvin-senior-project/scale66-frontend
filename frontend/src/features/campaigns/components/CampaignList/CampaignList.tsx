@@ -6,12 +6,19 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { CampaignCard } from "../CampaignCard";
 import { CreateCampaignButton } from "../CreateCampaignButton";
-import { CampaignActionModal } from "../CampaignActionModal";
 import type { Campaign } from "../../types";
 import styles from "./CampaignList.module.css";
 
 // TODO: Replace with actual data fetching from API
-const mockCampaigns: Campaign[] = [];
+const mockCampaigns: Campaign[] = [
+  {
+    id: "1",
+    name: "Summer Sale",
+    slideCount: 3,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
 
 /**
  * CampaignList Component
@@ -20,45 +27,26 @@ const mockCampaigns: Campaign[] = [];
  */
 export const CampaignList: React.FC = () => {
   const router = useRouter();
-  const [campaigns] = useState<Campaign[]>(mockCampaigns);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const handleCampaignClick = (campaign: Campaign) => {
-    // Navigate to canvas page with campaign
-    router.push(`/canvas/${campaign.id}`);
-  };
-
-  const handleCampaignRightClick = (e: React.MouseEvent, campaign: Campaign) => {
-    e.preventDefault();
-    setSelectedCampaign(campaign);
-    setModalPosition({ x: e.clientX, y: e.clientY });
-    setIsModalOpen(true);
-  };
+  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
 
   const handleCreateCampaign = () => {
     // Navigate to canvas with new campaign
     router.push("/canvas/new");
   };
 
-  const handleEdit = () => {
-    if (selectedCampaign) {
-      router.push(`/canvas/${selectedCampaign.id}`);
-    }
-    setIsModalOpen(false);
+  const handleEdit = (campaign: Campaign) => {
+    router.push(`/canvas/${campaign.id}`);
   };
 
-  const handlePost = () => {
+  const handlePost = (campaign: Campaign) => {
     // TODO: Implement post functionality
-    console.log("Post campaign:", selectedCampaign);
-    setIsModalOpen(false);
+    console.log("Post campaign:", campaign);
   };
 
-  const handleDelete = () => {
-    // TODO: Implement delete functionality
-    console.log("Delete campaign:", selectedCampaign);
-    setIsModalOpen(false);
+  const handleDelete = (campaign: Campaign) => {
+    // TODO: Implement delete functionality with API
+    setCampaigns(campaigns.filter(c => c.id !== campaign.id));
+    console.log("Delete campaign:", campaign);
   };
 
   return (
@@ -90,15 +78,13 @@ export const CampaignList: React.FC = () => {
         <div className={styles.grid}>
           <CreateCampaignButton onClick={handleCreateCampaign} />
           {campaigns.map((campaign) => (
-            <div
+            <CampaignCard
               key={campaign.id}
-              onContextMenu={(e) => handleCampaignRightClick(e, campaign)}
-            >
-              <CampaignCard
-                campaign={campaign}
-                onClick={handleCampaignClick}
-              />
-            </div>
+              campaign={campaign}
+              onEdit={handleEdit}
+              onPost={handlePost}
+              onDelete={handleDelete}
+            />
           ))}
         </div>
       </main>
@@ -106,19 +92,8 @@ export const CampaignList: React.FC = () => {
       <footer className={styles.footer}>
         <span className={styles.footerBrand}>MyFix.co</span>
       </footer>
-
-      <CampaignActionModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        campaign={selectedCampaign}
-        position={modalPosition}
-        onEdit={handleEdit}
-        onPost={handlePost}
-        onDelete={handleDelete}
-      />
     </div>
   );
 };
 
 export default CampaignList;
-
