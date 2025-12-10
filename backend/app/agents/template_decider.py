@@ -61,12 +61,8 @@ class TemplateDecider(BaseAgent[TemplateDeciderInput, TemplateDeciderOutput]):
     ) -> str:
         template_details = []
         for t in templates:
-            body_desc = f"\n   - Body Slide: {t.body}"
-            cta_desc = f"\n   - CTA Slide: {t.cta}" if t.cta else ""
-            
             template_detail = f"""Template: {t.id}
-   - Overview: {t.description}
-   - Hook Slide: {t.hook}{body_desc}{cta_desc}"""
+   - Overview: {t.description}"""
             template_details.append(template_detail)
         
         template_info = "\n\n".join(template_details)
@@ -81,7 +77,7 @@ HOW TO CHOOSE template:
     1. EXAMINE the list of AVAILABLE TEMPLATES and fit each one to the CONTENT REQUEST. The templates are all for the given CAROUSEL FORMAT.
     2. SELECT the TEMPLATE that best fits the CONTENT REQUEST.
         - YOU MUST select a template from the list of AVAILABLE TEMPLATES. IF no template fits the criteria, pick the closest template that fits the most criteria.
-        
+        - the valid template ids are: {valid_ids}
 ---
 
 AVAILABLE TEMPLATES WITH DETAILED DESCRIPTIONS:

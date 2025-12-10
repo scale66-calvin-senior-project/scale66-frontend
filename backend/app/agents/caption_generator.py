@@ -1,9 +1,11 @@
-from typing import Optional
+import asyncio
+from typing import Optional, List
 
 from app.agents.base_agent import BaseAgent
 from app.models.pipeline import CaptionGeneratorInput, CaptionGeneratorOutput
 from app.models.structured import ClaudeSlidesTextOutput
 from app.constants import FORMAT_TEXT_GUIDES
+from app.services.template_service import template_service
 
 
 class CaptionGenerator(BaseAgent[CaptionGeneratorInput, CaptionGeneratorOutput]):
@@ -23,11 +25,13 @@ class CaptionGenerator(BaseAgent[CaptionGeneratorInput, CaptionGeneratorOutput])
     async def _execute(self, input_data: CaptionGeneratorInput) -> CaptionGeneratorOutput:
         prompt = self._build_prompt(input_data)
         
-        text_output = await self.anthropic.generate_structured_output(
+        images_base64 = self._load_template_images(input_data)
+        
+        text_output = await asyncio.to_thread(
+            self.gemini.generate_text_with_image_analysis,
             prompt=prompt,
+            images_base64=images_base64,
             output_model=ClaudeSlidesTextOutput,
-            max_tokens=4096,
-            temperature=0.9,
         )
         
         expected_body_count = input_data.num_body_slides
@@ -38,45 +42,46 @@ class CaptionGenerator(BaseAgent[CaptionGeneratorInput, CaptionGeneratorOutput])
             else:
                 text_output.body_texts = text_output.body_texts[:expected_body_count]
         
-        has_cta = input_data.cta_slide is not None
-        if has_cta and not text_output.cta_text:
-            text_output.cta_text = "Follow for more tips!"
-        
         return CaptionGeneratorOutput(
             step_name="caption_generator",
             success=True,
             hook_text=text_output.hook_text,
             body_texts=text_output.body_texts,
-            cta_text=text_output.cta_text if has_cta else None,
         )
     
+    def _load_template_images(self, input_data: CaptionGeneratorInput) -> List[str]:
+        """Load template images as base64 encoded strings for Gemini analysis."""
+        images = []
+        
+        hook_image = template_service.get_template_image_base64(
+            input_data.template_id,
+            input_data.hook_slide
+        )
+        images.append(hook_image)
+        
+        body_image = template_service.get_template_image_base64(
+            input_data.template_id,
+            input_data.body_slide
+        )
+        images.append(body_image)
+        
+        return images
+    
     def _build_prompt(self, input_data: CaptionGeneratorInput) -> str:
-        text_guide = FORMAT_TEXT_GUIDES.get(input_data.format_type, "")
-        brand_kit = input_data.brand_kit
-        pain_points = ", ".join(brand_kit.customer_pain_points) if brand_kit.customer_pain_points else "Not provided"
+        format_text_guide = FORMAT_TEXT_GUIDES.get(input_data.format_type, "")
         
-        # Determine slide structure
-        has_cta = input_data.cta_slide is not None
-        
-        return f"""You are a social media caption writer. Generate carousel slide captions with the following structure:
-
-REQUIRED OUTPUT STRUCTURE:
-- hook_text: 1 attention-grabbing opening slide caption
-- body_texts: {input_data.num_body_slides} main content slide captions (array)
-{"- cta_text: 1 compelling call-to-action slide caption" if has_cta else ""}
-
-{text_guide}
-
-BRAND CONTEXT:
-- Name: {brand_kit.brand_name}
-- Niche: {brand_kit.brand_niche}
-- Style: {brand_kit.brand_style}
-- Product/Service: {brand_kit.product_service_desc}
-- Customer Pain Points: {pain_points}
+        return f"""You are an expert text overlay writer for social media carousel slides. Analyze the provided template images and generate appropriate caption text based on the user request.
 
 USER REQUEST: {input_data.user_prompt}
+{format_text_guide}
 
-Generate the captions as structured above. {"The CTA should drive user action (follow, visit website, buy, engage, etc.)." if has_cta else ""}"""
+The images provided show:
+1. Hook slide template (first image)
+2. Body slide template (second image)
+
+Generate caption text that fits the style and layout of these template images. Create {input_data.num_body_slides} body slide texts.
+
+"""
 
 
 caption_generator = CaptionGenerator()
