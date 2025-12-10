@@ -1,9 +1,12 @@
 import base64
-from typing import Optional, List
+from typing import Optional, List, TypeVar, Type
+from pydantic import BaseModel
 from google import genai
 from google.genai import types
 
 from app.core.config import settings
+
+T = TypeVar('T', bound=BaseModel)
 
 
 class GeminiServiceError(Exception):
@@ -82,6 +85,50 @@ class GeminiService:
             raise
         except Exception as e:
             raise GeminiServiceError(f"Failed to generate image from input: {e}")
+    
+    def generate_text_with_image_analysis(
+        self,
+        prompt: str,
+        images_base64: List[str],
+        output_model: Type[T],
+    ) -> T:
+        try:
+            parts = []
+            
+            for img_b64 in images_base64:
+                img_bytes = base64.b64decode(img_b64)
+                parts.append(
+                    types.Part(
+                        inline_data=types.Blob(
+                            mime_type="image/png",
+                            data=img_bytes
+                        )
+                    )
+                )
+            
+            parts.append(types.Part(text=prompt))
+            
+            config = types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_json_schema=output_model.model_json_schema(),
+            )
+            
+            response = self._client.models.generate_content(
+                model=settings.gemini_text_model,
+                contents=types.Content(
+                    role="user",
+                    parts=parts
+                ),
+                config=config
+            )
+            
+            parsed_output = output_model.model_validate_json(response.text)
+            return parsed_output
+                
+        except GeminiServiceError:
+            raise
+        except Exception as e:
+            raise GeminiServiceError(f"Failed to analyze images with structured output: {e}")
 
 
 gemini_service = GeminiService()

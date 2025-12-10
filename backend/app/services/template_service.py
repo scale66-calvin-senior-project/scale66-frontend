@@ -7,9 +7,26 @@ from pydantic import BaseModel
 
 class TemplateMetadata(BaseModel):
     id: str
-    num_slides: int
     carousel_format: str
     description: str
+    hook: str
+    body: str
+    cta: Optional[str] = None
+    
+    @property
+    def hook_slide(self) -> str:
+        """Hook slide filename"""
+        return "1_hook.png"
+    
+    @property
+    def body_slide(self) -> str:
+        """Body slide filename"""
+        return "1_body.png"
+    
+    @property
+    def cta_slide(self) -> Optional[str]:
+        """CTA slide filename if exists"""
+        return "1_cta.png" if self.cta else None
 
 
 class TemplateServiceError(Exception):
@@ -62,9 +79,29 @@ class TemplateService:
     def get_template_image_base64(
         self, 
         template_id: str, 
-        slide_number: int = 1
+        slide_filename: str
     ) -> str:
-        image_path = self._templates_dir / template_id / f"{slide_number}.png"
+        """
+        Get template image by slide filename.
+        
+        Args:
+            template_id: Template ID (e.g., "carousel-1")
+            slide_filename: Slide filename (e.g., "1_hook.png", "1_body.png", "1_cta.png")
+        
+        Returns:
+            Base64 encoded image string
+        """
+        # Determine subfolder based on filename
+        if "_hook" in slide_filename:
+            subfolder = "hook"
+        elif "_body" in slide_filename:
+            subfolder = "body"
+        elif "_cta" in slide_filename:
+            subfolder = "cta"
+        else:
+            raise TemplateServiceError(f"Invalid slide filename format: {slide_filename}")
+        
+        image_path = self._templates_dir / template_id / subfolder / slide_filename
         
         if not image_path.exists():
             raise TemplateServiceError(f"Template image not found: {image_path}")
