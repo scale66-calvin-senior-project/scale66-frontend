@@ -109,6 +109,15 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
             image_size="1K",
         )
     
+    def _get_common_avoidance_rules(self) -> str:
+        """Returns common rules about what to avoid in slide generation."""
+        return """
+WHAT TO AVOID:
+- Broken letters
+- Broken text
+- Broken images
+- Broken formatting"""
+    
     def _build_slide_prompt(
         self,
         input_data: SlideGeneratorInput,
@@ -117,6 +126,8 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
         has_previous_slide: bool = False,
         slide_type: Literal["hook", "body", "cta"] = "body",
     ) -> str:
+        common_rules = self._get_common_avoidance_rules()
+        
         if has_previous_slide:
             return f"""Create a carousel slide by EXACTLY replicating the previous slide's visual style.
 
@@ -128,9 +139,11 @@ CONTENT RULES:
 Use PRIMARILY this text: {slide_text}{f"""
 
 NUMBERING RULES:
+PRIMARY RULE: NEVER ADD NUMBERING UNLESS THE PREVIOUS SLIDE HAS A NUMBERING FORMAT.
 - Continue the numbering sequence from previous slide (IF PRESENT)
 - Use number (IF NEEDED): {slide_index}
-- Match exact numbering style and placement""" if slide_type == "body" else ""}"""
+- Match exact numbering style and placement""" if slide_type == "body" else ""}
+{common_rules}"""
         else:
             return f"""Create a carousel slide using the template as style reference.
 
@@ -138,13 +151,27 @@ RULES FOR USING THE TEMPLATE:
 1. PRESERVE the template's exact visual style and formatting while removing any branding.
 2. REMOVE ALL branding such as logos, social handles, website URLs, names, dates, etc.
 
+PRESERVATION RULES:
+1. Styling information should be preserved, capturing the nuance and details of:
+    - Color palette
+    - Typography, font styles, and sizes
+    - Indicators to move on to the next slide
+    - Layout structure and hierarchy
+Preserve every aspect of these elements, DO NOT change, add, or deviate from these elements.
+2. For a TEMPLATE that has a background image:
+    - IF background image matches the CONTENT, PRESERVE IT.
+    - IF background image is similar to the CONTENT, make slight changes to the background image to match the CONTENT.
+    - IF background image is DOES NOT match the CONTENT, CHANGE the background image to a relevant one, exactly preserving the style, colors and layout of the original background image.
+ The content of the background image can be changed to match the CONTENT, howeverm the style, colors and layout of the original background image should be EXPLICITLY PRESERVED.
+
 CONTENT RULES:
 Use PRIMARILY this text: {slide_text}{f"""
 
 NUMBERING RULES:
 - ONLY add numbering if template shows clear numbering format
 - If present, use number: {slide_index}
-- Match template's numbering style exactly""" if slide_type == "body" else ""}"""
+- Match template's numbering style exactly""" if slide_type == "body" else ""}
+{common_rules}"""
 
 
 slide_generator = SlideGenerator()

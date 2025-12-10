@@ -27,7 +27,7 @@ BRAND_KIT = BrandKit(
 
 FORMAT_TYPE = "listicle_tips"
 NUM_BODY_SLIDES = 3
-TEMPLATE_ID = "carousel-5"
+TEMPLATE_ID = "carousel-3"
 
 HOOK_TEXT = "3 things you never knew about social connection"
 
