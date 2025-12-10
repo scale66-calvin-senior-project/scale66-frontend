@@ -35,7 +35,7 @@ class FormatDecider(BaseAgent[FormatDeciderInput, FormatDeciderOutput]):
             success=True,
             format_type=format_output.format_type,
             num_body_slides=format_output.num_body_slides,
-            include_cta=format_output.cta_slide,
+            include_cta=False,
         )
     
     def _build_prompt(self, input_data: FormatDeciderInput) -> str:
@@ -44,64 +44,28 @@ class FormatDecider(BaseAgent[FormatDeciderInput, FormatDeciderOutput]):
             for fmt, desc in FORMAT_DESCRIPTIONS.items()
         ])
         
-        brand_kit = input_data.brand_kit
-        pain_points = ", ".join(brand_kit.customer_pain_points) if brand_kit.customer_pain_points else "Not provided"
-        
-        return f"""You are an expert social media marketing strategist selecting the optimal carousel FORMAT for a content request.
-
-AVAILABLE FORMATS:
-{format_list}
-
----
-
-DECISION FRAMEWORK:
-
-1. ANALYZE THE USER'S REQUEST
-   - What type of content are they asking for?
-   - Does it naturally break into discrete items, or is it a continuous narrative?
-   - Is there an implied structure (list, story, comparison, etc.)?
-   - How many distinct points/tips/items does this content naturally contain?
-
-2. EVALUATE FORMAT FIT
-   - Check EACH criterion in the format's "KEY CRITERIA" section
-   - A format is a STRONG fit only if ALL criteria are met
-   - Select the format that best matches the content structure
-
-3. DETERMINE NUMBER OF BODY SLIDES
-   - Body slides are the main content slides (not including hook or CTA)
-   - Count the natural number of distinct points/tips/items in the user's request
-   - Range: 1-8 body slides (most common: 3-7)
-   - Examples: "5 tips" = 5 body slides, "7 ways" = 7 body slides, "best practices" = 4-6 body slides
-   - If user specifies a number (e.g., "5 tips"), use that number
-   - If not specified, choose based on topic complexity and content depth
-
-4. DECIDE IF CTA SLIDE IS NEEDED
-   - CTA (Call-To-Action) slides drive specific user actions: engagement, sales, follows, website visits, conversions
-   - INCLUDE CTA (true) when:
-     * Content is promotional or marketing-focused
-     * Brand has clear product/service to promote
-     * Goal is to drive action (sign up, buy, follow, visit website)
-     * Customer pain points suggest need for solution/offer
-   - SKIP CTA (false) when:
-     * Purely educational or informational content
-     * Storytelling or brand awareness focus
-     * No clear action or conversion goal
-     * Content is meant to provide value without asking for anything
-   - Consider brand context and customer journey stage
-
----
+        return f"""You are an expert social media marketing strategist selecting the optimal carousel format for a CONTENT REQUEST.
 
 CONTENT REQUEST:
 "{input_data.user_prompt}"
 
-BRAND CONTEXT:
-- Brand Name: {brand_kit.brand_name}
-- Brand Niche: {brand_kit.brand_niche}
-- Brand Style: {brand_kit.brand_style}
-- Customer Pain Points: {pain_points}
-- Product/Service Description: {brand_kit.product_service_desc}
+HOW TO CHOOSE carousel format:
+    1. EXAMINE the list of AVAILABLE FORMATS and compare the CONTENT REQUEST to the KEY CRITERIA of each format.
+    2. SELECT the AVAILABLE FORMAT that meets the most criteria.
+        - YOU MUST select a format from the list of AVAILABLE FORMATS. IF no format meets the criteria, pick the closest format that meets the most criteria.
 
-Select the optimal carousel format, determine the number of body slides needed, and decide if a CTA slide should be included. You MUST choose from the available format values listed above."""
+HOW TO CHOOSE number of body slides:
+    - IF the CONTENT REQUEST is explicit about the number of body slides, use that number.
+        - NOTE: The number of body slides is NOT total slides.
+    - IF THE CONTENT REQUEST is not explicit about the number of body slides, pick the ideal number of body slides based on the judgement of a social media expert. 
+        - THE NUMBER OF BODY SLIDES SHOULD BE BETWEEN 1 AND 8.
+
+---
+
+AVAILABLE FORMATS:
+{format_list}
+
+"""
 
 
 format_decider = FormatDecider()

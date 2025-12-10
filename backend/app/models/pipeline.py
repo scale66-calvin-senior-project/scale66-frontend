@@ -22,7 +22,7 @@ class FormatDeciderInput(BasePipelineStep):
 class FormatDeciderOutput(BasePipelineStep):
     format_type: str = Field(...)
     num_body_slides: int = Field(..., ge=1, le=8, description="Number of body slides (content slides)")
-    include_cta: bool = Field(..., description="Whether to include a CTA slide")
+    include_cta: bool = Field(False, description="Whether to include a CTA slide")
 
 
 class TemplateDeciderInput(BasePipelineStep):

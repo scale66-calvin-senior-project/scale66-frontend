@@ -5,18 +5,12 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 
-class TemplateBodySlide(BaseModel):
-    """Represents a single body slide design option available in a template"""
-    slide: str  # e.g., "1_body.png", "2_body.png"
-    description: str
-
-
 class TemplateMetadata(BaseModel):
     id: str
     carousel_format: str
     description: str
     hook: str
-    body_slides: List[TemplateBodySlide]
+    body: str
     cta: Optional[str] = None
     
     @property
@@ -25,14 +19,14 @@ class TemplateMetadata(BaseModel):
         return "1_hook.png"
     
     @property
+    def body_slide(self) -> str:
+        """Body slide filename"""
+        return "1_body.png"
+    
+    @property
     def cta_slide(self) -> Optional[str]:
         """CTA slide filename if exists"""
         return "1_cta.png" if self.cta else None
-    
-    @property
-    def num_body_slide_options(self) -> int:
-        """Number of different body slide design options available"""
-        return len(self.body_slides)
 
 
 class TemplateServiceError(Exception):

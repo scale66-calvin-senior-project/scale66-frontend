@@ -9,14 +9,14 @@ from app.models.pipeline import TemplateDeciderInput
 from app.agents.template_decider import template_decider
 
 
-USER_PROMPT = "5 tip for getting started with social media marketing, just building brand awareness, not trying to sell anything or make the user do anything"
+USER_PROMPT = "8 things to prepare when going camping"
 
 BRAND_KIT = BrandKit(
-   brand_name="Scale66",
-   brand_niche="Social Media Marketing for online businesses",
-   brand_style="professional",
-   customer_pain_points=["I don't know how to get started with social media marketing", "I don't have the time to manage social media", "I don't have the budget to hire a marketing agency"],
-   product_service_desc="Helps speed up the process of social media marketing for brand awareness at the fraction of the cost of a marketing agency"
+   brand_name="",
+   brand_niche="",
+   brand_style="",
+   customer_pain_points=[],
+   product_service_desc=""
 )
 
 FORMAT_TYPE = "listicle_tips"
@@ -36,9 +36,6 @@ async def main():
     result = await template_decider.run(input_data)
     
     print(f"Template ID:  {result.template_id}")
-    print(f"Hook Slide:   {result.hook_slide}")
-    print(f"Body Slide:   {result.body_slide}")
-    print(f"CTA Slide:    {result.cta_slide}")
 
 
 if __name__ == "__main__":

@@ -86,7 +86,7 @@ class GeminiService:
         except Exception as e:
             raise GeminiServiceError(f"Failed to generate image from input: {e}")
     
-    def analyze_images_structured(
+    def generate_text_with_image_analysis(
         self,
         prompt: str,
         images_base64: List[str],
@@ -114,7 +114,7 @@ class GeminiService:
             )
             
             response = self._client.models.generate_content(
-                model=settings.gemini_image_model,
+                model=settings.gemini_text_model,
                 contents=types.Content(
                     role="user",
                     parts=parts

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     gemini_api_key: Optional[str] = None
     anthropic_model: str = "claude-sonnet-4-5"
     gemini_image_model: str = "gemini-3-pro-image-preview"
+    gemini_text_model: str = "gemini-3-pro-preview"
 
     model_config = SettingsConfigDict(
         env_file=".env",

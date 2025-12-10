@@ -9,14 +9,14 @@ from app.models.pipeline import FormatDeciderInput
 from app.agents.format_decider import format_decider
 
 
-USER_PROMPT = "5 tip for getting started with social media marketing, just building brand awareness, not trying to sell anything or make the user do anything"
+USER_PROMPT = "3 important reasons why you need social connection in your life"
 
 BRAND_KIT = BrandKit(
-   brand_name="Scale66",
-   brand_niche="Social Media Marketing for online businesses",
-   brand_style="professional",
-   customer_pain_points=["I don't know how to get started with social media marketing", "I don't have the time to manage social media", "I don't have the budget to hire a marketing agency"],
-   product_service_desc="Helps speed up the process of social media marketing for brand awareness at the fraction of the cost of a marketing agency"
+   brand_name="",
+   brand_niche="",
+   brand_style="",
+   customer_pain_points=[],
+   product_service_desc=""
 )
 
 
@@ -30,7 +30,6 @@ async def main():
     
     print(f"Format Type:      {result.format_type}")
     print(f"Num Body Slides:  {result.num_body_slides}")
-    print(f"Include CTA:      {result.include_cta}")
 
 
 if __name__ == "__main__":
