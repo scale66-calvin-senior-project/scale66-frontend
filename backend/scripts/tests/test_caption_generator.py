@@ -9,7 +9,7 @@ from app.models.pipeline import CaptionGeneratorInput
 from app.agents.caption_generator import caption_generator
 
 
-USER_PROMPT = "5 educational tips for out of the way health reasons to drink coffee"
+USER_PROMPT = "3 educational tips for out of the way health reasons to drink coffee"
 
 BRAND_KIT = BrandKit(
     brand_name="Joe's Coffee Corner",
@@ -24,7 +24,7 @@ BRAND_KIT = BrandKit(
 )
 
 FORMAT_TYPE = "listicle_tips"
-NUM_BODY_SLIDES = 5
+NUM_BODY_SLIDES = 3
 TEMPLATE_ID = "carousel-2"
 
 
@@ -37,7 +37,6 @@ async def main():
         template_id=TEMPLATE_ID,
         hook_slide="1_hook.png",
         body_slide="1_body.png",
-        cta_slide="1_cta.png",
     )
     
     result = await caption_generator.run(input_data)

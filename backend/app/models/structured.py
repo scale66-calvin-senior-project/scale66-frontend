@@ -12,4 +12,3 @@ class ClaudeTemplateSelectionOutput(BaseModel):
 class ClaudeSlidesTextOutput(BaseModel):
     hook_text: str = Field(..., description="Hook slide caption text")
     body_texts: List[str] = Field(..., description="Body slide caption texts in order")
-    cta_text: Optional[str] = Field(None, description="CTA slide caption text (only if CTA slide is needed)")

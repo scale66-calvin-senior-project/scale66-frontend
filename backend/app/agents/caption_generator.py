@@ -23,60 +23,46 @@ class CaptionGenerator(BaseAgent[CaptionGeneratorInput, CaptionGeneratorOutput])
     async def _execute(self, input_data: CaptionGeneratorInput) -> CaptionGeneratorOutput:
         prompt = self._build_prompt(input_data)
         
-        text_output = await self.anthropic.generate_structured_output(
+        output = await self.anthropic.generate_structured_output(
             prompt=prompt,
             output_model=ClaudeSlidesTextOutput,
-            max_tokens=4096,
-            temperature=0.9,
         )
         
         expected_body_count = input_data.num_body_slides
-        if len(text_output.body_texts) != expected_body_count:
-            if len(text_output.body_texts) < expected_body_count:
-                while len(text_output.body_texts) < expected_body_count:
-                    text_output.body_texts.append("[Content continues...]")
+        body_texts = output.body_texts
+        if len(body_texts) != expected_body_count:
+            if len(body_texts) < expected_body_count:
+                while len(body_texts) < expected_body_count:
+                    body_texts.append("[Content continues...]")
             else:
-                text_output.body_texts = text_output.body_texts[:expected_body_count]
-        
-        has_cta = input_data.cta_slide is not None
-        if has_cta and not text_output.cta_text:
-            text_output.cta_text = "Follow for more tips!"
+                body_texts = body_texts[:expected_body_count]
         
         return CaptionGeneratorOutput(
             step_name="caption_generator",
             success=True,
-            hook_text=text_output.hook_text,
-            body_texts=text_output.body_texts,
-            cta_text=text_output.cta_text if has_cta else None,
+            hook_text=output.hook_text,
+            body_texts=body_texts,
         )
     
     def _build_prompt(self, input_data: CaptionGeneratorInput) -> str:
-        text_guide = FORMAT_TEXT_GUIDES.get(input_data.format_type, "")
-        brand_kit = input_data.brand_kit
-        pain_points = ", ".join(brand_kit.customer_pain_points) if brand_kit.customer_pain_points else "Not provided"
+        """Build combined prompt for hook and body slide generation."""
+        format_text_guide = FORMAT_TEXT_GUIDES.get(input_data.format_type, "")
         
-        # Determine slide structure
-        has_cta = input_data.cta_slide is not None
-        
-        return f"""You are a social media caption writer. Generate carousel slide captions with the following structure:
+        return f"""You are an expert strategist and caption text writer for social media carousel slides.
 
-REQUIRED OUTPUT STRUCTURE:
-- hook_text: 1 attention-grabbing opening slide caption
-- body_texts: {input_data.num_body_slides} main content slide captions (array)
-{"- cta_text: 1 compelling call-to-action slide caption" if has_cta else ""}
+HOW TO CREATE CAPTIONS:
+    1. CREATE the captions for each section, PRIMARILY using the FORMAT TEXT GUIDE below.
+    3. Additionally, use the USER REQUEST if the user has any requests for the captions.
 
-{text_guide}
-
-BRAND CONTEXT:
-- Name: {brand_kit.brand_name}
-- Niche: {brand_kit.brand_niche}
-- Style: {brand_kit.brand_style}
-- Product/Service: {brand_kit.product_service_desc}
-- Customer Pain Points: {pain_points}
+FORMAT TYPE: {input_data.format_type}
+FORMAT TEXT GUIDE:{format_text_guide}
 
 USER REQUEST: {input_data.user_prompt}
 
-Generate the captions as structured above. {"The CTA should drive user action (follow, visit website, buy, engage, etc.)." if has_cta else ""}"""
+Generate:
+1. One hook slide caption text
+2. {input_data.num_body_slides} body slide caption texts
+"""
 
 
 caption_generator = CaptionGenerator()

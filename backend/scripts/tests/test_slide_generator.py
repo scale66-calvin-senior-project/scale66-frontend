@@ -7,6 +7,7 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.models.brand_kit import BrandKit
+from app.core.config import settings
 from app.models.pipeline import SlideGeneratorInput
 from app.agents.slide_generator import slide_generator
 
@@ -61,7 +62,7 @@ async def main():
     print(f"  Total Slides:      {input_data.num_slides}")
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    carousel_dir = Path(__file__).parent.parent / "output" / "carousels" / f"carousel_{timestamp}"
+    carousel_dir = Path(settings.output_dir) / "carousels" / f"carousel_{timestamp}"
     carousel_dir.mkdir(parents=True, exist_ok=True)
     
     print(f"\n  Carousel Folder:   {carousel_dir}")
