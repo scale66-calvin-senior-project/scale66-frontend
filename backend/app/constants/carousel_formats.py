@@ -67,30 +67,11 @@ NOT SUITABLE FOR:
 
 FORMAT_TEXT_GUIDES: Dict[str, str] = {
     CarouselFormat.LISTICLE_TIPS: """
-    Purpose: To convery information in a numbered list of tips/insights, one per slide.
-    Caption Structure:
-        Hook: A concise hook that attracts the ideal customer by targetting their pain points.
-        Examples:
-            1. "7 Ways to Start Social Media Marketing"
-            2. "If you're a solopreneur, you need to know these 5 tips to get started"
-            3. "Losing Weight has never been easier with these 5 tips"
-            4. "Need more Leads? Try these 6 strategies"
-            5. "8 Ways to Grow Your Social Media Audience"
-        Body: A standalone tip, unrelated to other tips or external context that wouldn't be available to the target audience. One per slide.
-        Examples:
-            1. "Identify what you want to achieve with social media—whether it's brand awareness, lead generation, or sales. Then research and document your ideal customer profile, including demographics, interests, pain points, and where they spend time online."
-            2. "Not all platforms are created equal. Select 2-3 platforms where your target audience is most active. Focus on quality over quantity—it's better to master one platform than to spread yourself thin across many."
-            3. "Plan the types of content you'll post, posting frequency, and themes. A mix of educational, entertaining, and promotional content typically performs best. Consistency in posting schedule helps build audience engagement."
-            4. "Use a clear profile picture, compelling bio with keywords, and link to your website. Make sure your brand voice and visual style are consistent across all platforms to build recognition."
-            5. "Don't just broadcast—interact with your audience. Respond to comments, answer questions, and engage with content from accounts in your niche. Building relationships is key to growing organically."
-            6. "Encourage customers to share their experiences with your product or service. Repost their content and give them credit. This builds trust, increases engagement, and provides authentic social proof."
+    HOOK GUIDELINES:
+    1. The hook should be a clear offer of value that immediately singles out the relevant audience and their pain points.
     
-    Sometimes, you may want to add a bonus/CTA to the end of the carousel. This should be done using the Brand Kit information.
-    Things to avoid: 
-        1. Do not include slide numbers in the caption text.
-        2. Do not include any other text in the caption text other than the caption text itself.
-        3. When creating caption text, always include more than usually expected. Aim for 15-30 words per caption. NEVER GO ABOVE 30 WORDS PER CAPTION.
-        4. Each caption should be a standalone tip, unrelated to other tips or external context that wouldn't be available to the target audience.
+    BODY GUIDELINES:
+    1. The body provides the value in the form of a tip or insight.
+    2. The body should be a standalone tip that doesn't have a narrative thread or context that wouldn't be available to the average audience.
     """,
 }
-

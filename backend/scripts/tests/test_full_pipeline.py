@@ -7,6 +7,7 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.models.brand_kit import BrandKit
+from app.core.config import settings
 from app.models.pipeline import (
     FormatDeciderInput,
     TemplateDeciderInput,
@@ -19,7 +20,7 @@ from app.agents.caption_generator import caption_generator
 from app.agents.slide_generator import slide_generator
 
 
-USER_PROMPT = "5 tips for getting started with social media marketing, just building brand awareness, not trying to sell anything or make the user do anything"
+USER_PROMPT = "Create a carousel talking about 3 important reasons for social media marketing as a solopreneur"
 
 BRAND_KIT = BrandKit(
     brand_name="Scale66",
@@ -106,7 +107,7 @@ async def main():
         print(f"      {caption_result.cta_text}")
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    carousel_dir = Path(__file__).parent.parent / "output" / "carousels" / f"carousel_{timestamp}"
+    carousel_dir = Path(settings.output_dir) / "carousels" / f"carousel_{timestamp}"
     carousel_dir.mkdir(parents=True, exist_ok=True)
     
     print(f"\n  Carousel Folder:   {carousel_dir}")
