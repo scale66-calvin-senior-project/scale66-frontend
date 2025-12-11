@@ -37,7 +37,6 @@ async def main():
         template_id=TEMPLATE_ID,
         hook_slide="1_hook.png",
         body_slide="1_body.png",
-        cta_slide="1_cta.png",
     )
     
     result = await caption_generator.run(input_data)

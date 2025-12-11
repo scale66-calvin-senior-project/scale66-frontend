@@ -1,9 +1,6 @@
 ---
-description: Clarify user intent before making changes when instructions are vague or changes seem drastic
-globs:
-alwaysApply: true
+alwaysApply: false
 ---
-
 # Clarify Intent Rule
 
 ## When to Pause and Clarify
