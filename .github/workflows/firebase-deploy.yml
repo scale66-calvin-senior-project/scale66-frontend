@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Next.js app
+      - name: Build Next.js app (static export)
         run: npm run build
         env:
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
@@ -39,6 +39,11 @@ jobs:
           NEXT_PUBLIC_STRIPE_PAYMENT_LINK_STARTER: ${{ secrets.NEXT_PUBLIC_STRIPE_PAYMENT_LINK_STARTER }}
           NEXT_PUBLIC_STRIPE_PAYMENT_LINK_GROWTH: ${{ secrets.NEXT_PUBLIC_STRIPE_PAYMENT_LINK_GROWTH }}
           NEXT_PUBLIC_STRIPE_PAYMENT_LINK_AGENCY: ${{ secrets.NEXT_PUBLIC_STRIPE_PAYMENT_LINK_AGENCY }}
+      
+      - name: Verify build output
+        run: |
+          ls -la out/ || echo "Build output not found"
+          echo "Build completed, ready to deploy"
 
       - name: Deploy to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -46,6 +51,5 @@ jobs:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
           projectId: scale66-app
-          channelId: live
-          target: scale66-app
+          entryPoint: ./frontend
 
