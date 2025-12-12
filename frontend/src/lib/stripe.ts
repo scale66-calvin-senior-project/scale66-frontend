@@ -31,9 +31,14 @@ export const redirectToCheckout = async (sessionId: string): Promise<void> => {
     throw new Error('Stripe is not initialized. Please check your environment variables.');
   }
   
-  const { error } = await stripe.redirectToCheckout({ sessionId });
-  if (error) {
-    throw error;
+  // redirectToCheckout is a method on the Stripe instance
+  // Type assertion needed as TypeScript types may not include this method
+  const result = await (stripe as unknown as {
+    redirectToCheckout: (options: { sessionId: string }) => Promise<{ error?: { message: string } }>;
+  }).redirectToCheckout({ sessionId });
+  
+  if (result?.error) {
+    throw new Error(result.error.message);
   }
 };
 

@@ -9,9 +9,10 @@ export interface Step5Props {
   onBack: () => void;
   onSkip: () => void;
   initialData?: OnboardingData;
+  isSaving?: boolean;
 }
 
-export const Step5: React.FC<Step5Props> = ({ onNext, onBack, initialData }) => {
+export const Step5: React.FC<Step5Props> = ({ onNext, onBack, initialData, isSaving = false }) => {
   const [productService, setProductService] = useState(initialData?.productService || '');
 
   const handleNext = () => {
@@ -39,15 +40,15 @@ export const Step5: React.FC<Step5Props> = ({ onNext, onBack, initialData }) => 
       </div>
 
       <div className={styles.actions}>
-        <button className={styles.backButton} onClick={onBack}>
+        <button className={styles.backButton} onClick={onBack} disabled={isSaving}>
           Back
         </button>
         <button 
           className={styles.nextButton} 
           onClick={handleNext}
-          disabled={!productService.trim()}
+          disabled={!productService.trim() || isSaving}
         >
-          Next
+          {isSaving ? 'Saving...' : 'Next'}
         </button>
       </div>
     </div>
