@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Standalone build for deployment
-  output: 'standalone',
+  // Static export for Firebase Hosting
+  output: 'export',
   trailingSlash: true,
   images: {
     unoptimized: true,
