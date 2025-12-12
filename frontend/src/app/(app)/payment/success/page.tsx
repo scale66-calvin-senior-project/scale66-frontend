@@ -46,7 +46,6 @@ export default function PaymentSuccessPage() {
         // Get payment intent or session ID from URL params (Stripe adds these)
         const paymentIntentId = searchParams.get('payment_intent');
         const sessionId = searchParams.get('session_id');
-        const paymentIntentClientSecret = searchParams.get('payment_intent_client_secret');
         
         // Get plan ID from URL params (if Payment Link was configured with it)
         const planIdFromUrl = searchParams.get('plan_id') || searchParams.get('plan');
@@ -147,10 +146,11 @@ export default function PaymentSuccessPage() {
             if (typeof window !== 'undefined') {
               localStorage.removeItem('selected_plan_id');
             }
-          } catch (updateError: any) {
+          } catch (updateError: unknown) {
             console.error('Error updating subscription tier:', updateError);
             // If it's a timeout, still show success (webhook might have updated it)
-            if (updateError?.message?.includes('timeout')) {
+            const errorMessage = updateError instanceof Error ? updateError.message : String(updateError);
+            if (errorMessage.includes('timeout')) {
               console.warn('Update timed out, but webhook may have processed it');
               finalStatus = 'success';
               finalMessage = 'Payment successful! Your subscription is being processed. Redirecting to dashboard...';

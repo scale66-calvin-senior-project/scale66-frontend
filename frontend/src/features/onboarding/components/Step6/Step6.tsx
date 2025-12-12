@@ -11,7 +11,7 @@ export interface Step6Props {
   initialData?: OnboardingData;
 }
 
-export const Step6: React.FC<Step6Props> = ({ onNext, onBack, onComplete, initialData }) => {
+export const Step6: React.FC<Step6Props> = ({ onNext, onBack, initialData }) => {
   const [socialLinks, setSocialLinks] = useState({
     instagram: initialData?.socialMediaLinks?.instagram || '',
     tiktok: initialData?.socialMediaLinks?.tiktok || '',

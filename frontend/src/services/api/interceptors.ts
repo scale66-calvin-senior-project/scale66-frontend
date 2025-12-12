@@ -55,10 +55,13 @@ export const setupRetryInterceptor = (
   client.interceptors.response.use(
     undefined,
     async (error: AxiosError) => {
-      const config = error.config as any
+      interface RetryConfig {
+        __retryCount?: number;
+      }
+      const config = error.config as (RetryConfig & typeof error.config) | undefined
 
       // Don't retry if no config or max retries reached
-      if (!config || config.__retryCount >= maxRetries) {
+      if (!config || (config.__retryCount !== undefined && config.__retryCount >= maxRetries)) {
         return Promise.reject(error)
       }
 

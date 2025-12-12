@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { OnboardingData } from '../../types';
 import styles from './Step4.module.css';
 
@@ -54,7 +54,7 @@ export const Step4: React.FC<Step4Props> = ({ onNext, onBack, onSkip, initialDat
 
   return (
     <div className={styles.step}>
-      <h1 className={styles.title}>What are your customer's pain points?</h1>
+      <h1 className={styles.title}>What are your customer&apos;s pain points?</h1>
       <p className={styles.subtitle}>
         Understanding your customers helps us create more targeted content
       </p>

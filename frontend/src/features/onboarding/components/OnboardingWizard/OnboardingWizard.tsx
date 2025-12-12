@@ -9,7 +9,6 @@ import { Step2 } from '../Step2';
 import { Step3 } from '../Step3';
 import { Step4 } from '../Step4';
 import { Step5 } from '../Step5';
-import { Step6 } from '../Step6';
 import { Step6_5 } from '../Step6_5';
 import { PricingCards } from '@/features/payment';
 import { onboardingService } from '../../services';
@@ -42,8 +41,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     setIsSaving(true);
 
     // Save to Supabase on each step - wait for it to complete before navigating
-    let saveSuccessful = false;
-    
     try {
       console.log('💾 Saving onboarding data...', updatedData);
       
@@ -61,7 +58,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         try {
           await savePromise;
           clearTimeout(timeoutId);
-          saveSuccessful = true;
           console.log('✅ Onboarding data saved successfully');
           
           // Small delay to ensure database consistency
@@ -73,7 +69,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
       }
     } catch (error) {
       console.error('❌ Error saving onboarding data:', error);
-      saveSuccessful = false;
       
       // If session is invalid, redirect to login
       if (error instanceof Error && error.message.includes('session is invalid')) {
@@ -170,9 +165,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
   };
 
   const renderStep = () => {
-    // Pass isSaving to steps so they can disable buttons during save
-    const stepProps = { isSaving };
-    
     switch (currentStep) {
       case 1:
         return <Step1 onNext={handleNext} onSkip={handleSkip} initialData={onboardingData} isSaving={isSaving} />;

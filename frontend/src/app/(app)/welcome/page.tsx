@@ -21,7 +21,6 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { OnboardingWizard } from '@/features/onboarding';
-import { getPostLoginRedirectPath } from '@/utils/auth-redirect';
 
 export default function WelcomePage() {
 	const router = useRouter();

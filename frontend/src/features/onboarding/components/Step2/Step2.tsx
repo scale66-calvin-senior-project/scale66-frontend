@@ -34,7 +34,7 @@ export const Step2: React.FC<Step2Props> = ({ onNext, onBack, onSkip, initialDat
 
   return (
     <div className={styles.step}>
-      <h1 className={styles.title}>What's your brand niche?</h1>
+      <h1 className={styles.title}>What&apos;s your brand niche?</h1>
       <p className={styles.subtitle}>
         Help us understand your industry to create more relevant content
       </p>

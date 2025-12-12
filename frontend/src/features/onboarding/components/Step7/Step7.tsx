@@ -8,7 +8,7 @@ export interface Step7Props {
   onComplete: () => void;
 }
 
-export const Step7: React.FC<Step7Props> = ({ onBack, onComplete }) => {
+export const Step7: React.FC<Step7Props> = ({ onComplete }) => {
   const plans = [
     {
       name: "Agency",

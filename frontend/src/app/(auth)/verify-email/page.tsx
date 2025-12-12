@@ -121,7 +121,7 @@ export default function VerifyEmailPage() {
         </p>
         <div style={{ marginTop: '32px', textAlign: 'center' }}>
           <p style={{ fontSize: '14px', color: 'rgba(81, 81, 81, 0.75)', marginBottom: '16px' }}>
-            Didn't receive the email? Check your spam folder or try signing up again.
+            Didn&apos;t receive the email? Check your spam folder or try signing up again.
           </p>
           <a href="/signup" className={styles.authLink}>
             Back to Sign Up

@@ -10,7 +10,7 @@ export interface AuthToggleProps {
  * AuthToggle Component
  * TODO: Implement toggle between login/signup modes
  */
-export const AuthToggle: React.FC<AuthToggleProps> = ({ mode, onToggle }) => {
+export const AuthToggle: React.FC<AuthToggleProps> = () => {
   return (
     <div className={styles.container}>
       <p>TODO: Implement auth mode toggle</p>
