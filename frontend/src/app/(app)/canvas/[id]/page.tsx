@@ -12,6 +12,15 @@
  * 
  * @param params - Dynamic route params containing campaign id
  */
+
+// Required for static export with dynamic routes
+export async function generateStaticParams() {
+  // Return a placeholder ID to generate the route structure
+  // Actual dynamic IDs will be handled client-side via routing
+  // This ensures the route exists in the static export
+  return [{ id: 'placeholder' }];
+}
+
 export default async function CanvasPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   
