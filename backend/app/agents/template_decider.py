@@ -7,6 +7,9 @@ from app.services.template_service import template_service, TemplateMetadata
 
 
 class TemplateDecider(BaseAgent[TemplateDeciderInput, TemplateDeciderOutput]):
+    """Selects the optimal template for a given format and content request."""
+    
+    # Singleton pattern implementation
     _instance: Optional['TemplateDecider'] = None
     
     def __new__(cls):
@@ -35,12 +38,14 @@ class TemplateDecider(BaseAgent[TemplateDeciderInput, TemplateDeciderOutput]):
             temperature=0.3,
         )
         
+        # Validate selected template exists, fallback to first available if not
         selected_template_id = template_output.template_id
         selected_template = template_service.get_template(selected_template_id)
         if not selected_template:
             selected_template = matching_templates[0]
             selected_template_id = selected_template.id
         
+        # Include CTA slide filename only if CTA is requested and available
         cta_slide_filename = None
         if input_data.include_cta and selected_template.cta_slide:
             cta_slide_filename = selected_template.cta_slide
@@ -59,6 +64,7 @@ class TemplateDecider(BaseAgent[TemplateDeciderInput, TemplateDeciderOutput]):
         input_data: TemplateDeciderInput,
         templates: List[TemplateMetadata]
     ) -> str:
+        # Build formatted list of template descriptions for AI selection
         template_details = []
         for t in templates:
             template_detail = f"""Template: {t.id}

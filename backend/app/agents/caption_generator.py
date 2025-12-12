@@ -7,6 +7,9 @@ from app.constants import FORMAT_TEXT_GUIDES
 
 
 class CaptionGenerator(BaseAgent[CaptionGeneratorInput, CaptionGeneratorOutput]):
+    """Generates hook and body slide captions using AI."""
+    
+    # Singleton pattern implementation
     _instance: Optional['CaptionGenerator'] = None
     
     def __new__(cls):
@@ -28,6 +31,7 @@ class CaptionGenerator(BaseAgent[CaptionGeneratorInput, CaptionGeneratorOutput])
             output_model=ClaudeSlidesTextOutput,
         )
         
+        # Ensure body_texts matches expected count (pad or truncate if needed)
         expected_body_count = input_data.num_body_slides
         body_texts = output.body_texts
         if len(body_texts) != expected_body_count:

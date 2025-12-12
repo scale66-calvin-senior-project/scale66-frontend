@@ -7,11 +7,19 @@ from app.models.common import BasePipelineStep
 class OrchestratorInput(BasePipelineStep):
     brand_kit_id: str = Field(...)
     user_prompt: str = Field(...)
+    user_id: Optional[str] = Field(None, description="User ID for storage organization")
 
 
 class OrchestratorOutput(BasePipelineStep):
     carousel_id: str = Field(...)
     carousel_slides_urls: List[str] = Field(...)
+    hook_text: str = Field(..., description="Hook slide caption text")
+    body_texts: List[str] = Field(..., description="Body slide caption texts")
+    cta_text: Optional[str] = Field(None, description="CTA slide caption text if exists")
+    template_id: str = Field(..., description="Template ID used")
+    format_type: str = Field(..., description="Format type selected")
+    num_body_slides: int = Field(..., description="Number of body slides generated")
+    include_cta: bool = Field(False, description="Whether CTA slide was included")
 
 
 class FormatDeciderInput(BasePipelineStep):

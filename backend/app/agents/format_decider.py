@@ -7,6 +7,9 @@ from app.constants import FORMAT_DESCRIPTIONS
 
 
 class FormatDecider(BaseAgent[FormatDeciderInput, FormatDeciderOutput]):
+    """Decides the optimal carousel format and number of body slides based on user prompt."""
+    
+    # Singleton pattern implementation
     _instance: Optional['FormatDecider'] = None
     
     def __new__(cls):
@@ -39,6 +42,7 @@ class FormatDecider(BaseAgent[FormatDeciderInput, FormatDeciderOutput]):
         )
     
     def _build_prompt(self, input_data: FormatDeciderInput) -> str:
+        # Build formatted list of available formats with descriptions
         format_list = "\n".join([
             f"### {fmt.value}\n{desc}"
             for fmt, desc in FORMAT_DESCRIPTIONS.items()

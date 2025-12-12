@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     
     supabase_url: Optional[str] = None
     supabase_service_key: Optional[str] = None
+    supabase_jwt_secret: Optional[str] = None
     
     anthropic_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
