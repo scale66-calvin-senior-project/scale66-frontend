@@ -48,17 +48,28 @@ export const authService = {
 
     if (error) {
       // Log comprehensive error details for debugging
+      interface SupabaseError extends Error {
+        status?: number;
+        statusText?: string;
+        code?: string;
+        details?: string;
+        hint?: string;
+        error_description?: string;
+        error_code?: string;
+      }
+
+      const supabaseError = error as SupabaseError;
       console.error('[AUTH] Supabase signup error - Full error object:', {
         error: error,
         errorType: error.constructor.name,
         message: error.message,
-        status: (error as any).status,
-        statusText: (error as any).statusText,
-        code: (error as any).code,
-        details: (error as any).details,
-        hint: (error as any).hint,
-        errorDescription: (error as any).error_description,
-        errorCode: (error as any).error_code,
+        status: supabaseError.status,
+        statusText: supabaseError.statusText,
+        code: supabaseError.code,
+        details: supabaseError.details,
+        hint: supabaseError.hint,
+        errorDescription: supabaseError.error_description,
+        errorCode: supabaseError.error_code,
         fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2),
         timestamp: new Date().toISOString(),
         signupData: {
@@ -68,34 +79,38 @@ export const authService = {
       });
 
       // Also log the signup response data if available
-      if (signupData) {
-        const userData = signupData.user as any;
-        if (userData) {
-          console.error('[AUTH] Signup response data (even with error):', {
-            user: {
-              id: userData.id,
-              email: userData.email,
-              created_at: userData.created_at,
-              user_metadata: userData.user_metadata,
-            },
-            session: signupData.session ? 'Session exists' : 'No session',
-          });
+      if (signupData?.user) {
+        interface UserData {
+          id: string;
+          email?: string;
+          created_at?: string;
+          user_metadata?: Record<string, unknown>;
         }
+        const userData = signupData.user as UserData;
+        console.error('[AUTH] Signup response data (even with error):', {
+          user: {
+            id: userData.id,
+            email: userData.email,
+            created_at: userData.created_at,
+            user_metadata: userData.user_metadata,
+          },
+          session: signupData.session ? 'Session exists' : 'No session',
+        });
       }
 
       // Create a detailed error message with troubleshooting info
       const errorDetails = [
         error.message || 'Unknown error',
-        (error as any).hint ? `Hint: ${(error as any).hint}` : '',
-        (error as any).details ? `Details: ${(error as any).details}` : '',
-        (error as any).code ? `Code: ${(error as any).code}` : '',
+        supabaseError.hint ? `Hint: ${supabaseError.hint}` : '',
+        supabaseError.details ? `Details: ${supabaseError.details}` : '',
+        supabaseError.code ? `Code: ${supabaseError.code}` : '',
       ].filter(Boolean).join(' | ');
 
       // Check if this is a database trigger error
       const isDatabaseError = 
         error.message?.toLowerCase().includes('database error') ||
         error.message?.toLowerCase().includes('saving new user') ||
-        (error as any).code === 'unexpected_failure';
+        supabaseError.code === 'unexpected_failure';
 
       if (isDatabaseError) {
         const troubleshootingMessage = 

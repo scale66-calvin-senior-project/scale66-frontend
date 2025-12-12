@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User } from '@/features/auth/types';
 import { authService } from '@/features/auth/services/auth.service';
@@ -23,7 +23,6 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasCheckedSession, setHasCheckedSession] = useState(false);
 
   const fetchUserWithSubscription = async (authUserId: string): Promise<User | null> => {
     try {
@@ -62,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loadUser = async (skipLoadingState = false) => {
+  const loadUser = useCallback(async (skipLoadingState = false) => {
     if (!skipLoadingState) {
       setIsLoading(true);
     }
@@ -88,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Always set loading to false, even on error
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const refreshUser = async () => {
     await loadUser();
@@ -101,7 +100,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
-    let timeoutId: NodeJS.Timeout;
     let hasChecked = false;
 
     // First, do a quick session check (fast - from localStorage/cookies)
@@ -121,7 +119,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             subscription_tier: 'free', // Will be updated when full data loads
           };
           setUser(basicUser);
-          setHasCheckedSession(true);
           setIsLoading(false); // Stop showing loading immediately
           
           // Now load full user data in the background (non-blocking)
@@ -132,24 +129,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else if (mounted) {
           // No session found
           setUser(null);
-          setHasCheckedSession(true);
           setIsLoading(false);
         }
       } catch (error) {
         console.error('Quick session check failed:', error);
         if (mounted) {
-          setHasCheckedSession(true);
           setIsLoading(false);
         }
       }
     };
 
     // Set a timeout to prevent infinite loading (max 3 seconds)
-    timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       if (mounted) {
         console.warn('Auth check timeout - stopping loading state');
         setIsLoading(false);
-        setHasCheckedSession(true);
       }
     }, 3000);
 
@@ -180,7 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [loadUser]);
 
   const isSubscribed = user?.subscription_tier === 'starter' || user?.subscription_tier === 'growth' || user?.subscription_tier === 'agency';
 

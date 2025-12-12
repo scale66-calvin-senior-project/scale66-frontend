@@ -31,7 +31,7 @@ export const Step3: React.FC<Step3Props> = ({ onNext, onBack, onSkip, initialDat
 
   return (
     <div className={styles.step}>
-      <h1 className={styles.title}>What's your brand style?</h1>
+      <h1 className={styles.title}>What&apos;s your brand style?</h1>
       <p className={styles.subtitle}>
         Choose the aesthetic that best represents your brand
       </p>

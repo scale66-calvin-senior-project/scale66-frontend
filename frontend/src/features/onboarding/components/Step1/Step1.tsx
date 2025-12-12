@@ -21,7 +21,7 @@ export const Step1: React.FC<Step1Props> = ({ onNext, onSkip, initialData, isSav
 
   return (
     <div className={styles.step}>
-      <h1 className={styles.title}>What's your brand name?</h1>
+      <h1 className={styles.title}>What&apos;s your brand name?</h1>
       <p className={styles.subtitle}>
         This helps us personalize your content creation experience
       </p>

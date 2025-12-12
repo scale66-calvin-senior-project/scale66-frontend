@@ -9,7 +9,7 @@ export interface SocialAuthButtonsProps {
  * SocialAuthButtons Component
  * TODO: Implement social auth buttons (Google, Apple)
  */
-export const SocialAuthButtons: React.FC<SocialAuthButtonsProps> = ({ onSuccess }) => {
+export const SocialAuthButtons: React.FC<SocialAuthButtonsProps> = () => {
   return (
     <div className={styles.container}>
       <p>TODO: Implement Google & Apple auth buttons</p>

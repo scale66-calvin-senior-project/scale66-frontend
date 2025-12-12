@@ -11,7 +11,7 @@ export interface Step5Props {
   initialData?: OnboardingData;
 }
 
-export const Step5: React.FC<Step5Props> = ({ onNext, onBack, onSkip, initialData }) => {
+export const Step5: React.FC<Step5Props> = ({ onNext, onBack, initialData }) => {
   const [productService, setProductService] = useState(initialData?.productService || '');
 
   const handleNext = () => {
@@ -25,7 +25,7 @@ export const Step5: React.FC<Step5Props> = ({ onNext, onBack, onSkip, initialDat
     <div className={styles.step}>
       <h1 className={styles.title}>What product or service do you offer?</h1>
       <p className={styles.subtitle}>
-        Tell us about what you're selling or providing to your customers
+        Tell us about what you&apos;re selling or providing to your customers
       </p>
 
       <div className={styles.inputWrapper}>

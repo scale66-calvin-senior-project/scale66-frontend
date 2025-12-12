@@ -53,7 +53,6 @@ export const Step6_5: React.FC<Step6_5Props> = ({ onNext, onBack, initialData })
   // Calculate insights based on onboarding data
   const getPostingFrequency = (): string => {
     const niche = initialData?.brandNiche?.toLowerCase() || '';
-    const brandName = initialData?.brandName || '';
     
     // More specific logic based on niche
     if (niche.includes('fashion') || niche.includes('beauty') || niche.includes('lifestyle')) {
@@ -83,9 +82,6 @@ export const Step6_5: React.FC<Step6_5Props> = ({ onNext, onBack, initialData })
   const getCustomerArchetype = (): string => {
     const niche = initialData?.brandNiche?.toLowerCase() || '';
     const style = initialData?.brandStyle?.toLowerCase() || '';
-    const painPoints = Array.isArray(initialData?.customerPainPoints) 
-      ? initialData.customerPainPoints 
-      : initialData?.customerPainPoints?.split('\n').filter(p => p.trim()) || [];
     
     // More specific archetype matching
     if (niche.includes('fashion') || niche.includes('beauty')) {
@@ -148,9 +144,6 @@ export const Step6_5: React.FC<Step6_5Props> = ({ onNext, onBack, initialData })
 
   const getKPIs = () => {
     const niche = initialData?.brandNiche?.toLowerCase() || '';
-    const painPointsCount = Array.isArray(initialData?.customerPainPoints)
-      ? initialData.customerPainPoints.length
-      : initialData?.customerPainPoints?.split('\n').filter(p => p.trim()).length || 0;
     
     // Dynamic engagement rate based on niche
     let engagementRate = '4.2%';
@@ -230,7 +223,7 @@ export const Step6_5: React.FC<Step6_5Props> = ({ onNext, onBack, initialData })
     <div className={styles.step}>
       <h1 className={styles.title}>Marketing Insights for {brandName}</h1>
       <p className={styles.subtitle}>
-        Based on your brand information, here's what we've prepared for you
+        Based on your brand information, here&apos;s what we&apos;ve prepared for you
       </p>
 
       <div className={styles.insightsContainer}>

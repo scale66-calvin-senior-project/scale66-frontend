@@ -19,7 +19,8 @@ export async function middleware(request: NextRequest) {
   // Supabase stores session in cookies like: sb-<project-ref>-auth-token
   // Get all cookies and check their names
   const allCookies = cookies.getAll();
-  const hasAuthCookie = allCookies.some(cookie => {
+  // Note: hasAuthCookie check is currently unused but kept for future use
+  allCookies.some(cookie => {
     const name = cookie.name.toLowerCase();
     // Check for various Supabase cookie patterns
     return name.includes('supabase') || 
