@@ -1,4 +1,5 @@
 import base64
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
@@ -36,7 +37,11 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
         super().__init__()
     
     async def _validate_input(self, input_data: OrchestratorInput) -> None:
-        pass
+        """Validate orchestrator input."""
+        if not input_data.brand_kit_id or not input_data.brand_kit_id.strip():
+            raise ValidationError("brand_kit_id is required")
+        if not input_data.user_prompt or not input_data.user_prompt.strip():
+            raise ValidationError("user_prompt is required")
     
     async def _execute(self, input_data: OrchestratorInput) -> OrchestratorOutput:
         # Step 1: Fetch brand kit data
@@ -92,10 +97,19 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             )
         )
         
-        # Step 6: Optionally save images locally
-        output_dir = None
+        # Step 6: Upload images to Supabase storage
+        carousel_id = str(uuid.uuid4())
+        slide_urls = await self._upload_images_to_storage(
+            carousel_id=carousel_id,
+            hook_image=slide_result.hook_image,
+            body_images=slide_result.body_images,
+            cta_image=slide_result.cta_image,
+            user_id=input_data.user_id if hasattr(input_data, 'user_id') else None,
+        )
+        
+        # Step 7: Optionally save images locally for debugging
         if settings.save_local_output:
-            output_dir = self._save_images_locally(
+            self._save_images_locally(
                 hook_image=slide_result.hook_image,
                 body_images=slide_result.body_images,
                 cta_image=slide_result.cta_image,
@@ -105,30 +119,104 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
         return OrchestratorOutput(
             step_name="orchestrator",
             success=True,
-            carousel_id="local-output",
-            carousel_slides_urls=[],
+            carousel_id=carousel_id,
+            carousel_slides_urls=slide_urls,
+            hook_text=caption_result.hook_text,
+            body_texts=caption_result.body_texts,
+            cta_text=caption_result.cta_text,
+            template_id=template_result.template_id,
+            format_type=format_result.format_type,
+            num_body_slides=format_result.num_body_slides,
+            include_cta=format_result.include_cta,
         )
     
     async def _fetch_brand_kit(self, brand_kit_id: str) -> BrandKit:
         """Fetch brand kit data from Supabase and convert to BrandKit model."""
+        try:
+            supabase = get_supabase_admin_client()
+            response = supabase.table("brand_kits").select("*").eq("id", brand_kit_id).execute()
+            
+            if not response.data:
+                raise ExecutionError(f"Brand kit not found: {brand_kit_id}")
+            
+            brand_data = response.data[0]
+            
+            # Handle pain_points which may be stored as string or list
+            pain_points = brand_data.get("customer_pain_points", [])
+            if isinstance(pain_points, str):
+                pain_points = [pain_points] if pain_points else []
+            
+            brand_kit = BrandKit(
+                brand_name=brand_data.get("brand_name", ""),
+                brand_niche=brand_data.get("brand_niche", ""),
+                brand_style=brand_data.get("brand_style", ""),
+                customer_pain_points=pain_points,
+                product_service_desc=brand_data.get("product_service_description", ""),
+            )
+            
+            return brand_kit
+            
+        except ExecutionError:
+            raise
+        except Exception as e:
+            raise ExecutionError(f"Failed to fetch brand kit: {str(e)}")
+    
+    async def _upload_images_to_storage(
+        self,
+        carousel_id: str,
+        hook_image: str,
+        body_images: List[str],
+        cta_image: Optional[str],
+        user_id: Optional[str] = None,
+    ) -> List[str]:
+        """Upload generated images to Supabase storage and return public URLs."""
         supabase = get_supabase_admin_client()
-        response = supabase.table("brand_kits").select("*").eq("id", brand_kit_id).execute()
-        brand_data = response.data[0]
+        bucket_name = "carousels"
+        slide_urls: List[str] = []
         
-        # Handle pain_points which may be stored as string or list
-        pain_points = brand_data.get("customer_pain_points", [])
-        if isinstance(pain_points, str):
-            pain_points = [pain_points] if pain_points else []
-        
-        brand_kit = BrandKit(
-            brand_name=brand_data.get("brand_name", ""),
-            brand_niche=brand_data.get("brand_niche", ""),
-            brand_style=brand_data.get("brand_style", ""),
-            customer_pain_points=pain_points,
-            product_service_desc=brand_data.get("product_service_description", ""),
-        )
-        
-        return brand_kit
+        try:
+            storage = supabase.storage.from_(bucket_name)
+            
+            # Upload hook slide (always first)
+            hook_path = f"{carousel_id}/1_hook.png"
+            hook_bytes = base64.b64decode(hook_image)
+            storage.upload(
+                hook_path,
+                hook_bytes,
+                file_options={"content-type": "image/png"}
+            )
+            hook_url = storage.get_public_url(hook_path)
+            slide_urls.append(hook_url)
+            
+            # Upload body slides (numbered starting from 2)
+            for i, body_img in enumerate(body_images):
+                body_path = f"{carousel_id}/{i + 2}_body.png"
+                body_bytes = base64.b64decode(body_img)
+                storage.upload(
+                    body_path,
+                    body_bytes,
+                    file_options={"content-type": "image/png"}
+                )
+                body_url = storage.get_public_url(body_path)
+                slide_urls.append(body_url)
+            
+            # Upload CTA slide if present (last slide)
+            if cta_image:
+                cta_path = f"{carousel_id}/{len(body_images) + 2}_cta.png"
+                cta_bytes = base64.b64decode(cta_image)
+                storage.upload(
+                    cta_path,
+                    cta_bytes,
+                    file_options={"content-type": "image/png"}
+                )
+                cta_url = storage.get_public_url(cta_path)
+                slide_urls.append(cta_url)
+            
+            return slide_urls
+            
+        except Exception as e:
+            error_msg = f"Failed to upload images to storage: {str(e)}"
+            raise ExecutionError(error_msg)
     
     def _save_images_locally(
         self,
