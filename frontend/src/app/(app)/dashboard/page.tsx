@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth';
 import { MainPage } from "@/features/mainpage";
@@ -17,50 +17,35 @@ import { MainPage } from "@/features/mainpage";
  */
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const [hasCheckedSession, setHasCheckedSession] = useState(false);
 
   useEffect(() => {
-    // Wait for auth to load
-    if (isLoading) return;
+    // Quick session check - don't wait for full auth context
+    const checkSession = async () => {
+      if (hasCheckedSession) return;
+      
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        setHasCheckedSession(true);
+        
+        // Only redirect if we're absolutely sure there's no session
+        if (!session?.user && !isAuthenticated && !user) {
+          console.log('No session found, redirecting to landing page');
+          router.replace('/');
+        }
+      } catch (error) {
+        console.error('Session check error:', error);
+        setHasCheckedSession(true);
+      }
+    };
 
-    // Only redirect if we're absolutely sure there's no session
-    // Double-check with Supabase directly before redirecting
-    if (!isAuthenticated) {
-      import('@/lib/supabase').then(({ supabase }) => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (!session) {
-            console.log('No session found, redirecting to landing page');
-            router.push('/');
-          } else {
-            console.log('Session found but auth context not loaded yet, waiting...');
-            // Session exists but auth context hasn't loaded it yet
-            // Give it a moment to sync
-          }
-        });
-      });
-    }
-  }, [isAuthenticated, isLoading, router]);
+    checkSession();
+  }, [isAuthenticated, user, router, hasCheckedSession]);
 
-  // Show loading while checking auth
-  if (isLoading) {
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-      }}>
-        <div>Loading...</div>
-      </div>
-    );
-  }
-
-  // Don't render if not authenticated (redirect will happen)
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  // Show dashboard for all authenticated users
-  // Subscription check can be done at feature level if needed
+  // Always show dashboard optimistically - no loading screen ever
+  // If user isn't authenticated, the redirect will happen in the background
   return <MainPage />;
 }

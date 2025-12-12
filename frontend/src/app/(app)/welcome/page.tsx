@@ -49,7 +49,7 @@ export default function WelcomePage() {
 					if (userData) {
 						// If onboarding completed and paid, redirect to dashboard
 						if (userData.onboarding_completed && 
-							(userData.subscription_tier === 'pro' || userData.subscription_tier === 'premium')) {
+							(userData.subscription_tier === 'starter' || userData.subscription_tier === 'growth' || userData.subscription_tier === 'agency')) {
 							router.push('/dashboard');
 							return;
 						}

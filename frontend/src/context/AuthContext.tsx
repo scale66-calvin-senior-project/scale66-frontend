@@ -23,6 +23,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasCheckedSession, setHasCheckedSession] = useState(false);
 
   const fetchUserWithSubscription = async (authUserId: string): Promise<User | null> => {
     try {
@@ -61,8 +62,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loadUser = async () => {
-    setIsLoading(true);
+  const loadUser = async (skipLoadingState = false) => {
+    if (!skipLoadingState) {
+      setIsLoading(true);
+    }
     try {
       const authUser = await authService.getCurrentUser();
       
@@ -97,26 +100,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Load user on mount
-    loadUser();
+    let mounted = true;
+    let timeoutId: NodeJS.Timeout;
+    let hasChecked = false;
+
+    // First, do a quick session check (fast - from localStorage/cookies)
+    const quickSessionCheck = async () => {
+      if (hasChecked) return;
+      hasChecked = true;
+      
+      try {
+        // Check for session immediately (this is fast - reads from localStorage)
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user && mounted) {
+          // We have a session! Set a basic user immediately so UI doesn't block
+          const basicUser: User = {
+            id: session.user.id,
+            email: session.user.email || '',
+            subscription_tier: 'free', // Will be updated when full data loads
+          };
+          setUser(basicUser);
+          setHasCheckedSession(true);
+          setIsLoading(false); // Stop showing loading immediately
+          
+          // Now load full user data in the background (non-blocking)
+          loadUser(true).catch(err => {
+            console.error('Background user load failed:', err);
+            // Keep the basic user we set above
+          });
+        } else if (mounted) {
+          // No session found
+          setUser(null);
+          setHasCheckedSession(true);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Quick session check failed:', error);
+        if (mounted) {
+          setHasCheckedSession(true);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    // Set a timeout to prevent infinite loading (max 3 seconds)
+    timeoutId = setTimeout(() => {
+      if (mounted) {
+        console.warn('Auth check timeout - stopping loading state');
+        setIsLoading(false);
+        setHasCheckedSession(true);
+      }
+    }, 3000);
+
+    // Do quick session check first
+    quickSessionCheck();
 
     // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
       if (event === 'SIGNED_IN' && session?.user) {
         await loadUser();
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
+        setIsLoading(false);
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        // Session refreshed - reload user data in background
+        loadUser(true).catch(err => {
+          console.error('Token refresh user load failed:', err);
+        });
       }
     });
 
     return () => {
+      mounted = false;
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, []);
 
-  const isSubscribed = user?.subscription_tier === 'pro' || user?.subscription_tier === 'premium';
+  const isSubscribed = user?.subscription_tier === 'starter' || user?.subscription_tier === 'growth' || user?.subscription_tier === 'agency';
 
   return (
     <AuthContext.Provider

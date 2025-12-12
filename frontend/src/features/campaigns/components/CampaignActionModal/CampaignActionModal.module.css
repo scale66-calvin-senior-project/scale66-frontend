@@ -1,0 +1,57 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+.modal {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  min-width: 120px;
+  padding: 8px 0;
+  z-index: 1001;
+}
+
+.menuItem {
+  display: block;
+  width: 100%;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #515151;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.menuItem:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.menuItem:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.menuItem:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+.deleteItem {
+  color: #dc3545;
+}
+
+.deleteItem:hover {
+  background: rgba(220, 53, 69, 0.08);
+}
+
+

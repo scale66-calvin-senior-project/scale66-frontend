@@ -8,7 +8,7 @@ export interface User {
   id: string;
   email: string;
   name?: string;
-  subscription_tier?: 'free' | 'pro' | 'premium';
+  subscription_tier?: 'free' | 'starter' | 'growth' | 'agency';
   stripe_customer_id?: string;
   onboarding_completed?: boolean;
 }

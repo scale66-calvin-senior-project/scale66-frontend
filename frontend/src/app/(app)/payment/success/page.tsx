@@ -20,18 +20,17 @@ export default function PaymentSuccessPage() {
   const [message, setMessage] = useState('Processing your payment...');
   const hasRunRef = useRef(false);
 
-  // Map plan IDs to subscription tiers
-  // Database only allows: 'free', 'pro', 'premium'
-  const getSubscriptionTier = (planId: string | null): 'pro' | 'premium' | null => {
+  // Get subscription tier from plan ID
+  // Store the actual plan name: 'starter', 'growth', or 'agency'
+  const getSubscriptionTier = (planId: string | null): 'starter' | 'growth' | 'agency' | null => {
     if (!planId) return null;
     const planLower = planId.toLowerCase();
-    // Map: starter -> pro, growth -> premium, agency -> premium
-    if (planLower.includes('starter')) return 'pro';
-    if (planLower.includes('growth')) return 'premium';
-    if (planLower.includes('agency')) return 'premium'; // Agency maps to premium tier
-    // Default mapping
-    if (planLower.includes('pro')) return 'pro';
-    if (planLower.includes('premium')) return 'premium';
+    
+    // Return the actual plan name
+    if (planLower.includes('starter')) return 'starter';
+    if (planLower.includes('growth')) return 'growth';
+    if (planLower.includes('agency')) return 'agency';
+    
     return null;
   };
 
@@ -84,31 +83,42 @@ export default function PaymentSuccessPage() {
         
         // If we have payment intent or session ID, try to verify with backend
         // This is optional - we'll update subscription_tier regardless
+        // Add timeout to prevent hanging
         if (paymentIntentId || sessionId) {
           try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            
             const response = await fetch(`${env.apiBaseUrl}/api/v1/payment/verify`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               credentials: 'include',
+              signal: controller.signal,
               body: JSON.stringify({
                 payment_intent_id: paymentIntentId,
                 session_id: sessionId,
               }),
             });
 
+            clearTimeout(timeoutId);
+
             if (response.ok) {
               const data = await response.json();
               // Backend should return the plan/subscription tier
               if (data.subscription_tier) {
-                subscriptionTier = data.subscription_tier as 'pro' | 'premium';
+                subscriptionTier = data.subscription_tier as 'starter' | 'growth' | 'agency';
               } else if (data.plan_id) {
                 subscriptionTier = getSubscriptionTier(data.plan_id);
               }
             }
           } catch (verifyError) {
             console.error('Backend verification error (continuing anyway):', verifyError);
+            // Continue with plan_id from URL if backend fails
+            if (!subscriptionTier && planId) {
+              subscriptionTier = getSubscriptionTier(planId);
+            }
           }
         }
         
@@ -118,32 +128,52 @@ export default function PaymentSuccessPage() {
         let finalMessage = 'Payment successful! Your subscription has been activated. Redirecting to dashboard...';
         
         if (subscriptionTier) {
-          const { error: updateError } = await supabase
+          console.log(`💾 Updating subscription_tier to ${subscriptionTier} for user ${authUser.id}`);
+          
+          // Add timeout to prevent hanging
+          const updatePromise = supabase
             .from('users')
             .update({ subscription_tier: subscriptionTier })
             .eq('id', authUser.id);
           
-          if (updateError) {
-            console.error('Error updating subscription tier:', updateError);
-            finalStatus = 'error';
-            finalMessage = 'Payment received but there was an issue updating your subscription. Please contact support.';
-          } else {
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Update timeout')), 8000)
+          );
+          
+          try {
+            await Promise.race([updatePromise, timeoutPromise]);
             console.log(`✅ Updated subscription_tier to ${subscriptionTier} for user ${authUser.id}`);
             // Clear the stored plan ID after successful update
             if (typeof window !== 'undefined') {
               localStorage.removeItem('selected_plan_id');
             }
+          } catch (updateError: any) {
+            console.error('Error updating subscription tier:', updateError);
+            // If it's a timeout, still show success (webhook might have updated it)
+            if (updateError?.message?.includes('timeout')) {
+              console.warn('Update timed out, but webhook may have processed it');
+              finalStatus = 'success';
+              finalMessage = 'Payment successful! Your subscription is being processed. Redirecting to dashboard...';
+            } else {
+              finalStatus = 'error';
+              finalMessage = 'Payment received but there was an issue updating your subscription. Please contact support.';
+            }
           }
         } else {
           // No plan ID found - this shouldn't happen, but handle gracefully
           console.warn('No plan ID found - cannot update subscription tier');
+          console.warn('URL params:', { planIdFromUrl, planIdFromStorage, planId });
           finalStatus = 'error';
           finalMessage = 'Payment received but we could not identify which plan you purchased. Please contact support with your payment details.';
         }
         
-        // Refresh user data to get updated subscription (don't await if it fails)
+        // Refresh user data to get updated subscription (with timeout)
         try {
-          await refreshUser();
+          const refreshPromise = refreshUser();
+          const refreshTimeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Refresh timeout')), 5000)
+          );
+          await Promise.race([refreshPromise, refreshTimeout]);
         } catch (refreshError) {
           console.error('Error refreshing user (continuing anyway):', refreshError);
         }
@@ -181,17 +211,6 @@ export default function PaymentSuccessPage() {
       fill="none" 
       xmlns="http://www.w3.org/2000/svg"
     >
-      <circle 
-        cx="12" 
-        cy="12" 
-        r="10" 
-        stroke="currentColor" 
-        strokeWidth="2" 
-        strokeLinecap="round" 
-        strokeDasharray="31.416" 
-        strokeDashoffset="15.708"
-        opacity="0.3"
-      />
       <circle 
         cx="12" 
         cy="12" 

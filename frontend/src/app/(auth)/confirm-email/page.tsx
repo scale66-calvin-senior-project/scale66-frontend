@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import styles from '../auth-page.module.css';
 
@@ -10,10 +11,13 @@ import styles from '../auth-page.module.css';
  * This page is shown when user clicks the email verification link
  * Opens in a new tab/window from the email
  * Verifies the email and signals the original tab via localStorage
+ * If opened in the same tab, redirects directly to welcome page
  */
 export default function ConfirmEmailPage() {
+  const router = useRouter();
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
   const [message, setMessage] = useState('Verifying your email...');
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
     const handleEmailVerification = async () => {
@@ -23,56 +27,98 @@ export default function ConfirmEmailPage() {
         const accessToken = hashParams.get('access_token');
         const type = hashParams.get('type');
 
-        if (accessToken && type === 'email') {
-          // Supabase client with detectSessionInUrl: true should automatically process this
-          // Wait a moment for Supabase to process the session
-          await new Promise(resolve => setTimeout(resolve, 500));
+        // If we have tokens in the URL, Supabase should process them automatically
+        // Wait for Supabase to process the session (with multiple retries)
+        let sessionData = null;
+        let attempts = 0;
+        const maxAttempts = 8; // Give it enough time
+
+        while (attempts < maxAttempts && !sessionData) {
+          await new Promise(resolve => setTimeout(resolve, 300));
           
-          const { data: sessionData, error } = await supabase.auth.getSession();
+          const { data: session } = await supabase.auth.getSession();
           
-          if (sessionData?.session && !error) {
-            // Email verified successfully
-            setStatus('success');
-            setMessage('Email verified successfully! You can close this window.');
-            
-            // Signal the original tab that verification is complete
-            // Use localStorage event to communicate across tabs
-            const event = new StorageEvent('storage', {
-              key: 'email-verified',
-              newValue: 'true',
-              storageArea: localStorage,
-            });
-            window.dispatchEvent(event);
-            
-            // Also set in localStorage for polling
-            localStorage.setItem('email-verified', 'true');
-            localStorage.setItem('email-verified-timestamp', Date.now().toString());
-            
-            // Clear the hash from URL
-            window.history.replaceState(null, '', window.location.pathname);
-          } else {
-            throw new Error('Failed to verify email');
+          if (session?.session) {
+            sessionData = session;
+            break;
           }
+          
+          attempts++;
+        }
+
+        // If we have a session, verification was successful
+        if (sessionData?.session) {
+          // Show success message
+          setStatus('success');
+          setMessage('Email verified successfully!');
+          
+          // Signal the original tab that verification is complete
+          localStorage.setItem('email-verified', 'true');
+          localStorage.setItem('email-verified-timestamp', Date.now().toString());
+          
+          // Dispatch storage event for cross-tab communication
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: 'email-verified',
+            newValue: 'true',
+            storageArea: localStorage,
+          }));
+          
+          // Clear the hash from URL
+          window.history.replaceState(null, '', window.location.pathname);
+          
+          // Redirect after showing success message for a moment
+          setTimeout(() => {
+            if (!hasRedirected) {
+              setHasRedirected(true);
+              router.replace('/welcome');
+            }
+          }, 2000);
+        } else if (accessToken && type === 'email') {
+          // We have tokens but no session yet - wait a bit more
+          setTimeout(async () => {
+            const { data: session } = await supabase.auth.getSession();
+            if (session?.session) {
+              setStatus('success');
+              setMessage('Email verified successfully!');
+              localStorage.setItem('email-verified', 'true');
+              localStorage.setItem('email-verified-timestamp', Date.now().toString());
+              setTimeout(() => {
+                if (!hasRedirected) {
+                  setHasRedirected(true);
+                  router.replace('/welcome');
+                }
+              }, 2000);
+            } else {
+              setStatus('error');
+              setMessage('Verification is taking longer than expected. You can close this window and return to the app.');
+            }
+          }, 1000);
         } else {
-          // No tokens in URL - check if already verified
-          const { data: sessionData } = await supabase.auth.getSession();
-          if (sessionData?.session) {
+          // No tokens - check if already verified
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.session) {
             setStatus('success');
-            setMessage('Email already verified! You can close this window.');
-            localStorage.setItem('email-verified', 'true');
+            setMessage('Email already verified!');
+            setTimeout(() => {
+              if (!hasRedirected) {
+                setHasRedirected(true);
+                router.replace('/welcome');
+              }
+            }, 2000);
           } else {
-            throw new Error('No verification tokens found');
+            setStatus('error');
+            setMessage('No verification tokens found. Please check your email and click the verification link.');
           }
         }
       } catch (error) {
-        console.error('Email verification error:', error);
+        console.error('[EMAIL VERIFICATION] Error:', error);
         setStatus('error');
-        setMessage('Failed to verify email. Please try clicking the link again or contact support.');
+        setMessage('There was an issue verifying your email. Please try clicking the link again.');
       }
     };
 
     handleEmailVerification();
-  }, []);
+  }, [router, hasRedirected]);
 
   return (
     <div className={styles.authPage}>
@@ -89,14 +135,17 @@ export default function ConfirmEmailPage() {
             <p className={styles.authSubtitle}>{message}</p>
             <div style={{ marginTop: '32px', textAlign: 'center' }}>
               <p style={{ fontSize: '14px', color: 'rgba(81, 81, 81, 0.75)' }}>
-                Return to the original window to continue with onboarding.
+                You can close this window and return to the app.
+              </p>
+              <p style={{ fontSize: '14px', color: 'rgba(81, 81, 81, 0.75)', marginTop: '8px' }}>
+                Redirecting automatically...
               </p>
             </div>
           </>
         )}
         {status === 'error' && (
           <>
-            <h1 className={styles.authTitle}>Verification Failed</h1>
+            <h1 className={styles.authTitle}>Verification Issue</h1>
             <p className={styles.authSubtitle}>{message}</p>
             <div style={{ marginTop: '32px', textAlign: 'center' }}>
               <a href="/signup" className={styles.authLink}>

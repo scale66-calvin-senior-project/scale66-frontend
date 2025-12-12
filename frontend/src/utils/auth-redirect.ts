@@ -26,8 +26,8 @@ export function getPostLoginRedirectPath(user: User | null): string {
     return '/welcome?step=7';
   }
 
-  // If onboarding completed and paid (pro or premium), send to dashboard
-  if (user.onboarding_completed && (user.subscription_tier === 'pro' || user.subscription_tier === 'premium')) {
+  // If onboarding completed and paid (starter, growth, or agency), send to dashboard
+  if (user.onboarding_completed && (user.subscription_tier === 'starter' || user.subscription_tier === 'growth' || user.subscription_tier === 'agency')) {
     return '/dashboard';
   }
 

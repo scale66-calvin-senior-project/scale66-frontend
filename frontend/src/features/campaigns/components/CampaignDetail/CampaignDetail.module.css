@@ -1,0 +1,182 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #ffffff 0%, #FFF1F0 25%, #C2E7FF 50%, #FFF1F0 75%, #ffffff 100%);
+  background-attachment: fixed;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+  padding: 0 40px;
+  background: transparent;
+  position: relative;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #515151;
+  text-decoration: none;
+}
+
+.logo {
+  border-radius: 8px;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.navLink {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #515151;
+  opacity: 0.75;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.navLink:hover,
+.navLinkActive {
+  opacity: 1;
+}
+
+.navLinkActive {
+  font-weight: 600;
+}
+
+.main {
+  flex: 1;
+  padding: 40px 60px;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #515151;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #e85a6b;
+  margin-top: 4px;
+}
+
+.content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+}
+
+.slideCard {
+  width: 120px;
+  height: 160px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  position: relative;
+}
+
+.slideCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.placeholder {
+  font-size: 11px;
+  font-weight: 500;
+  color: #515151;
+  opacity: 0.6;
+  text-align: center;
+  line-height: 1.3;
+  padding: 0 12px;
+}
+
+.footer {
+  padding: 24px 40px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.footerBrand {
+  font-size: 15px;
+  font-weight: 600;
+  color: #515151;
+  opacity: 0.65;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 24px;
+    height: 64px;
+  }
+
+  .navLinks {
+    gap: 32px;
+  }
+
+  .navLink {
+    font-size: 0.9rem;
+  }
+
+  .main {
+    padding: 32px 24px;
+  }
+
+  .content {
+    gap: 24px;
+    justify-content: center;
+  }
+
+  .slideCard {
+    width: 100px;
+    height: 140px;
+  }
+
+  .footer {
+    padding: 20px 24px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .navLinks {
+    display: none;
+  }
+
+  .navbar {
+    padding: 0 20px;
+  }
+
+  .main {
+    padding: 24px 20px;
+  }
+}
+
+

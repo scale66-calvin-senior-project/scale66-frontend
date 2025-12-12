@@ -8,12 +8,14 @@ export interface Step1Props {
   onNext: (data?: Partial<OnboardingData>) => void;
   onSkip: () => void;
   initialData?: OnboardingData;
+  isSaving?: boolean;
 }
 
-export const Step1: React.FC<Step1Props> = ({ onNext, onSkip, initialData }) => {
+export const Step1: React.FC<Step1Props> = ({ onNext, onSkip, initialData, isSaving = false }) => {
   const [brandName, setBrandName] = useState(initialData?.brandName || '');
 
   const handleNext = () => {
+    if (isSaving) return; // Prevent clicks while saving
     onNext({ brandName: brandName.trim() || undefined });
   };
 
@@ -40,15 +42,19 @@ export const Step1: React.FC<Step1Props> = ({ onNext, onSkip, initialData }) => 
       </div>
 
       <div className={styles.actions}>
-        <button className={styles.skipButton} onClick={onSkip}>
+        <button 
+          className={styles.skipButton} 
+          onClick={onSkip}
+          disabled={isSaving}
+        >
           Skip
         </button>
         <button 
           className={styles.nextButton} 
           onClick={handleNext}
-          disabled={!brandName.trim()}
+          disabled={!brandName.trim() || isSaving}
         >
-          Next
+          {isSaving ? 'Saving...' : 'Next'}
         </button>
       </div>
     </div>

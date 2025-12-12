@@ -35,7 +35,7 @@ export default function LoginPage() {
           const redirectPath = getPostLoginRedirectPath({
             id: userData.id,
             email: userData.email,
-            subscription_tier: userData.subscription_tier as 'free' | 'pro' | 'premium' | undefined,
+            subscription_tier: userData.subscription_tier as 'free' | 'starter' | 'growth' | 'agency' | undefined,
             onboarding_completed: userData.onboarding_completed || false,
           });
           router.push(redirectPath);
@@ -67,7 +67,7 @@ export default function LoginPage() {
           const redirectPath = getPostLoginRedirectPath({
             id: userData.id,
             email: userData.email,
-            subscription_tier: userData.subscription_tier as 'free' | 'pro' | 'premium' | undefined,
+            subscription_tier: userData.subscription_tier as 'free' | 'starter' | 'growth' | 'agency' | undefined,
             onboarding_completed: userData.onboarding_completed || false,
           });
           router.push(redirectPath);

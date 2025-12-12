@@ -18,7 +18,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR UNIQUE NOT NULL,
-    subscription_tier VARCHAR CHECK (subscription_tier IN ('free', 'pro', 'premium')) DEFAULT 'free',
+    subscription_tier VARCHAR CHECK (subscription_tier IN ('free', 'starter', 'growth', 'agency')) DEFAULT 'free',
     stripe_customer_id VARCHAR UNIQUE,
     onboarding_completed BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -117,7 +117,7 @@ CREATE TABLE payment_transactions (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     stripe_payment_intent_id VARCHAR UNIQUE NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
-    subscription_tier VARCHAR CHECK (subscription_tier IN ('free', 'pro', 'premium')) NOT NULL,
+    subscription_tier VARCHAR CHECK (subscription_tier IN ('free', 'starter', 'growth', 'agency')) NOT NULL,
     status VARCHAR CHECK (status IN ('pending', 'succeeded', 'failed', 'refunded')) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -472,8 +472,8 @@ CREATE TRIGGER update_payment_transactions_updated_at
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.users (id, email)
-    VALUES (NEW.id, NEW.email);
+    INSERT INTO public.users (id, email, subscription_tier)
+    VALUES (NEW.id, NEW.email, 'free');
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

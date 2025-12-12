@@ -10,7 +10,7 @@ export interface BrandKitData {
   brand_name: string;
   brand_niche?: string;
   brand_style?: string;
-  customer_pain_points?: string[]; // JSONB array - send as array, not stringified
+  customer_pain_points?: string; // TEXT column - stored as string (newline-separated)
   product_service_description?: string;
 }
 
@@ -56,27 +56,71 @@ export const onboardingService = {
    * Uses upsert to create or update the brand kit
    */
   async saveBrandKit(data: Partial<OnboardingData>): Promise<void> {
+    console.log('🚀 saveBrandKit called with data:', data);
     try {
       const userId = await this.getCurrentUserId();
+      console.log('✅ Got userId:', userId);
       
-      // Ensure public.users record exists (should be created by trigger, but verify)
-      // This helps catch any timing issues
-      const { data: userRecord, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', userId)
-        .single();
+      // Quick check if user record exists (with minimal retries)
+      let userExists = false;
+      for (let i = 0; i < 3; i++) {
+        const { data: user, error: userError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+        
+        if (user && !userError) {
+          userExists = true;
+          console.log('✅ User record found');
+          break;
+        }
+        
+        if (userError?.code === 'PGRST116') {
+          // Not found - wait briefly and retry (trigger might still be processing)
+          if (i < 2) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+            continue;
+          }
+        } else {
+          // Other error - break and try to continue
+          break;
+        }
+      }
       
-      if (userError && userError.code !== 'PGRST116') { // PGRST116 = not found
-        console.warn('User record check failed:', userError);
-        // Continue anyway - the trigger should have created it, or RLS might be blocking
+      // If user record doesn't exist, try to create it (trigger might not have run yet)
+      if (!userExists) {
+        console.log('🔄 User record not found, attempting to create...');
+        const { data: userData } = await supabase.auth.getUser();
+        const { error: createError } = await supabase
+          .from('users')
+          .insert({
+            id: userId,
+            email: userData.user?.email || '',
+          });
+        
+        if (createError && createError.code !== '23505') {
+          // 23505 = duplicate key (record was created between checks)
+          console.warn('⚠️ Could not create user record:', createError);
+          // Continue anyway - the brand kit insert will fail if user doesn't exist
+        } else {
+          console.log('✅ User record created or already exists');
+        }
       }
       
       // Prepare the data for Supabase
       const brandKitData: Partial<BrandKitData> = {};
       
       if (data.brandName) {
-        brandKitData.brand_name = data.brandName;
+        const trimmedName = data.brandName.trim();
+        if (trimmedName) {
+          brandKitData.brand_name = trimmedName;
+          console.log('📝 Brand name to save:', brandKitData.brand_name);
+        } else {
+          console.warn('⚠️ Brand name is empty after trimming');
+        }
+      } else {
+        console.warn('⚠️ No brandName in data:', data);
       }
       
       if (data.brandNiche) {
@@ -87,25 +131,18 @@ export const onboardingService = {
         brandKitData.brand_style = data.brandStyle;
       }
       
-      // Handle customer pain points - JSONB column expects array, not stringified
+      // Handle customer pain points - TEXT column, store as string
       if (data.customerPainPoints) {
         if (Array.isArray(data.customerPainPoints)) {
-          // Filter out empty strings and send as array for JSONB
+          // Join array into string
           const filteredArray = data.customerPainPoints
             .map(p => typeof p === 'string' ? p.trim() : String(p).trim())
             .filter(p => p.length > 0);
           if (filteredArray.length > 0) {
-            brandKitData.customer_pain_points = filteredArray;
+            brandKitData.customer_pain_points = filteredArray.join('\n');
           }
         } else if (typeof data.customerPainPoints === 'string') {
-          // If it's a string, convert to array first
-          const painPointsArray = data.customerPainPoints
-            .split('\n')
-            .map(p => p.trim())
-            .filter(p => p.length > 0);
-          if (painPointsArray.length > 0) {
-            brandKitData.customer_pain_points = painPointsArray;
-          }
+          brandKitData.customer_pain_points = data.customerPainPoints.trim();
         }
       }
       
@@ -113,60 +150,111 @@ export const onboardingService = {
         brandKitData.product_service_description = data.productService.trim();
       }
       
-      // Check if brand kit already exists for this user
-      // First, try to find any existing brand kit for this user
-      const { data: existingKits, error: selectError } = await supabase
-        .from('brand_kits')
-        .select('id, brand_name')
-        .eq('user_id', userId)
-        .limit(1);
-      
-      if (selectError) {
-        console.error('Error checking existing brand kits:', selectError);
-        throw new Error(`Failed to check existing brand kits: ${selectError.message}`);
+      // Validate required data
+      if (!brandKitData.brand_name) {
+        throw new Error('Brand name is required to save brand kit');
       }
       
-      if (existingKits && existingKits.length > 0) {
-        // Update existing brand kit (use the first one found)
-        const existingKit = existingKits[0];
-        
-        // If brand_name is provided and different, we need to handle the unique constraint
-        // For now, just update the existing one
-        const { error } = await supabase
+      // Check if brand kit already exists for this user
+      // Since users typically have one brand kit, we'll update if exists, insert if not
+      console.log('💾 Saving brand kit with data:', { user_id: userId, ...brandKitData });
+      
+      // First, check if a brand kit exists for this user
+      const { data: existingKit, error: checkError } = await supabase
+        .from('brand_kits')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116 = not found, which is fine
+        console.warn('⚠️ Error checking for existing brand kit:', checkError);
+      }
+      
+      let savedData = null;
+      let saveError = null;
+      
+      if (existingKit) {
+        // Update existing brand kit
+        console.log('🔄 Updating existing brand kit:', existingKit.id);
+        const { data: updatedData, error: updateError } = await supabase
           .from('brand_kits')
           .update(brandKitData)
-          .eq('id', existingKit.id)
-          .eq('user_id', userId);
+          .eq('user_id', userId)
+          .select()
+          .single();
         
-        if (error) {
-          console.error('Error updating brand kit:', error);
-          throw new Error(`Failed to update brand kit: ${error.message}`);
-        }
+        savedData = updatedData;
+        saveError = updateError;
       } else {
-        // Create new brand kit (requires brand_name)
-        if (!brandKitData.brand_name) {
-          console.warn('Cannot create brand kit without brand_name, skipping save');
-          return;
-        }
-        
-        const { error } = await supabase
+        // Insert new brand kit
+        console.log('🆕 Creating new brand kit');
+        const { data: insertedData, error: insertError } = await supabase
           .from('brand_kits')
           .insert({
             user_id: userId,
             ...brandKitData,
-          });
+          })
+          .select()
+          .single();
         
-        if (error) {
-          console.error('Error creating brand kit:', error);
-          // Check if it's an RLS policy issue
-          if (error.message?.includes('policy') || error.message?.includes('permission')) {
-            throw new Error(`Permission denied: Make sure you are authenticated and your email is verified. ${error.message}`);
-          }
-          throw new Error(`Failed to create brand kit: ${error.message}`);
+        savedData = insertedData;
+        saveError = insertError;
+      }
+      
+      if (saveError) {
+        console.error('❌ Error saving brand kit:', saveError);
+        console.error('Error details:', {
+          code: saveError.code,
+          message: saveError.message,
+          details: saveError.details,
+          hint: saveError.hint,
+          userId,
+          brandKitData,
+        });
+        
+        // Check if it's a foreign key constraint issue (user doesn't exist)
+        if (saveError.code === '23503' || saveError.message?.includes('foreign key') || saveError.message?.includes('user_id')) {
+          throw new Error(`User record not found. Please wait a moment and try again. ${saveError.message}`);
+        }
+        
+        // Check if it's an RLS policy issue
+        if (saveError.message?.includes('policy') || saveError.message?.includes('permission')) {
+          throw new Error(`Permission denied: Make sure you are authenticated and your email is verified. ${saveError.message}`);
+        }
+        
+        throw new Error(`Failed to save brand kit: ${saveError.message}`);
+      }
+      
+      if (!savedData) {
+        throw new Error('Save completed but no data returned from database');
+      }
+      
+      console.log('✅ Brand kit saved successfully:', savedData);
+      
+      // Verify the save by reading it back (quick consistency check)
+      // Wait a tiny bit for database consistency
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('brand_kits')
+        .select('id, brand_name, updated_at')
+        .eq('user_id', userId)
+        .single();
+      
+      if (verifyError || !verifyData) {
+        console.warn('⚠️ Verification read failed, but save appeared successful:', verifyError);
+        // Don't throw - the save might have succeeded, just the read failed
+      } else {
+        console.log('✅ Verified save - data confirmed in database:', verifyData);
+        // Double-check the brand_name matches what we tried to save
+        if (verifyData.brand_name !== brandKitData.brand_name) {
+          console.warn('⚠️ Brand name mismatch - saved:', brandKitData.brand_name, 'found:', verifyData.brand_name);
         }
       }
     } catch (error) {
-      console.error('Error saving brand kit:', error);
+      console.error('❌ Error saving brand kit:', error);
+      // Re-throw to ensure the caller knows it failed
       throw error;
     }
   },

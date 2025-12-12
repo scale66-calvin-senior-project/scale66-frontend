@@ -18,31 +18,22 @@ export default function VerifyEmailPage() {
   const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
-    // Get user email if available (from unverified session)
-    const getUserEmail = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        setEmail(user.email);
-      } else {
-        // Try to get from session
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.email) {
-          setEmail(session.user.email);
-        }
-      }
-    };
-
-    getUserEmail();
-
     // Check if already verified on mount
     const checkInitialStatus = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      
+      // If we have a session, the user is verified
       if (session?.user) {
         setIsVerified(true);
-        setTimeout(() => {
-          router.push('/welcome');
-        }, 1000);
         return;
+      }
+
+      // Get user email if available (from unverified session)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setEmail(user.email);
+      } else if (session?.user?.email) {
+        setEmail(session.user.email);
       }
     };
 
@@ -52,17 +43,13 @@ export default function VerifyEmailPage() {
     const handleStorageChange = async (e: StorageEvent) => {
       if (e.key === 'email-verified' && e.newValue === 'true') {
         // Email was verified in another tab
-        // Verify we have a session
         const { data: { session } } = await supabase.auth.getSession();
+        
         if (session?.user) {
-          setIsVerified(true);
           // Clear the localStorage flag
           localStorage.removeItem('email-verified');
           localStorage.removeItem('email-verified-timestamp');
-          // Redirect to onboarding
-          setTimeout(() => {
-            router.push('/welcome');
-          }, 1000);
+          setIsVerified(true);
         }
       }
     };
@@ -72,55 +59,74 @@ export default function VerifyEmailPage() {
     // Also poll for verification status (in case storage event doesn't fire)
     const pollInterval = setInterval(async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      
+      // If we have a session, the user is verified
       if (session?.user) {
-        // Check if this is a new verification (not just an existing session)
         const verifiedTimestamp = localStorage.getItem('email-verified-timestamp');
         if (verifiedTimestamp) {
-          setIsVerified(true);
           localStorage.removeItem('email-verified');
           localStorage.removeItem('email-verified-timestamp');
-          clearInterval(pollInterval);
-          setTimeout(() => {
-            router.push('/welcome');
-          }, 1000);
         }
+        clearInterval(pollInterval);
+        setIsVerified(true);
       }
-    }, 2000); // Poll every 2 seconds
+    }, 1000); // Poll every 1 second
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(pollInterval);
     };
-  }, [router]);
+  }, []);
+
+  // Show verified message if email is verified
+  if (isVerified) {
+    return (
+      <div className={styles.authPage}>
+        <div className={styles.authContainer}>
+          <h1 className={styles.authTitle}>Email Verified!</h1>
+          <p className={styles.authSubtitle}>
+            Your email has been successfully verified. You can close this window and return to the app.
+          </p>
+          <div style={{ marginTop: '32px', textAlign: 'center' }}>
+            <button
+              onClick={() => router.push('/welcome')}
+              className={styles.authLink}
+              style={{
+                display: 'inline-block',
+                padding: '12px 24px',
+                backgroundColor: '#000',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                textDecoration: 'none',
+              }}
+            >
+              Continue to Onboarding
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.authPage}>
       <div className={styles.authContainer}>
-        {isVerified ? (
-          <>
-            <h1 className={styles.authTitle}>Email Verified!</h1>
-            <p className={styles.authSubtitle}>
-              Your email has been verified successfully. Redirecting to onboarding...
-            </p>
-          </>
-        ) : (
-          <>
-            <h1 className={styles.authTitle}>Check Your Email</h1>
-            <p className={styles.authSubtitle}>
-              {email 
-                ? `We've sent a verification link to ${email}. Please check your inbox and click the link to verify your account.`
-                : "We've sent a verification link to your email. Please check your inbox and click the link to verify your account."}
-            </p>
-            <div style={{ marginTop: '32px', textAlign: 'center' }}>
-              <p style={{ fontSize: '14px', color: 'rgba(81, 81, 81, 0.75)', marginBottom: '16px' }}>
-                Didn't receive the email? Check your spam folder or try signing up again.
-              </p>
-              <a href="/signup" className={styles.authLink}>
-                Back to Sign Up
-              </a>
-            </div>
-          </>
-        )}
+        <h1 className={styles.authTitle}>Check Your Email</h1>
+        <p className={styles.authSubtitle}>
+          {email 
+            ? `We've sent a verification link to ${email}. Please check your inbox and click the link to verify your account.`
+            : "We've sent a verification link to your email. Please check your inbox and click the link to verify your account."}
+        </p>
+        <div style={{ marginTop: '32px', textAlign: 'center' }}>
+          <p style={{ fontSize: '14px', color: 'rgba(81, 81, 81, 0.75)', marginBottom: '16px' }}>
+            Didn't receive the email? Check your spam folder or try signing up again.
+          </p>
+          <a href="/signup" className={styles.authLink}>
+            Back to Sign Up
+          </a>
+        </div>
       </div>
     </div>
   );

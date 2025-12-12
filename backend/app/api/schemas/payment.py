@@ -8,8 +8,9 @@ from enum import Enum
 class SubscriptionTier(str, Enum):
     """Subscription tiers."""
     free = "free"
-    pro = "pro"
-    premium = "premium"
+    starter = "starter"
+    growth = "growth"
+    agency = "agency"
 
 
 class PaymentStatus(str, Enum):
