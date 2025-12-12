@@ -22,6 +22,9 @@ from app.core.supabase import get_supabase_admin_client
 
 
 class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
+    """Orchestrates the complete carousel generation pipeline by coordinating all agents."""
+    
+    # Singleton pattern implementation
     _instance: Optional['Orchestrator'] = None
     
     def __new__(cls):
@@ -36,9 +39,10 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
         pass
     
     async def _execute(self, input_data: OrchestratorInput) -> OrchestratorOutput:
+        # Step 1: Fetch brand kit data
         brand_kit = await self._fetch_brand_kit(input_data.brand_kit_id)
         
-        # Step 1: Format Decision
+        # Step 2: Decide format and number of slides
         format_result = await format_decider.run(
             FormatDeciderInput(
                 user_prompt=input_data.user_prompt,
@@ -46,7 +50,7 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             )
         )
         
-        # Step 2: Template Decision
+        # Step 3: Select template based on format
         template_result = await template_decider.run(
             TemplateDeciderInput(
                 user_prompt=input_data.user_prompt,
@@ -57,6 +61,7 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             )
         )
         
+        # Step 4: Generate captions for all slides
         caption_result = await caption_generator.run(
             CaptionGeneratorInput(
                 format_type=format_result.format_type,
@@ -70,6 +75,7 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             )
         )
         
+        # Step 5: Generate slide images
         slide_result = await slide_generator.run(
             SlideGeneratorInput(
                 format_type=format_result.format_type,
@@ -86,6 +92,7 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
             )
         )
         
+        # Step 6: Optionally save images locally
         output_dir = None
         if settings.save_local_output:
             output_dir = self._save_images_locally(
@@ -103,10 +110,12 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
         )
     
     async def _fetch_brand_kit(self, brand_kit_id: str) -> BrandKit:
+        """Fetch brand kit data from Supabase and convert to BrandKit model."""
         supabase = get_supabase_admin_client()
         response = supabase.table("brand_kits").select("*").eq("id", brand_kit_id).execute()
         brand_data = response.data[0]
         
+        # Handle pain_points which may be stored as string or list
         pain_points = brand_data.get("customer_pain_points", [])
         if isinstance(pain_points, str):
             pain_points = [pain_points] if pain_points else []
@@ -128,23 +137,24 @@ class Orchestrator(BaseAgent[OrchestratorInput, OrchestratorOutput]):
         cta_image: Optional[str],
         brand_kit_id: str,
     ) -> Path:
+        """Save generated images to local filesystem with timestamped directory."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         brand_id_short = brand_kit_id[:8]
         output_dir = Path(settings.output_dir) / "carousels" / f"{timestamp}_{brand_id_short}"
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Save hook slide
+        # Save hook slide (always first)
         hook_path = output_dir / "1_hook.png"
         with open(hook_path, "wb") as f:
             f.write(base64.b64decode(hook_image))
         
-        # Save body slides
+        # Save body slides (numbered starting from 2)
         for i, body_img in enumerate(body_images):
             body_path = output_dir / f"{i + 2}_body.png"
             with open(body_path, "wb") as f:
                 f.write(base64.b64decode(body_img))
         
-        # Save CTA slide if exists
+        # Save CTA slide if present (last slide)
         if cta_image:
             cta_path = output_dir / f"{len(body_images) + 2}_cta.png"
             with open(cta_path, "wb") as f:

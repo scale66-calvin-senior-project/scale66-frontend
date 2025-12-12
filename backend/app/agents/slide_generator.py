@@ -5,6 +5,9 @@ from app.services.template_service import template_service
 
 
 class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
+    """Generates slide images using AI, maintaining visual consistency across the carousel."""
+    
+    # Singleton pattern implementation
     _instance: Optional['SlideGenerator'] = None
     
     def __new__(cls):
@@ -19,6 +22,7 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
         pass
     
     async def _execute(self, input_data: SlideGeneratorInput) -> SlideGeneratorOutput:
+        # Generate hook slide (uses template as reference)
         hook_template_base64 = self._load_template_image(
             input_data.template_id, 
             input_data.hook_slide
@@ -32,6 +36,7 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
             slide_type="hook",
         )
         
+        # Generate body slides (each references the previous slide for consistency)
         body_template_base64 = self._load_template_image(
             input_data.template_id, 
             input_data.body_slide
@@ -52,6 +57,7 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
             body_images.append(body_image)
             previous_body_slide = body_image
         
+        # Generate CTA slide if needed (uses template as reference)
         cta_image = None
         if input_data.cta_slide and input_data.cta_text:
             cta_template_base64 = self._load_template_image(
@@ -76,6 +82,7 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
         )
     
     def _load_template_image(self, template_id: str, slide_filename: str) -> str:
+        """Load template image as base64 string."""
         return template_service.get_template_image_base64(template_id, slide_filename)
     
     async def _generate_slide_image(
@@ -87,6 +94,7 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
         previous_slide_base64: Optional[str],
         slide_type: Literal["hook", "body", "cta"],
     ) -> str:
+        """Generate a single slide image using AI with appropriate reference image."""
         has_previous_slide = previous_slide_base64 is not None
         is_body_slide = slide_type == "body"
         
@@ -98,6 +106,7 @@ class SlideGenerator(BaseAgent[SlideGeneratorInput, SlideGeneratorOutput]):
             slide_type=slide_type,
         )
         
+        # Use previous slide for consistency, or template for first slide
         if has_previous_slide:
             images_to_reference = [previous_slide_base64]
         else:
