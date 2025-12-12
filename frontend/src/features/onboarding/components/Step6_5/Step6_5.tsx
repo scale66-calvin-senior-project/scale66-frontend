@@ -8,6 +8,7 @@ export interface Step6_5Props {
   onNext: () => void;
   onBack: () => void;
   initialData?: OnboardingData;
+  isSaving?: boolean;
 }
 
 // SVG Icon Components
@@ -39,7 +40,7 @@ const PaletteIcon = () => (
   </svg>
 );
 
-export const Step6_5: React.FC<Step6_5Props> = ({ onNext, onBack, initialData }) => {
+export const Step6_5: React.FC<Step6_5Props> = ({ onNext, onBack, initialData, isSaving = false }) => {
   const [animationsVisible, setAnimationsVisible] = useState(false);
 
   useEffect(() => {
@@ -258,11 +259,11 @@ export const Step6_5: React.FC<Step6_5Props> = ({ onNext, onBack, initialData })
       </div>
 
       <div className={styles.actions}>
-        <button className={styles.backButton} onClick={onBack}>
+        <button className={styles.backButton} onClick={onBack} disabled={isSaving}>
           Back
         </button>
-        <button className={styles.nextButton} onClick={onNext}>
-          Continue to Pricing
+        <button className={styles.nextButton} onClick={onNext} disabled={isSaving}>
+          {isSaving ? 'Saving...' : 'Continue to Pricing'}
         </button>
       </div>
     </div>

@@ -36,9 +36,9 @@ export default function ConfirmEmailPage() {
         while (attempts < maxAttempts && !sessionData) {
           await new Promise(resolve => setTimeout(resolve, 300));
           
-          const { data: session } = await supabase.auth.getSession();
+          const { data: { session } } = await supabase.auth.getSession();
           
-          if (session?.session) {
+          if (session) {
             sessionData = session;
             break;
           }
@@ -47,7 +47,7 @@ export default function ConfirmEmailPage() {
         }
 
         // If we have a session, verification was successful
-        if (sessionData?.session) {
+        if (sessionData) {
           // Show success message
           setStatus('success');
           setMessage('Email verified successfully!');
@@ -76,8 +76,8 @@ export default function ConfirmEmailPage() {
         } else if (accessToken && type === 'email') {
           // We have tokens but no session yet - wait a bit more
           setTimeout(async () => {
-            const { data: session } = await supabase.auth.getSession();
-            if (session?.session) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
               setStatus('success');
               setMessage('Email verified successfully!');
               localStorage.setItem('email-verified', 'true');
@@ -96,7 +96,7 @@ export default function ConfirmEmailPage() {
         } else {
           // No tokens - check if already verified
           const { data: { session } } = await supabase.auth.getSession();
-          if (session?.session) {
+          if (session) {
             setStatus('success');
             setMessage('Email already verified!');
             setTimeout(() => {

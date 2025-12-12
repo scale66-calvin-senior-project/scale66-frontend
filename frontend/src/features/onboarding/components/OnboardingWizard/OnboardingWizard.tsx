@@ -47,7 +47,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
       // Ensure we have at least brandName for step 1
       if (currentStep === 1 && !updatedData.brandName?.trim()) {
         console.warn('⚠️ No brand name provided, skipping save');
-        saveSuccessful = false;
+        // Skip save for step 1 if no brand name
       } else {
         // Save with a timeout wrapper, but don't use Promise.race which cancels the operation
         const savePromise = onboardingService.saveBrandKit(updatedData);

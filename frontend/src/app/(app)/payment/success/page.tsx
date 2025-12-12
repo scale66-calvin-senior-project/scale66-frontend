@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/features/auth';
 import { supabase } from '@/lib/supabase';
@@ -12,7 +12,7 @@ import { env } from '@/config/env';
  * Handles redirect from Stripe Payment Link after successful payment
  * Verifies payment and updates user subscription_tier in Supabase
  */
-export default function PaymentSuccessPage() {
+function PaymentSuccessPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refreshUser } = useAuth();
@@ -281,6 +281,26 @@ export default function PaymentSuccessPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        padding: '2rem',
+        textAlign: 'center',
+      }}>
+        <p>Loading...</p>
+      </div>
+    }>
+      <PaymentSuccessPageContent />
+    </Suspense>
   );
 }
 

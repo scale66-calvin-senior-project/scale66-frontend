@@ -9,6 +9,7 @@ export interface Step2Props {
   onBack: () => void;
   onSkip: () => void;
   initialData?: OnboardingData;
+  isSaving?: boolean;
 }
 
 const NICHE_OPTIONS = [
@@ -25,7 +26,7 @@ const NICHE_OPTIONS = [
   'Other',
 ];
 
-export const Step2: React.FC<Step2Props> = ({ onNext, onBack, onSkip, initialData }) => {
+export const Step2: React.FC<Step2Props> = ({ onNext, onBack, onSkip, initialData, isSaving = false }) => {
   const [selectedNiche, setSelectedNiche] = useState(initialData?.brandNiche || '');
 
   const handleNext = () => {
@@ -52,14 +53,14 @@ export const Step2: React.FC<Step2Props> = ({ onNext, onBack, onSkip, initialDat
       </div>
 
       <div className={styles.actions}>
-        <button className={styles.backButton} onClick={onBack}>
+        <button className={styles.backButton} onClick={onBack} disabled={isSaving}>
           Back
         </button>
-        <button className={styles.skipButton} onClick={onSkip}>
+        <button className={styles.skipButton} onClick={onSkip} disabled={isSaving}>
           Skip
         </button>
-        <button className={styles.nextButton} onClick={handleNext}>
-          Next
+        <button className={styles.nextButton} onClick={handleNext} disabled={isSaving}>
+          {isSaving ? 'Saving...' : 'Next'}
         </button>
       </div>
     </div>

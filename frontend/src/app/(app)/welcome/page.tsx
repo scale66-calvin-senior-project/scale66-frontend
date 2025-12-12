@@ -17,12 +17,12 @@
  */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { OnboardingWizard } from '@/features/onboarding';
 
-export default function WelcomePage() {
+function WelcomePageContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [isVerifying, setIsVerifying] = useState(true);
@@ -106,5 +106,22 @@ export default function WelcomePage() {
 	}
 
 	return <OnboardingWizard initialStep={initialStep} />;
+}
+
+export default function WelcomePage() {
+	return (
+		<Suspense fallback={
+			<div style={{ 
+				display: 'flex', 
+				justifyContent: 'center', 
+				alignItems: 'center', 
+				minHeight: '100vh' 
+			}}>
+				<p>Loading...</p>
+			</div>
+		}>
+			<WelcomePageContent />
+		</Suspense>
+	);
 }
 

@@ -9,9 +9,10 @@ export interface Step4Props {
   onBack: () => void;
   onSkip: () => void;
   initialData?: OnboardingData;
+  isSaving?: boolean;
 }
 
-export const Step4: React.FC<Step4Props> = ({ onNext, onBack, onSkip, initialData }) => {
+export const Step4: React.FC<Step4Props> = ({ onNext, onBack, onSkip, initialData, isSaving = false }) => {
   // Initialize pain points from initialData
   const getInitialPainPoints = (): string[] => {
     if (!initialData?.customerPainPoints) return [''];
@@ -99,14 +100,14 @@ export const Step4: React.FC<Step4Props> = ({ onNext, onBack, onSkip, initialDat
       </div>
 
       <div className={styles.actions}>
-        <button className={styles.backButton} onClick={onBack}>
+        <button className={styles.backButton} onClick={onBack} disabled={isSaving}>
           Back
         </button>
-        <button className={styles.skipButton} onClick={onSkip}>
+        <button className={styles.skipButton} onClick={onSkip} disabled={isSaving}>
           Skip
         </button>
-        <button className={styles.nextButton} onClick={handleNext}>
-          Next
+        <button className={styles.nextButton} onClick={handleNext} disabled={isSaving}>
+          {isSaving ? 'Saving...' : 'Next'}
         </button>
       </div>
     </div>
