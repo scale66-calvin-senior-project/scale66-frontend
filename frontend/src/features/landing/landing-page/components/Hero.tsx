@@ -96,7 +96,7 @@ export default function Hero() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      router.push('/waitlist');
+      router.push('/signup');
     }
   };
 
@@ -145,7 +145,11 @@ export default function Hero() {
             </div>
           )}
         </div>
-        <Link href="/waitlist" className={styles.play} aria-label="Get Started">
+        <Link
+          href="/signup"
+          className={styles.play}
+          aria-label="Get Started"
+        >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
             <defs>
               <linearGradient id="sendGrad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
@@ -164,9 +168,24 @@ export default function Hero() {
       </div>
 
       <div className={styles.chips}>
-        <button className={styles.chip}>Brand Awareness</button>
-        <button className={styles.chip}>Lead Generation</button>
-        <button className={styles.chip}>Conversion Optimization</button>
+        <button 
+          className={styles.chip}
+          onClick={() => router.push('/signup')}
+        >
+          Brand Awareness
+        </button>
+        <button 
+          className={styles.chip}
+          onClick={() => router.push('/signup')}
+        >
+          Lead Generation
+        </button>
+        <button 
+          className={styles.chip}
+          onClick={() => router.push('/signup')}
+        >
+          Conversion Optimization
+        </button>
       </div>
 
       <div className={styles.trusted}>✓ Used by 50+ businesses • 30-day money-back guarantee • Cancel anytime</div>

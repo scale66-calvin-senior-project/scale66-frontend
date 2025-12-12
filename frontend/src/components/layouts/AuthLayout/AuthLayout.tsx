@@ -1,4 +1,6 @@
 import React from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 import styles from './AuthLayout.module.css';
 
 export interface AuthLayoutProps {
@@ -9,19 +11,16 @@ export interface AuthLayoutProps {
  * AuthLayout Component
  * 
  * Layout wrapper for authentication pages (login/signup)
- * 
- * TODO: Implement auth layout
- * - Minimal header with logo
- * - Centered auth form container
- * - Background styling
- * - Footer (optional)
+ * Includes minimal header with logo and centered auth form
  */
 export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
   return (
     <div className={styles.layout}>
       <header className={styles.header}>
-        {/* TODO: Add logo */}
-        <div>Scale66</div>
+        <Link href="/">
+          <Image src="/logo.png" alt="Scale66" width={32} height={32} />
+          Scale66
+        </Link>
       </header>
       <main className={styles.main}>
         <div className={styles.container}>{children}</div>

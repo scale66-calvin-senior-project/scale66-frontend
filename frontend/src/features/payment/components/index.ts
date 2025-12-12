@@ -1,12 +1,6 @@
 /**
  * Payment Components
- * 
- * TODO: Export components when created:
- * - PricingCards
- * - PricingCard
- * - StripeModal
  */
-
-// Placeholder export to satisfy TypeScript module resolution
-export {};
+export { PricingCards } from './PricingCards';
+export type { PricingCardsProps } from './PricingCards';
 

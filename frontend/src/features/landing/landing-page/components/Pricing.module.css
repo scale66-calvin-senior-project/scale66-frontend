@@ -77,7 +77,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, rgba(194, 231, 255, 0.6), rgba(255, 241, 240, 0.6));
+  background: linear-gradient(90deg, rgba(186, 228, 255, 0.6), rgba(186, 228, 255, 0.4));
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -209,6 +209,8 @@
   backdrop-filter: blur(30px) saturate(180%);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   transition: transform 0.15s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .planButton:hover {

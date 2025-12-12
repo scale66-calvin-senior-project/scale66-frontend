@@ -88,7 +88,7 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <Link href="/waitlist" className={styles.planButton}>
+              <Link href="/signup" className={styles.planButton}>
                 Try for Free
               </Link>
             </div>

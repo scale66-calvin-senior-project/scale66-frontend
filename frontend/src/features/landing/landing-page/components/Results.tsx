@@ -73,7 +73,7 @@ export default function Results() {
 
         <div className={styles.cta}>
           <h3 className={styles.ctaHeading}>Join These Success Stories</h3>
-          <Link href="/waitlist" className={styles.ctaButton}>
+          <Link href="/signup" className={styles.ctaButton}>
             Get Started Now
           </Link>
         </div>

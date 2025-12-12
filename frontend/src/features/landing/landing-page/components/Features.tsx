@@ -52,7 +52,7 @@ export default function Features() {
 
         <div className={styles.cta}>
           <h3 className={styles.ctaHeading}>Ready to Transform Your Business?</h3>
-          <Link href="/waitlist" className={styles.ctaButton}>
+          <Link href="/signup" className={styles.ctaButton}>
             Get Started Now
           </Link>
         </div>

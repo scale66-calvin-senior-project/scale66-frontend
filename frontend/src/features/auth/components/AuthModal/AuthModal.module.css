@@ -1,0 +1,131 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,1) inset,
+    0 -1px 0 rgba(255,255,255,0.8) inset,
+    0 20px 60px rgba(0,0,0,0.15),
+    0 40px 120px rgba(194, 231, 255, 0.2);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  padding: 48px 40px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.closeButton {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: rgba(81, 81, 81, 0.8);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(1.1);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 36px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #515151;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.subtitle {
+  font-size: 16px;
+  line-height: 1.5;
+  color: rgba(81, 81, 81, 0.75);
+  margin: 0;
+}
+
+.content {
+  margin-bottom: 24px;
+}
+
+.footer {
+  text-align: center;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.footerText {
+  font-size: 14px;
+  color: rgba(81, 81, 81, 0.75);
+  margin: 0;
+}
+
+.toggleButton {
+  background: none;
+  border: none;
+  color: rgba(90, 121, 255, 0.9);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.toggleButton:hover {
+  color: rgba(90, 121, 255, 1);
+}
+
+@media (max-width: 768px) {
+  .modal {
+    padding: 40px 24px;
+    max-width: 100%;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+  }
+}
+

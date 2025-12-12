@@ -5,10 +5,12 @@
  */
 
 export interface User {
-  // TODO: Define user interface
   id: string;
   email: string;
   name?: string;
+  subscription_tier?: 'free' | 'pro' | 'premium';
+  stripe_customer_id?: string;
+  onboarding_completed?: boolean;
 }
 
 export interface LoginCredentials {
@@ -18,10 +20,9 @@ export interface LoginCredentials {
 }
 
 export interface SignupData {
-  // TODO: Define signup data
   email: string;
   password: string;
-  name?: string;
+  name: string;
 }
 
 export interface AuthState {

@@ -9,14 +9,19 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@stripe/stripe-js": "^8.5.3",
     "@supabase/supabase-js": "^2.39.0",
     "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
     "next": "15.5.4",
     "next-seo": "^7.0.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-icons": "^5.5.0",
-    "resend": "^6.4.2"
+    "resend": "^6.4.2",
+    "stripe": "^20.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

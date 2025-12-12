@@ -28,7 +28,7 @@ export default function Navbar() {
           </div>
         </li>
       </ul>
-      <Link href="/waitlist" className={styles.cta}>Start Marketing</Link>
+      <Link href="/signup" className={styles.cta}>Start Marketing</Link>
     </nav>
   );
 }

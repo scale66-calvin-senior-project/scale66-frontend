@@ -8,4 +8,5 @@ export * from './canvas';
 export * from './posting';
 export * from './brand-kit';
 export * from './settings';
+export * from './mainpage';
 
