@@ -1,18 +1,15 @@
-/**
- * Brand Kit Page
- * 
- * TODO: Implement brand kit management
- * - Import BrandKitForm, InlineEditField, VisualAssets from @/features/brand-kit
- * - Display brand information form
- * - Handle auto-save functionality
- * - Manage brand assets (colors, fonts, logos)
- */
-export default function BrandKitPage() {
-  return (
-    <div>
-      <h1>Brand Kit</h1>
-      <p>TODO: Implement brand kit management UI</p>
-    </div>
-  );
-}
+'use client';
 
+import { BrandKitPage } from '@/features/brand-kit';
+
+/**
+ * Brand Kit Page Route
+ * 
+ * Displays the brand kit management interface where users can:
+ * - View and edit their brand information
+ * - Connect/disconnect social media accounts
+ * - Manage brand styling preferences
+ */
+export default function BrandKitRoute() {
+  return <BrandKitPage />;
+}

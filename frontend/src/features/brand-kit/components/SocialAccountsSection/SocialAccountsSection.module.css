@@ -1,0 +1,223 @@
+/**
+ * Social Accounts Section Styles
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.description {
+  font-size: 14px;
+  color: rgba(81, 81, 81, 0.7);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Platform List */
+.platformList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.platformCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 4px 16px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  transition: all 0.2s ease;
+}
+
+.platformCard:hover {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 8px 24px rgba(0, 0, 0, 0.06),
+    0 12px 36px rgba(194, 231, 255, 0.1);
+}
+
+/* Platform Info */
+.platformInfo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.platformIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.platformIcon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.platformDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.platformName {
+  font-size: 16px;
+  font-weight: 600;
+  color: #515151;
+}
+
+.accountUsername {
+  font-size: 13px;
+  color: rgba(81, 81, 81, 0.6);
+}
+
+/* Platform Action */
+.platformAction {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.connectedBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #10b981;
+  font-weight: 500;
+}
+
+.connectedDot {
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); 
+  }
+  50% { 
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1); 
+  }
+}
+
+/* Buttons */
+.connectButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(90, 121, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.2) inset,
+    0 4px 12px rgba(90, 121, 255, 0.2);
+}
+
+.connectButton:hover:not(:disabled) {
+  background: rgba(90, 121, 255, 0.95);
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.3) inset,
+    0 6px 18px rgba(90, 121, 255, 0.3);
+}
+
+.connectButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.buttonSpinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.disconnectButton {
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(81, 81, 81, 0.15);
+  background: rgba(255, 255, 255, 0.4);
+  color: rgba(81, 81, 81, 0.7);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.disconnectButton:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+}
+
+.disconnectButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Privacy Note */
+.privacyNote {
+  font-size: 12px;
+  color: rgba(81, 81, 81, 0.5);
+  line-height: 1.5;
+  margin: 8px 0 0 0;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .platformCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .platformAction {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .connectButton {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
