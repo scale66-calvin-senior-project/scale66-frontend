@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { onboardingService } from '../../services';
 import { ProgressIndicator } from '../ProgressIndicator';
 import { Step1 } from '../Step1';
 import { Step2 } from '../Step2';
@@ -11,7 +11,6 @@ import { Step4 } from '../Step4';
 import { Step5 } from '../Step5';
 import { Step6_5 } from '../Step6_5';
 import { PricingCards } from '@/features/payment';
-import { onboardingService } from '../../services';
 import type { OnboardingData } from '../../types';
 import styles from './OnboardingWizard.module.css';
 
@@ -25,7 +24,13 @@ export interface OnboardingWizardProps {
 export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, initialStep }) => {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(initialStep || 1);
-  const [onboardingData, setOnboardingData] = useState<OnboardingData>({});
+  // Load initial data from localStorage if available
+  const [onboardingData, setOnboardingData] = useState<OnboardingData>(() => {
+    if (typeof window !== 'undefined') {
+      return onboardingService.loadFromLocalStorage() as OnboardingData;
+    }
+    return {};
+  });
   const [isSaving, setIsSaving] = useState(false);
 
   const handleNext = async (stepData?: Partial<OnboardingData>) => {
@@ -38,72 +43,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
       : onboardingData;
     
     setOnboardingData(updatedData);
-    setIsSaving(true);
-
-    // Save to Supabase on each step - wait for it to complete before navigating
-    try {
-      console.log('💾 Saving onboarding data...', updatedData);
-      
-      // Ensure we have at least brandName for step 1
-      if (currentStep === 1 && !updatedData.brandName?.trim()) {
-        console.warn('⚠️ No brand name provided, skipping save');
-        // Skip save for step 1 if no brand name
-      } else {
-        // Save with a timeout wrapper, but don't use Promise.race which cancels the operation
-        const savePromise = onboardingService.saveBrandKit(updatedData);
-        const timeoutId = setTimeout(() => {
-          console.warn('⏱️ Save operation is taking longer than expected...');
-        }, 8000); // Just log a warning, don't cancel
-        
-        try {
-          await savePromise;
-          clearTimeout(timeoutId);
-          console.log('✅ Onboarding data saved successfully');
-          
-          // Small delay to ensure database consistency
-          await new Promise(resolve => setTimeout(resolve, 200));
-        } catch (saveError) {
-          clearTimeout(timeoutId);
-          throw saveError; // Re-throw to be caught by outer catch
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error saving onboarding data:', error);
-      
-      // If session is invalid, redirect to login
-      if (error instanceof Error && error.message.includes('session is invalid')) {
-        setIsSaving(false);
-        router.push('/login');
-        return;
-      }
-      
-      // Log the full error for debugging
-      if (error instanceof Error) {
-        console.error('Error details:', {
-          message: error.message,
-          stack: error.stack,
-          data: updatedData,
-          currentStep,
-        });
-      }
-      
-      // For step 1, if save fails, don't proceed - user needs to retry
-      if (currentStep === 1) {
-        console.error('❌ Step 1 save failed - user must retry');
-        setIsSaving(false);
-        // Show error to user (you might want to add a toast/alert here)
-        alert('Failed to save brand name. Please try again.');
-        return;
-      }
-      
-      // For other steps, continue but log warning
-      console.warn('⚠️ Save failed but continuing to next step');
-    } finally {
-      setIsSaving(false);
-      console.log('🔄 isSaving set to false');
-    }
     
-    // Navigate to next step after save completes (only if save was successful or not step 1)
+    // Save to localStorage immediately (synchronous, no API call)
+    onboardingService.saveToLocalStorage(updatedData);
+    console.log('💾 Saved to localStorage:', updatedData);
+    
+    // Navigate to next step immediately (no waiting for API)
     // Skip Step6 (social media handles) - go directly from Step5 to Step6_5
     let nextStep = currentStep + 1;
     if (currentStep === 5) {
@@ -130,23 +75,35 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     }
   };
 
-  const handleComplete = async () => {
-    // Mark onboarding as completed in the database
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('users')
-          .update({ onboarding_completed: true })
-          .eq('id', user.id);
-      }
-    } catch (error) {
-      console.error('Error marking onboarding as completed:', error);
-      // Continue anyway - don't block user
-    }
+  const handleComplete = async (data?: OnboardingData) => {
+    // Use provided data or fall back to state
+    const dataToSave = data || onboardingData;
     
-    onComplete?.(onboardingData);
-    router.push('/dashboard');
+    // Save all onboarding data to backend API and mark as complete
+    setIsSaving(true);
+    
+    try {
+      console.log('🚀 Completing onboarding, saving all data to backend...', dataToSave);
+      
+      // Save all data to backend and mark as complete in one call
+      await onboardingService.saveAndCompleteOnboarding(dataToSave);
+      
+      console.log('✅ Onboarding completed successfully');
+      
+      onComplete?.(dataToSave);
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('❌ Error completing onboarding:', error);
+      
+      // Show error to user but don't block navigation
+      alert('There was an error saving your onboarding data. Your data has been saved locally. Please try again or contact support.');
+      
+      // Still navigate to dashboard - data is in localStorage and can be retried
+      onComplete?.(dataToSave);
+      router.push('/dashboard');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSkip = () => {
@@ -184,12 +141,17 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
           <PricingCards
             onBack={handleBack}
             onComplete={(planId) => {
-              // Save selected plan to onboarding data
-              setOnboardingData((prev) => ({
-                ...prev,
+              // Save selected plan to onboarding data and localStorage
+              // Don't save to database yet - that happens on payment success page
+              const updatedData = {
+                ...onboardingData,
                 paywallSelection: { plan: planId as 'agency' | 'growth' | 'starter' },
-              }));
-              handleComplete();
+              };
+              setOnboardingData(updatedData);
+              // Save to localStorage - payment success page will save to database
+              onboardingService.saveToLocalStorage(updatedData);
+              // Note: handleComplete is NOT called here because user is redirected to Stripe
+              // The payment success page will handle saving brand kit and completing onboarding
             }}
           />
         );

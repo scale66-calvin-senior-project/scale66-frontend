@@ -2,205 +2,188 @@
 
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/features/auth';
 import { supabase } from '@/lib/supabase';
-import { env } from '@/config/env';
+import { onboardingService } from '@/features/onboarding/services';
+import type { OnboardingData } from '@/features/onboarding/types';
+
+const STORAGE_DONE = 'payment_success_done';
+const STORAGE_STARTED = 'payment_success_started';
+const API_TIMEOUT_MS = 5000;
+const OVERALL_TIMEOUT_MS = 12000;
+
+/** Run a promise with a timeout; rejects on timeout. */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('Request timeout')), ms)),
+  ]);
+}
+
+/** Get subscription tier from plan ID. */
+function getSubscriptionTier(planId: string | null): 'starter' | 'growth' | 'agency' | null {
+  if (!planId) return null;
+  const planLower = planId.toLowerCase();
+  if (planLower.includes('starter')) return 'starter';
+  if (planLower.includes('growth')) return 'growth';
+  if (planLower.includes('agency')) return 'agency';
+  return null;
+}
+
+/** Save brand kit via Supabase (no backend). Used when API is unreachable. */
+async function saveBrandKitViaSupabase(userId: string, data: Partial<OnboardingData>): Promise<void> {
+  const brandName = (data.brandName ?? '').trim();
+  if (!brandName) return;
+
+  const row: Record<string, unknown> = {
+    user_id: userId,
+    brand_name: brandName,
+  };
+  if ((data.brandNiche ?? '').trim()) row.brand_niche = (data.brandNiche as string).trim();
+  if ((data.brandStyle ?? '').trim()) row.brand_style = (data.brandStyle as string).trim();
+  if ((data.productService ?? '').trim()) row.product_service_description = (data.productService as string).trim();
+  if (data.customerPainPoints) {
+    const arr = Array.isArray(data.customerPainPoints) ? data.customerPainPoints : [data.customerPainPoints];
+    row.customer_pain_points = arr.map((p) => String(p).trim()).filter(Boolean).join('\n') || null;
+  }
+
+  const { data: existing } = await supabase.from('brand_kits').select('id').eq('user_id', userId).limit(1).maybeSingle();
+  if (existing) {
+    await supabase.from('brand_kits').update(row).eq('user_id', userId);
+  } else {
+    await supabase.from('brand_kits').insert(row);
+  }
+}
 
 /**
  * Payment Success Page
- * 
- * Handles redirect from Stripe Payment Link after successful payment
- * Verifies payment and updates user subscription_tier in Supabase
+ *
+ * Handles redirect from Stripe Payment Link after successful payment.
+ * Uses Supabase-first for user update so it works even when the backend API is unreachable.
+ * Uses sessionStorage to avoid re-running and looping on remounts.
  */
 function PaymentSuccessPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { refreshUser } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Processing your payment...');
   const hasRunRef = useRef(false);
 
-  // Get subscription tier from plan ID
-  // Store the actual plan name: 'starter', 'growth', or 'agency'
-  const getSubscriptionTier = (planId: string | null): 'starter' | 'growth' | 'agency' | null => {
-    if (!planId) return null;
-    const planLower = planId.toLowerCase();
-    
-    // Return the actual plan name
-    if (planLower.includes('starter')) return 'starter';
-    if (planLower.includes('growth')) return 'growth';
-    if (planLower.includes('agency')) return 'agency';
-    
-    return null;
-  };
-
   useEffect(() => {
-    // Prevent multiple runs
-    if (hasRunRef.current) {
+    const goDashboard = () => {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(STORAGE_STARTED);
+        sessionStorage.setItem(STORAGE_DONE, '1');
+      }
+      router.push('/dashboard');
+    };
+
+    // Already completed in this tab – skip processing and redirect
+    if (typeof window !== 'undefined' && sessionStorage.getItem(STORAGE_DONE)) {
+      goDashboard();
       return;
     }
-    hasRunRef.current = true;
 
-    const verifyPayment = async () => {
+    // Remount while previous run still in progress – don’t start again; cap wait and redirect
+    if (typeof window !== 'undefined' && sessionStorage.getItem(STORAGE_STARTED)) {
+      const t = setTimeout(goDashboard, 15000);
+      return () => clearTimeout(t);
+    }
+
+    if (hasRunRef.current) return;
+    hasRunRef.current = true;
+    if (typeof window !== 'undefined') sessionStorage.setItem(STORAGE_STARTED, '1');
+
+    const processPayment = async () => {
+      let authUser: { id: string } | null = null;
+      let subscriptionTier: 'starter' | 'growth' | 'agency' | null = null;
+
       try {
-        // Get payment intent or session ID from URL params (Stripe adds these)
-        const paymentIntentId = searchParams.get('payment_intent');
-        const sessionId = searchParams.get('session_id');
-        
-        // Get plan ID from URL params (if Payment Link was configured with it)
-        const planIdFromUrl = searchParams.get('plan_id') || searchParams.get('plan');
-        
-        // Get plan ID from localStorage (stored before redirecting to Stripe)
-        const planIdFromStorage = typeof window !== 'undefined' 
-          ? localStorage.getItem('selected_plan_id')
-          : null;
-        
-        const planId = planIdFromUrl || planIdFromStorage;
-        
-        console.log('Payment verification:', {
-          paymentIntentId,
-          sessionId,
-          planIdFromUrl,
-          planIdFromStorage,
-          planId,
-        });
-        
-        // Get current user
-        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-        if (authError || !authUser) {
-          console.error('Auth error:', authError);
+        setStatus('loading');
+        setMessage('Processing your payment...');
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
           setStatus('error');
-          setMessage('You must be logged in to verify payment. Redirecting to login...');
-          setTimeout(() => {
-            router.push('/login');
-          }, 2000);
+          setMessage('You must be logged in. Redirecting to login...');
+          setTimeout(() => router.push('/login'), 2000);
+          return;
+        }
+        authUser = user;
+
+        const planId = searchParams.get('plan_id') || searchParams.get('plan') || (typeof window !== 'undefined' ? localStorage.getItem('selected_plan_id') : null);
+        if (!planId) {
+          setStatus('error');
+          setMessage('Could not identify which plan you purchased. Please contact support.');
+          setTimeout(goDashboard, 5000);
           return;
         }
 
-        // Determine subscription tier from plan ID
-        let subscriptionTier = getSubscriptionTier(planId);
-        
-        // If we have payment intent or session ID, try to verify with backend
-        // This is optional - we'll update subscription_tier regardless
-        // Add timeout to prevent hanging
-        if (paymentIntentId || sessionId) {
+        subscriptionTier = getSubscriptionTier(planId);
+        if (!subscriptionTier) {
+          setStatus('error');
+          setMessage('Invalid plan selected. Please contact support.');
+          setTimeout(goDashboard, 5000);
+          return;
+        }
+
+        // 1) Update user in Supabase first (no backend dependency – avoids Network Error loop)
+        setMessage('Updating your account...');
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ subscription_tier: subscriptionTier, onboarding_completed: true })
+          .eq('id', authUser.id);
+
+        if (updateError) {
+          console.error('Supabase user update error:', updateError);
+          throw updateError;
+        }
+        console.log(`✅ Updated user: subscription_tier=${subscriptionTier}, onboarding_completed=true`);
+
+        // 2) Brand kit: try API with timeout, then Supabase fallback
+        const onboardingData = onboardingService.loadFromLocalStorage();
+        if (onboardingData && Object.keys(onboardingData).length > 0 && (onboardingData.brandName ?? '').trim()) {
+          setMessage('Saving your brand information...');
           try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-            
-            const response = await fetch(`${env.apiBaseUrl}/api/v1/payment/verify`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              credentials: 'include',
-              signal: controller.signal,
-              body: JSON.stringify({
-                payment_intent_id: paymentIntentId,
-                session_id: sessionId,
-              }),
-            });
-
-            clearTimeout(timeoutId);
-
-            if (response.ok) {
-              const data = await response.json();
-              // Backend should return the plan/subscription tier
-              if (data.subscription_tier) {
-                subscriptionTier = data.subscription_tier as 'starter' | 'growth' | 'agency';
-              } else if (data.plan_id) {
-                subscriptionTier = getSubscriptionTier(data.plan_id);
-              }
-            }
-          } catch (verifyError) {
-            console.error('Backend verification error (continuing anyway):', verifyError);
-            // Continue with plan_id from URL if backend fails
-            if (!subscriptionTier && planId) {
-              subscriptionTier = getSubscriptionTier(planId);
+            await withTimeout(onboardingService.saveBrandKit(onboardingData), API_TIMEOUT_MS);
+            console.log('✅ Brand kit saved via API');
+          } catch (brandKitErr) {
+            console.warn('Brand kit API failed, trying Supabase:', brandKitErr);
+            try {
+              await saveBrandKitViaSupabase(authUser.id, onboardingData);
+              console.log('✅ Brand kit saved via Supabase');
+            } catch (supabaseErr) {
+              console.warn('Brand kit Supabase fallback failed:', supabaseErr);
             }
           }
         }
-        
-        // Update subscription_tier directly in Supabase
-        // This ensures the user gets updated even if webhook hasn't fired yet
-        let finalStatus: 'success' | 'error' = 'success';
-        let finalMessage = 'Payment successful! Your subscription has been activated. Redirecting to dashboard...';
-        
-        if (subscriptionTier) {
-          console.log(`💾 Updating subscription_tier to ${subscriptionTier} for user ${authUser.id}`);
-          
-          // Add timeout to prevent hanging
-          const updatePromise = supabase
-            .from('users')
-            .update({ subscription_tier: subscriptionTier })
-            .eq('id', authUser.id);
-          
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Update timeout')), 8000)
-          );
-          
-          try {
-            await Promise.race([updatePromise, timeoutPromise]);
-            console.log(`✅ Updated subscription_tier to ${subscriptionTier} for user ${authUser.id}`);
-            // Clear the stored plan ID after successful update
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem('selected_plan_id');
-            }
-          } catch (updateError: unknown) {
-            console.error('Error updating subscription tier:', updateError);
-            // If it's a timeout, still show success (webhook might have updated it)
-            const errorMessage = updateError instanceof Error ? updateError.message : String(updateError);
-            if (errorMessage.includes('timeout')) {
-              console.warn('Update timed out, but webhook may have processed it');
-              finalStatus = 'success';
-              finalMessage = 'Payment successful! Your subscription is being processed. Redirecting to dashboard...';
-            } else {
-              finalStatus = 'error';
-              finalMessage = 'Payment received but there was an issue updating your subscription. Please contact support.';
-            }
-          }
-        } else {
-          // No plan ID found - this shouldn't happen, but handle gracefully
-          console.warn('No plan ID found - cannot update subscription tier');
-          console.warn('URL params:', { planIdFromUrl, planIdFromStorage, planId });
-          finalStatus = 'error';
-          finalMessage = 'Payment received but we could not identify which plan you purchased. Please contact support with your payment details.';
-        }
-        
-        // Refresh user data to get updated subscription (with timeout)
-        try {
-          const refreshPromise = refreshUser();
-          const refreshTimeout = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Refresh timeout')), 5000)
-          );
-          await Promise.race([refreshPromise, refreshTimeout]);
-        } catch (refreshError) {
-          console.error('Error refreshing user (continuing anyway):', refreshError);
-        }
-        
-        // Update UI status
-        setStatus(finalStatus);
-        setMessage(finalMessage);
-        
-        // Redirect to dashboard after showing status
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, finalStatus === 'success' ? 2000 : 5000);
+
+        onboardingService.clearLocalStorage();
+        if (typeof window !== 'undefined') localStorage.removeItem('selected_plan_id');
+
+        setStatus('success');
+        setMessage('Payment successful! Your account has been activated. Redirecting to dashboard...');
+        setTimeout(goDashboard, 1500);
       } catch (error) {
-        console.error('Payment verification error:', error);
-        setStatus('error');
-        setMessage('There was an issue verifying your payment. Please contact support if the charge appears on your account.');
-        
-        // Still redirect after error (webhook may have processed it)
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 5000);
+        console.error('Payment processing error:', error);
+        if (authUser && subscriptionTier) {
+          const { error: fallbackErr } = await supabase
+            .from('users')
+            .update({ subscription_tier: subscriptionTier, onboarding_completed: true })
+            .eq('id', authUser.id);
+          if (!fallbackErr) console.log('✅ User updated via Supabase on error path');
+        }
+        setStatus('success');
+        setMessage('Payment recorded. Redirecting to dashboard...');
+        setTimeout(goDashboard, 2000);
       }
     };
 
-    verifyPayment();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps - only run once on mount
+    const timeoutId = setTimeout(() => {
+      setMessage('Almost there...');
+    }, OVERALL_TIMEOUT_MS - 2000);
+
+    processPayment().finally(() => clearTimeout(timeoutId));
+  }, [router, searchParams]);
 
   // SVG Icon Components
   const LoadingIcon = () => (
@@ -276,7 +259,7 @@ function PaymentSuccessPageContent() {
           <div style={{ marginBottom: '1rem', color: '#ef4444' }}>
             <ErrorIcon />
           </div>
-          <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#515151' }}>Payment Verification Issue</h1>
+          <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#515151' }}>Payment Processing Issue</h1>
           <p style={{ color: 'rgba(81, 81, 81, 0.75)' }}>{message}</p>
         </>
       )}
@@ -303,4 +286,3 @@ export default function PaymentSuccessPage() {
     </Suspense>
   );
 }
-

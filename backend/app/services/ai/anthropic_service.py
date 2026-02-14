@@ -20,9 +20,20 @@ class AnthropicService:
         return cls._instance
 
     def __init__(self):
+        # Lazy initialization - don't create client until first use
+        pass
+    
+    def _ensure_client(self):
+        """Ensure the Anthropic client is initialized with a valid API key."""
         if self._client is None:
+            # Validate API key before initializing client
+            api_key = settings.anthropic_api_key
+            if not api_key or not api_key.strip():
+                raise AnthropicServiceError(
+                    "ANTHROPIC_API_KEY is not set or is empty. Please set it in your .env file."
+                )
             try:
-                self._client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+                self._client = AsyncAnthropic(api_key=api_key.strip())
             except Exception as e:
                 raise AnthropicServiceError(f"Failed to initialize Anthropic client: {e}")
     
@@ -33,6 +44,9 @@ class AnthropicService:
         max_tokens: int = 4096,
         temperature: float = 0.7,
     ) -> T:
+        # Ensure client is initialized before making requests
+        self._ensure_client()
+        
         try:
             response = await self._client.beta.messages.parse(
                 model=settings.anthropic_model,
@@ -62,4 +76,5 @@ class AnthropicService:
             raise AnthropicServiceError(f"Failed to generate structured output: {e}")
 
 
+# Lazy singleton - will be initialized on first use
 anthropic_service = AnthropicService()

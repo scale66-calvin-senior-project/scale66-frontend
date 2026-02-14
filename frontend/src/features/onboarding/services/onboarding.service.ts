@@ -1,114 +1,136 @@
 /**
  * Onboarding Service
- * Handles saving onboarding data to Supabase brand_kits table
+ * Handles saving onboarding data to localStorage and backend API
  */
 
-import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/services/api/client';
 import type { OnboardingData } from '../types';
+
+const ONBOARDING_STORAGE_KEY = 'scale66_onboarding_data';
 
 export interface BrandKitData {
   brand_name: string;
   brand_niche?: string;
   brand_style?: string;
-  customer_pain_points?: string; // TEXT column - stored as string (newline-separated)
+  customer_pain_points?: string[]; // Backend expects array
   product_service_description?: string;
 }
 
 export const onboardingService = {
   /**
-   * Get current user's ID from Supabase session
-   * This returns auth.users.id which should match public.users.id after trigger
+   * Sanitize data to remove non-serializable values (React elements, DOM nodes, etc.)
    */
-  async getCurrentUserId(): Promise<string> {
-    // First check session to ensure user is authenticated
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !session) {
-      // If we get a JWT sub claim error, the user doesn't exist in auth.users
-      if (sessionError?.message?.includes('sub claim') || sessionError?.message?.includes('does not exist')) {
-        console.error('JWT contains invalid user ID - clearing session');
-        await supabase.auth.signOut();
-        throw new Error('Your session is invalid. Please sign in again.');
-      }
-      throw new Error('User not authenticated - no active session');
+  private sanitizeData(data: unknown): unknown {
+    if (data === null || data === undefined) {
+      return data;
     }
     
-    // Get user to ensure we have the latest user data
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
-      // If we get a JWT sub claim error, the user doesn't exist in auth.users
-      if (userError?.message?.includes('sub claim') || userError?.message?.includes('does not exist')) {
-        console.error('JWT contains invalid user ID - clearing session');
-        await supabase.auth.signOut();
-        throw new Error('Your session is invalid. Please sign in again.');
-      }
-      throw new Error('User not authenticated - unable to get user');
+    // Handle primitives
+    if (typeof data === 'string' || typeof data === 'number' || typeof data === 'boolean') {
+      return data;
     }
     
-    // The user.id from auth.users should match public.users.id
-    // The trigger handle_new_user() creates the public.users record with the same ID
-    return user.id;
+    // Handle arrays
+    if (Array.isArray(data)) {
+      return data.map(item => this.sanitizeData(item));
+    }
+    
+    // Handle objects - but skip if it's a DOM node or React element
+    if (typeof data === 'object') {
+      // Skip DOM nodes and React elements
+      if (data instanceof HTMLElement || data instanceof Element || data instanceof Node) {
+        return undefined;
+      }
+      
+      // Check for React elements (they have $$typeof property)
+      if ('$$typeof' in data || '__reactFiber' in data || 'stateNode' in data) {
+        return undefined;
+      }
+      
+      // Handle plain objects
+      const sanitized: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(data)) {
+        // Skip React internal properties
+        if (key.startsWith('__react') || key.startsWith('$$')) {
+          continue;
+        }
+        const sanitizedValue = this.sanitizeData(value);
+        if (sanitizedValue !== undefined) {
+          sanitized[key] = sanitizedValue;
+        }
+      }
+      return sanitized;
+    }
+    
+    // For anything else, return undefined (don't save)
+    return undefined;
+  },
+
+  /**
+   * Save onboarding data to localStorage
+   * This is called on each step to persist data locally
+   */
+  saveToLocalStorage(data: Partial<OnboardingData>): void {
+    try {
+      const existingData = this.loadFromLocalStorage();
+      const mergedData = { ...existingData, ...data };
+      
+      // Sanitize data before saving to remove any non-serializable values
+      const sanitized = this.sanitizeData(mergedData) as Partial<OnboardingData>;
+      
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(sanitized));
+      console.log('💾 Saved to localStorage:', sanitized);
+    } catch (error) {
+      console.error('❌ Error saving to localStorage:', error);
+      // Don't throw - localStorage might not be available
+    }
+  },
+
+  /**
+   * Load onboarding data from localStorage
+   */
+  loadFromLocalStorage(): Partial<OnboardingData> {
+    try {
+      const stored = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+      if (stored) {
+        const data = JSON.parse(stored) as Partial<OnboardingData>;
+        console.log('📂 Loaded from localStorage:', data);
+        return data;
+      }
+    } catch (error) {
+      console.error('❌ Error loading from localStorage:', error);
+    }
+    return {};
+  },
+
+  /**
+   * Clear onboarding data from localStorage
+   */
+  clearLocalStorage(): void {
+    try {
+      localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+      console.log('🗑️ Cleared localStorage');
+    } catch (error) {
+      console.error('❌ Error clearing localStorage:', error);
+    }
   },
 
   /**
    * Save or update brand kit data for the current user
-   * Uses upsert to create or update the brand kit
+   * Uses backend API to create or update the brand kit
+   * This is only called once at the end of onboarding
    */
   async saveBrandKit(data: Partial<OnboardingData>): Promise<void> {
     console.log('🚀 saveBrandKit called with data:', data);
+    
+    // Validate we have at least some data
+    if (!data || Object.keys(data).length === 0) {
+      console.warn('⚠️ No onboarding data provided to saveBrandKit');
+      return; // Don't throw - might be called with empty data
+    }
+    
     try {
-      const userId = await this.getCurrentUserId();
-      console.log('✅ Got userId:', userId);
-      
-      // Quick check if user record exists (with minimal retries)
-      let userExists = false;
-      for (let i = 0; i < 3; i++) {
-        const { data: user, error: userError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', userId)
-          .maybeSingle();
-        
-        if (user && !userError) {
-          userExists = true;
-          console.log('✅ User record found');
-          break;
-        }
-        
-        if (userError?.code === 'PGRST116') {
-          // Not found - wait briefly and retry (trigger might still be processing)
-          if (i < 2) {
-            await new Promise(resolve => setTimeout(resolve, 300));
-            continue;
-          }
-        } else {
-          // Other error - break and try to continue
-          break;
-        }
-      }
-      
-      // If user record doesn't exist, try to create it (trigger might not have run yet)
-      if (!userExists) {
-        console.log('🔄 User record not found, attempting to create...');
-        const { data: userData } = await supabase.auth.getUser();
-        const { error: createError } = await supabase
-          .from('users')
-          .insert({
-            id: userId,
-            email: userData.user?.email || '',
-          });
-        
-        if (createError && createError.code !== '23505') {
-          // 23505 = duplicate key (record was created between checks)
-          console.warn('⚠️ Could not create user record:', createError);
-          // Continue anyway - the brand kit insert will fail if user doesn't exist
-        } else {
-          console.log('✅ User record created or already exists');
-        }
-      }
-      
-      // Prepare the data for Supabase
+      // Prepare the data for backend API
       const brandKitData: Partial<BrandKitData> = {};
       
       if (data.brandName) {
@@ -116,33 +138,29 @@ export const onboardingService = {
         if (trimmedName) {
           brandKitData.brand_name = trimmedName;
           console.log('📝 Brand name to save:', brandKitData.brand_name);
-        } else {
-          console.warn('⚠️ Brand name is empty after trimming');
         }
-      } else {
-        console.warn('⚠️ No brandName in data:', data);
       }
       
       if (data.brandNiche) {
-        brandKitData.brand_niche = data.brandNiche;
+        brandKitData.brand_niche = data.brandNiche.trim();
       }
       
       if (data.brandStyle) {
-        brandKitData.brand_style = data.brandStyle;
+        brandKitData.brand_style = data.brandStyle.trim();
       }
       
-      // Handle customer pain points - TEXT column, store as string
+      // Handle customer pain points - convert to array
       if (data.customerPainPoints) {
         if (Array.isArray(data.customerPainPoints)) {
-          // Join array into string
-          const filteredArray = data.customerPainPoints
+          brandKitData.customer_pain_points = data.customerPainPoints
             .map(p => typeof p === 'string' ? p.trim() : String(p).trim())
             .filter(p => p.length > 0);
-          if (filteredArray.length > 0) {
-            brandKitData.customer_pain_points = filteredArray.join('\n');
-          }
         } else if (typeof data.customerPainPoints === 'string') {
-          brandKitData.customer_pain_points = data.customerPainPoints.trim();
+          // Split by newlines and filter empty
+          brandKitData.customer_pain_points = data.customerPainPoints
+            .split('\n')
+            .map(p => p.trim())
+            .filter(p => p.length > 0);
         }
       }
       
@@ -150,111 +168,87 @@ export const onboardingService = {
         brandKitData.product_service_description = data.productService.trim();
       }
       
-      // Validate required data
+      // Validate required data - brand name is required
       if (!brandKitData.brand_name) {
+        console.warn('⚠️ Brand name is required but not provided');
         throw new Error('Brand name is required to save brand kit');
       }
       
-      // Check if brand kit already exists for this user
-      // Since users typically have one brand kit, we'll update if exists, insert if not
-      console.log('💾 Saving brand kit with data:', { user_id: userId, ...brandKitData });
+      console.log('💾 Saving brand kit via API:', brandKitData);
       
-      // First, check if a brand kit exists for this user
-      const { data: existingKit, error: checkError } = await supabase
-        .from('brand_kits')
-        .select('id')
-        .eq('user_id', userId)
-        .maybeSingle();
-      
-      if (checkError && checkError.code !== 'PGRST116') {
-        // PGRST116 = not found, which is fine
-        console.warn('⚠️ Error checking for existing brand kit:', checkError);
-      }
-      
-      let savedData = null;
-      let saveError = null;
-      
-      if (existingKit) {
+      // Check if brand kit exists first
+      try {
+        const { data: existingKit } = await apiClient.get('/api/v1/brand-kits/me');
+        
         // Update existing brand kit
         console.log('🔄 Updating existing brand kit:', existingKit.id);
-        const { data: updatedData, error: updateError } = await supabase
-          .from('brand_kits')
-          .update(brandKitData)
-          .eq('user_id', userId)
-          .select()
-          .single();
-        
-        savedData = updatedData;
-        saveError = updateError;
-      } else {
-        // Insert new brand kit
-        console.log('🆕 Creating new brand kit');
-        const { data: insertedData, error: insertError } = await supabase
-          .from('brand_kits')
-          .insert({
-            user_id: userId,
-            ...brandKitData,
-          })
-          .select()
-          .single();
-        
-        savedData = insertedData;
-        saveError = insertError;
-      }
-      
-      if (saveError) {
-        console.error('❌ Error saving brand kit:', saveError);
-        console.error('Error details:', {
-          code: saveError.code,
-          message: saveError.message,
-          details: saveError.details,
-          hint: saveError.hint,
-          userId,
-          brandKitData,
-        });
-        
-        // Check if it's a foreign key constraint issue (user doesn't exist)
-        if (saveError.code === '23503' || saveError.message?.includes('foreign key') || saveError.message?.includes('user_id')) {
-          throw new Error(`User record not found. Please wait a moment and try again. ${saveError.message}`);
-        }
-        
-        // Check if it's an RLS policy issue
-        if (saveError.message?.includes('policy') || saveError.message?.includes('permission')) {
-          throw new Error(`Permission denied: Make sure you are authenticated and your email is verified. ${saveError.message}`);
-        }
-        
-        throw new Error(`Failed to save brand kit: ${saveError.message}`);
-      }
-      
-      if (!savedData) {
-        throw new Error('Save completed but no data returned from database');
-      }
-      
-      console.log('✅ Brand kit saved successfully:', savedData);
-      
-      // Verify the save by reading it back (quick consistency check)
-      // Wait a tiny bit for database consistency
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const { data: verifyData, error: verifyError } = await supabase
-        .from('brand_kits')
-        .select('id, brand_name, updated_at')
-        .eq('user_id', userId)
-        .single();
-      
-      if (verifyError || !verifyData) {
-        console.warn('⚠️ Verification read failed, but save appeared successful:', verifyError);
-        // Don't throw - the save might have succeeded, just the read failed
-      } else {
-        console.log('✅ Verified save - data confirmed in database:', verifyData);
-        // Double-check the brand_name matches what we tried to save
-        if (verifyData.brand_name !== brandKitData.brand_name) {
-          console.warn('⚠️ Brand name mismatch - saved:', brandKitData.brand_name, 'found:', verifyData.brand_name);
+        const { data: updatedKit } = await apiClient.put('/api/v1/brand-kits/me', brandKitData);
+        console.log('✅ Brand kit updated successfully:', updatedKit);
+      } catch (error: unknown) {
+        // If 404, create new brand kit
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response?: { status?: number } };
+          if (axiosError.response?.status === 404) {
+            console.log('🆕 Creating new brand kit');
+            const { data: createdKit } = await apiClient.post('/api/v1/brand-kits', brandKitData);
+            console.log('✅ Brand kit created successfully:', createdKit);
+          } else {
+            console.error('❌ Error checking/updating brand kit:', axiosError);
+            throw error;
+          }
+        } else {
+          console.error('❌ Unexpected error:', error);
+          throw error;
         }
       }
     } catch (error) {
       console.error('❌ Error saving brand kit:', error);
       // Re-throw to ensure the caller knows it failed
+      throw error;
+    }
+  },
+
+  /**
+   * Save all onboarding data to backend and mark as complete
+   * This is called once at the end of onboarding
+   */
+  async saveAndCompleteOnboarding(data: Partial<OnboardingData>): Promise<void> {
+    try {
+      console.log('🚀 Saving all onboarding data to backend...', data);
+      
+      // First, save the brand kit
+      await this.saveBrandKit(data);
+      
+      // Then mark onboarding as complete
+      await apiClient.put('/api/v1/users/me', {
+        onboarding_completed: true,
+      });
+      
+      console.log('✅ Onboarding saved and marked as complete');
+      
+      // Clear localStorage after successful save
+      this.clearLocalStorage();
+    } catch (error) {
+      console.error('❌ Error saving onboarding:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Mark onboarding as complete (without saving brand kit)
+   * Used if brand kit was already saved separately
+   */
+  async markOnboardingComplete(): Promise<void> {
+    try {
+      await apiClient.put('/api/v1/users/me', {
+        onboarding_completed: true,
+      });
+      console.log('✅ Onboarding marked as complete');
+      
+      // Clear localStorage after successful completion
+      this.clearLocalStorage();
+    } catch (error) {
+      console.error('❌ Error marking onboarding as complete:', error);
       throw error;
     }
   },

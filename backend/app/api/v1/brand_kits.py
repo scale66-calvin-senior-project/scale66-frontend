@@ -23,7 +23,18 @@ async def create_brand_kit(
     """
     try:
         data = brand_kit_data.model_dump()
+        # Convert customer_pain_points array to newline-separated string for database
+        if data.get("customer_pain_points") and isinstance(data["customer_pain_points"], list):
+            data["customer_pain_points"] = "\n".join(data["customer_pain_points"])
+        
         brand_kit = await brand_kit_crud.create(supabase, data, user_id)
+        
+        # Convert customer_pain_points string back to array for response
+        if brand_kit.get("customer_pain_points") and isinstance(brand_kit["customer_pain_points"], str):
+            brand_kit["customer_pain_points"] = [
+                p.strip() for p in brand_kit["customer_pain_points"].split("\n") if p.strip()
+            ]
+        
         return brand_kit
     except Exception as e:
         logger.error(f"Error creating brand kit: {str(e)}")
@@ -45,6 +56,12 @@ async def get_my_brand_kit(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Brand kit not found. Please complete onboarding."
         )
+    
+    # Convert customer_pain_points string to array for response
+    if brand_kit.get("customer_pain_points") and isinstance(brand_kit["customer_pain_points"], str):
+        brand_kit["customer_pain_points"] = [
+            p.strip() for p in brand_kit["customer_pain_points"].split("\n") if p.strip()
+        ]
     
     return brand_kit
 
@@ -76,5 +93,16 @@ async def update_my_brand_kit(
             detail="No fields to update"
         )
     
+    # Convert customer_pain_points array to newline-separated string for database
+    if data.get("customer_pain_points") and isinstance(data["customer_pain_points"], list):
+        data["customer_pain_points"] = "\n".join(data["customer_pain_points"])
+    
     updated_brand_kit = await brand_kit_crud.update(supabase, existing["id"], data, user_id)
+    
+    # Convert customer_pain_points string back to array for response
+    if updated_brand_kit.get("customer_pain_points") and isinstance(updated_brand_kit["customer_pain_points"], str):
+        updated_brand_kit["customer_pain_points"] = [
+            p.strip() for p in updated_brand_kit["customer_pain_points"].split("\n") if p.strip()
+        ]
+    
     return updated_brand_kit

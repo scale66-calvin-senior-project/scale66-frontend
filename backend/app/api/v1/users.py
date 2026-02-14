@@ -52,5 +52,27 @@ async def update_current_user(
             detail="No fields to update"
         )
     
-    updated_user = await user_crud.update(supabase, user_id, data)
-    return updated_user
+    # For users table, we update by id directly (not user_id)
+    # The base CRUD update method expects user_id for filtering, but for users table,
+    # the id IS the user_id, so we pass None to skip the user_id filter
+    try:
+        # Direct update for users table (no user_id filter needed)
+        response = supabase.table("users").update(data).eq("id", user_id).execute()
+        
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        updated_user = response.data[0]
+        logger.info(f"Updated user {user_id}: {data}")
+        return updated_user
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user"
+        )

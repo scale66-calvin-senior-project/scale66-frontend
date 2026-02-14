@@ -57,3 +57,9 @@ class StripeWebhookEvent(BaseModel):
     """Schema for Stripe webhook events."""
     type: str
     data: dict
+
+
+class PaymentVerifyRequest(BaseModel):
+    """Schema for payment verification request."""
+    payment_intent_id: Optional[str] = None
+    session_id: Optional[str] = None

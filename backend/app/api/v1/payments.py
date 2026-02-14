@@ -6,7 +6,7 @@ import logging
 from app.api.dependencies import get_supabase, get_current_user
 from app.api.schemas.payment import (
     PaymentTransactionCreate, PaymentTransactionUpdate, 
-    PaymentTransactionResponse, StripeWebhookEvent
+    PaymentTransactionResponse, StripeWebhookEvent, PaymentVerifyRequest
 )
 from app.crud.payment import payment_transaction_crud
 from app.crud.user import user_crud
@@ -62,6 +62,46 @@ async def get_payment_transaction(
     """
     transaction = await payment_transaction_crud.get_or_404(supabase, transaction_id, user_id)
     return transaction
+
+
+@router.post("/payments/verify")
+async def verify_payment(
+    request_data: PaymentVerifyRequest,
+    supabase: Client = Depends(get_supabase),
+    user_id: str = Depends(get_current_user)
+):
+    """
+    Verify a payment by payment intent ID or session ID.
+    Returns the subscription tier if payment was successful.
+    """
+    payment_intent_id = request_data.payment_intent_id
+    session_id = request_data.session_id
+    
+    if not payment_intent_id and not session_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Either payment_intent_id or session_id is required"
+        )
+    
+    # Try to find transaction by payment intent ID
+    transaction = None
+    if payment_intent_id:
+        transaction = await payment_transaction_crud.get_by_stripe_payment_intent(
+            supabase, payment_intent_id
+        )
+    
+    if transaction and transaction.get("user_id") == user_id:
+        return {
+            "subscription_tier": transaction.get("subscription_tier"),
+            "status": transaction.get("status"),
+            "verified": True
+        }
+    
+    # If not found, return None (frontend will use plan_id from URL as fallback)
+    return {
+        "verified": False,
+        "message": "Payment transaction not found. Webhook may not have processed yet."
+    }
 
 
 @router.post("/payments/webhook", status_code=status.HTTP_200_OK)

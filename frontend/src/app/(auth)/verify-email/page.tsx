@@ -16,6 +16,7 @@ export default function VerifyEmailPage() {
   const router = useRouter();
   const [email, setEmail] = useState<string>('');
   const [isVerified, setIsVerified] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     // Check if already verified on mount
@@ -89,7 +90,20 @@ export default function VerifyEmailPage() {
           </p>
           <div style={{ marginTop: '32px', textAlign: 'center' }}>
             <button
-              onClick={() => router.push('/welcome')}
+              onClick={async () => {
+                if (isNavigating) return;
+                setIsNavigating(true);
+                try {
+                  // Refresh session so /welcome has a valid session (avoids redirect to login)
+                  await supabase.auth.refreshSession();
+                  router.push('/welcome');
+                } catch (e) {
+                  console.error('Error refreshing session:', e);
+                  router.push('/welcome');
+                } finally {
+                  setIsNavigating(false);
+                }
+              }}
               className={styles.authLink}
               style={{
                 display: 'inline-block',
@@ -98,11 +112,13 @@ export default function VerifyEmailPage() {
                 color: '#fff',
                 border: 'none',
                 borderRadius: '4px',
-                cursor: 'pointer',
+                cursor: isNavigating ? 'wait' : 'pointer',
                 textDecoration: 'none',
+                opacity: isNavigating ? 0.8 : 1,
               }}
+              disabled={isNavigating}
             >
-              Continue to Onboarding
+              {isNavigating ? 'Continuing...' : 'Continue to Onboarding'}
             </button>
           </div>
         </div>

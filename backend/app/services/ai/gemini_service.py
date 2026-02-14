@@ -23,9 +23,20 @@ class GeminiService:
         return cls._instance
 
     def __init__(self): 
+        # Lazy initialization - don't create client until first use
+        pass
+    
+    def _ensure_client(self):
+        """Ensure the Gemini client is initialized with a valid API key."""
         if self._client is None:
+            # Validate API key before initializing client
+            api_key = settings.gemini_api_key
+            if not api_key or not api_key.strip():
+                raise GeminiServiceError(
+                    "GEMINI_API_KEY is not set or is empty. Please set it in your .env file."
+                )
             try:
-                self._client = genai.Client(api_key=settings.gemini_api_key)
+                self._client = genai.Client(api_key=api_key.strip())
             except Exception as e:
                 raise GeminiServiceError(f"Failed to initialize Gemini client: {e}")
     
@@ -36,6 +47,9 @@ class GeminiService:
         aspect_ratio: str = "4:5",
         image_size: str = "1K",
     ) -> str:
+        # Ensure client is initialized before making requests
+        self._ensure_client()
+        
         try:
             parts = []
             
@@ -92,6 +106,9 @@ class GeminiService:
         images_base64: List[str],
         output_model: Type[T],
     ) -> T:
+        # Ensure client is initialized before making requests
+        self._ensure_client()
+        
         try:
             parts = []
             
