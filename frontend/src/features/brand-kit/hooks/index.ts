@@ -1,1 +1,1 @@
-export * from './usebrandkit';
+export { useBrandKit } from './useBrandKit';
