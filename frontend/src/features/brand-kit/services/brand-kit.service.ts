@@ -15,8 +15,8 @@ interface BrandKitResponse {
   brand_name?: string;
   brand_niche?: string;
   brand_style?: string;
-  customer_pain_points?: string;
-  product_service_description: string;
+  customer_pain_points?: string | string[];
+  product_service_description?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -33,6 +33,7 @@ interface SocialAccountResponse {
 
 /**
  * Transform API response to frontend model
+ * Backend returns customer_pain_points as string[]; we store as newline-separated string in UI
  */
 const transformBrandKit = (data: BrandKitResponse): BrandKit => ({
   id: data.id,
@@ -40,8 +41,10 @@ const transformBrandKit = (data: BrandKitResponse): BrandKit => ({
   brandName: data.brand_name,
   brandNiche: data.brand_niche,
   brandStyle: data.brand_style as BrandKit['brandStyle'],
-  customerPainPoints: data.customer_pain_points,
-  productServiceDescription: data.product_service_description,
+  customerPainPoints: Array.isArray(data.customer_pain_points)
+    ? data.customer_pain_points.join('\n')
+    : (typeof data.customer_pain_points === 'string' ? data.customer_pain_points : ''),
+  productServiceDescription: data.product_service_description ?? '',
   createdAt: data.created_at,
   updatedAt: data.updated_at,
 });
@@ -60,18 +63,24 @@ const transformSocialAccount = (data: SocialAccountResponse): SocialMediaAccount
 });
 
 class BrandKitService {
-  private baseUrl = '/api/v1/brand-kit';
+  private baseUrl = '/api/v1/brand-kits';
+  private meUrl = '/api/v1/brand-kits/me';
   private socialUrl = '/api/v1/social-accounts';
+
+  /** Convert form customerPainPoints (string) to API array */
+  private static toPainPointsArray(value: string | undefined): string[] {
+    if (value == null || value === '') return [];
+    return value.split('\n').map((p) => p.trim()).filter(Boolean);
+  }
 
   /**
    * Get current user's brand kit
    */
   async getBrandKit(): Promise<BrandKit | null> {
     try {
-      const response = await apiClient.get<BrandKitResponse>(this.baseUrl);
+      const response = await apiClient.get<BrandKitResponse>(this.meUrl);
       return transformBrandKit(response.data);
     } catch (error: unknown) {
-      // Return null if no brand kit exists yet
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { status?: number } };
         if (axiosError.response?.status === 404) {
@@ -87,11 +96,11 @@ class BrandKitService {
    */
   async createBrandKit(data: BrandKitFormData): Promise<BrandKit> {
     const payload = {
-      brand_name: data.brandName,
-      brand_niche: data.brandNiche,
+      brand_name: (data.brandName ?? '').trim() || 'My Brand',
+      brand_niche: data.brandNiche?.trim() || undefined,
       brand_style: data.brandStyle,
-      customer_pain_points: data.customerPainPoints,
-      product_service_description: data.productServiceDescription,
+      customer_pain_points: BrandKitService.toPainPointsArray(data.customerPainPoints),
+      product_service_description: data.productServiceDescription?.trim() || undefined,
     };
 
     const response = await apiClient.post<BrandKitResponse>(this.baseUrl, payload);
@@ -103,24 +112,25 @@ class BrandKitService {
    */
   async updateBrandKit(data: Partial<BrandKitFormData>): Promise<BrandKit> {
     const payload: Record<string, unknown> = {};
-    
-    if (data.brandName !== undefined) payload.brand_name = data.brandName;
-    if (data.brandNiche !== undefined) payload.brand_niche = data.brandNiche;
+    if (data.brandName !== undefined) payload.brand_name = data.brandName.trim();
+    if (data.brandNiche !== undefined) payload.brand_niche = data.brandNiche?.trim() ?? null;
     if (data.brandStyle !== undefined) payload.brand_style = data.brandStyle;
-    if (data.customerPainPoints !== undefined) payload.customer_pain_points = data.customerPainPoints;
+    if (data.customerPainPoints !== undefined) {
+      payload.customer_pain_points = BrandKitService.toPainPointsArray(data.customerPainPoints);
+    }
     if (data.productServiceDescription !== undefined) {
-      payload.product_service_description = data.productServiceDescription;
+      payload.product_service_description = data.productServiceDescription.trim();
     }
 
-    const response = await apiClient.patch<BrandKitResponse>(this.baseUrl, payload);
+    const response = await apiClient.put<BrandKitResponse>(this.meUrl, payload);
     return transformBrandKit(response.data);
   }
 
   /**
-   * Delete brand kit
+   * Delete brand kit (backend may not implement; 404 handled by caller)
    */
   async deleteBrandKit(): Promise<void> {
-    await apiClient.delete(this.baseUrl);
+    await apiClient.delete(this.meUrl);
   }
 
   /**

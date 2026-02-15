@@ -1,13 +1,18 @@
-/* TODO: Implement app layout styles */
-.layout {
-  /* Layout container */
-}
-
-.header {
-  /* App header/navbar */
+/**
+ * App layout - shared shell for dashboard, brand-kit, settings, campaigns, etc.
+ * Matches mainpage gradient and minimal modern feel
+ */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #ffffff 0%, #bae4ff 50%, #ffffff 100%);
+  background-attachment: fixed;
 }
 
 .main {
-  /* Main content area */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 88px; /* navbar height + top offset */
 }
-

@@ -22,9 +22,6 @@ interface UseBrandKitReturn {
   clearError: () => void;
 }
 
-/**
- * Hook for managing brand kit data and social account connections
- */
 export const useBrandKit = (): UseBrandKitReturn => {
   const [brandKit, setBrandKit] = useState<BrandKit | null>(null);
   const [socialAccounts, setSocialAccounts] = useState<SocialMediaAccount[]>([]);
@@ -32,19 +29,14 @@ export const useBrandKit = (): UseBrandKitReturn => {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Load brand kit and social accounts
-   */
   const loadBrandKit = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-
     try {
       const [kit, accounts] = await Promise.all([
         brandKitService.getBrandKit(),
         brandKitService.getSocialAccounts(),
       ]);
-
       setBrandKit(kit);
       setSocialAccounts(accounts);
     } catch (err) {
@@ -55,22 +47,13 @@ export const useBrandKit = (): UseBrandKitReturn => {
     }
   }, []);
 
-  /**
-   * Save brand kit (create or update)
-   */
   const saveBrandKit = useCallback(async (data: BrandKitFormData): Promise<BrandKit | null> => {
     setIsSaving(true);
     setError(null);
-
     try {
-      let result: BrandKit;
-      
-      if (brandKit) {
-        result = await brandKitService.updateBrandKit(data);
-      } else {
-        result = await brandKitService.createBrandKit(data);
-      }
-
+      const result = brandKit
+        ? await brandKitService.updateBrandKit(data)
+        : await brandKitService.createBrandKit(data);
       setBrandKit(result);
       return result;
     } catch (err) {
@@ -82,38 +65,28 @@ export const useBrandKit = (): UseBrandKitReturn => {
     }
   }, [brandKit]);
 
-  /**
-   * Update a single field with auto-save
-   */
-  const updateField = useCallback(async (
-    field: keyof BrandKitFormData,
-    value: string
-  ): Promise<void> => {
-    if (!brandKit) return;
+  const updateField = useCallback(
+    async (field: keyof BrandKitFormData, value: string): Promise<void> => {
+      if (!brandKit) return;
+      setIsSaving(true);
+      setError(null);
+      try {
+        const result = await brandKitService.updateBrandKit({ [field]: value });
+        setBrandKit(result);
+      } catch (err) {
+        console.error('Error updating field:', err);
+        setError('Failed to save changes. Please try again.');
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [brandKit]
+  );
 
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      const result = await brandKitService.updateBrandKit({ [field]: value });
-      setBrandKit(result);
-    } catch (err) {
-      console.error('Error updating field:', err);
-      setError('Failed to save changes. Please try again.');
-    } finally {
-      setIsSaving(false);
-    }
-  }, [brandKit]);
-
-  /**
-   * Delete brand kit
-   */
   const deleteBrandKit = useCallback(async (): Promise<void> => {
     if (!brandKit) return;
-
     setIsSaving(true);
     setError(null);
-
     try {
       await brandKitService.deleteBrandKit();
       setBrandKit(null);
@@ -125,15 +98,10 @@ export const useBrandKit = (): UseBrandKitReturn => {
     }
   }, [brandKit]);
 
-  /**
-   * Connect social account via OAuth
-   */
   const connectSocialAccount = useCallback(async (platform: SocialPlatform): Promise<void> => {
     setError(null);
-
     try {
       const { authUrl } = await brandKitService.connectSocialAccount(platform);
-      // Redirect to OAuth provider
       window.location.href = authUrl;
     } catch (err) {
       console.error('Error connecting social account:', err);
@@ -141,29 +109,19 @@ export const useBrandKit = (): UseBrandKitReturn => {
     }
   }, []);
 
-  /**
-   * Disconnect social account
-   */
   const disconnectSocialAccount = useCallback(async (accountId: string): Promise<void> => {
     setError(null);
-
     try {
       await brandKitService.disconnectSocialAccount(accountId);
-      setSocialAccounts(prev => prev.filter(acc => acc.id !== accountId));
+      setSocialAccounts((prev) => prev.filter((acc) => acc.id !== accountId));
     } catch (err) {
       console.error('Error disconnecting social account:', err);
       setError('Failed to disconnect account. Please try again.');
     }
   }, []);
 
-  /**
-   * Clear error state
-   */
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+  const clearError = useCallback(() => setError(null), []);
 
-  // Load data on mount
   useEffect(() => {
     loadBrandKit();
   }, [loadBrandKit]);

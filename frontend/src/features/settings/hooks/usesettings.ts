@@ -32,13 +32,10 @@ interface UseSettingsReturn {
   clearError: () => void;
 }
 
-/**
- * Hook for managing user settings and subscription
- */
 export const useSettings = (): UseSettingsReturn => {
   const router = useRouter();
   const { logout } = useAuthContext();
-  
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [billingHistory, setBillingHistory] = useState<PaymentTransaction[]>([]);
@@ -46,22 +43,20 @@ export const useSettings = (): UseSettingsReturn => {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Load all settings data
-   */
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-
     try {
       const [profileData, subscriptionData, historyData] = await Promise.all([
         settingsService.getProfile(),
         settingsService.getSubscription(),
         settingsService.getBillingHistory(),
       ]);
-
       setProfile(profileData);
-      setSubscription(subscriptionData);
+      setSubscription(
+        subscriptionData ??
+          (profileData ? { tier: profileData.subscriptionTier, status: 'active' as const } : null)
+      );
       setBillingHistory(historyData);
     } catch (err) {
       console.error('Error loading settings:', err);
@@ -71,13 +66,9 @@ export const useSettings = (): UseSettingsReturn => {
     }
   }, []);
 
-  /**
-   * Update user profile
-   */
   const updateProfile = useCallback(async (data: Partial<ProfileFormData>): Promise<boolean> => {
     setIsSaving(true);
     setError(null);
-
     try {
       const result = await settingsService.updateProfile(data);
       setProfile(result);
@@ -91,16 +82,9 @@ export const useSettings = (): UseSettingsReturn => {
     }
   }, []);
 
-  /**
-   * Change user password
-   */
-  const changePassword = useCallback(async (
-    currentPassword: string,
-    newPassword: string
-  ): Promise<boolean> => {
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<boolean> => {
     setIsSaving(true);
     setError(null);
-
     try {
       await settingsService.changePassword(currentPassword, newPassword);
       return true;
@@ -113,12 +97,8 @@ export const useSettings = (): UseSettingsReturn => {
     }
   }, []);
 
-  /**
-   * Open Stripe customer portal for payment management
-   */
   const openCustomerPortal = useCallback(async (): Promise<void> => {
     setError(null);
-
     try {
       const { url } = await settingsService.getCustomerPortalUrl();
       window.location.href = url;
@@ -128,16 +108,11 @@ export const useSettings = (): UseSettingsReturn => {
     }
   }, []);
 
-  /**
-   * Cancel subscription
-   */
   const cancelSubscription = useCallback(async (): Promise<boolean> => {
     setIsSaving(true);
     setError(null);
-
     try {
       await settingsService.cancelSubscription();
-      // Reload subscription to get updated status
       const subscriptionData = await settingsService.getSubscription();
       setSubscription(subscriptionData);
       return true;
@@ -150,13 +125,9 @@ export const useSettings = (): UseSettingsReturn => {
     }
   }, []);
 
-  /**
-   * Resume canceled subscription
-   */
   const resumeSubscription = useCallback(async (): Promise<boolean> => {
     setIsSaving(true);
     setError(null);
-
     try {
       await settingsService.resumeSubscription();
       const subscriptionData = await settingsService.getSubscription();
@@ -171,13 +142,9 @@ export const useSettings = (): UseSettingsReturn => {
     }
   }, []);
 
-  /**
-   * Delete user account
-   */
   const deleteAccount = useCallback(async (): Promise<boolean> => {
     setIsSaving(true);
     setError(null);
-
     try {
       await settingsService.deleteAccount();
       return true;
@@ -190,9 +157,6 @@ export const useSettings = (): UseSettingsReturn => {
     }
   }, []);
 
-  /**
-   * Sign out user
-   */
   const signOut = useCallback(async (): Promise<void> => {
     try {
       await logout();
@@ -203,14 +167,8 @@ export const useSettings = (): UseSettingsReturn => {
     }
   }, [logout, router]);
 
-  /**
-   * Clear error state
-   */
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+  const clearError = useCallback(() => setError(null), []);
 
-  // Load data on mount
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);

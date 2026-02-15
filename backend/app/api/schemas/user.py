@@ -19,6 +19,7 @@ class UserBase(BaseModel):
 
 class UserUpdate(BaseModel):
     """Schema for updating user information."""
+    email: Optional[EmailStr] = None
     subscription_tier: Optional[SubscriptionTier] = None
     onboarding_completed: Optional[bool] = None
 

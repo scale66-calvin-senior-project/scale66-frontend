@@ -106,3 +106,20 @@ async def update_my_brand_kit(
         ]
     
     return updated_brand_kit
+
+
+@router.delete("/brand-kits/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_my_brand_kit(
+    supabase: Client = Depends(get_supabase),
+    user_id: str = Depends(get_current_user)
+):
+    """
+    Delete the authenticated user's brand kit.
+    """
+    existing = await brand_kit_crud.get_by_user(supabase, user_id)
+    if not existing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Brand kit not found."
+        )
+    await brand_kit_crud.delete(supabase, existing["id"], user_id)

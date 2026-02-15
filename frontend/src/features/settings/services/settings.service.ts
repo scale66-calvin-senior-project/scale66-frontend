@@ -76,7 +76,7 @@ const transformTransaction = (data: PaymentTransactionResponse): PaymentTransact
 class SettingsService {
   private userUrl = '/api/v1/users/me';
   private subscriptionUrl = '/api/v1/payments/subscription';
-  private billingUrl = '/api/v1/payments/history';
+  private billingUrl = '/api/v1/payments/transactions';
 
   /**
    * Get current user profile
@@ -101,10 +101,9 @@ class SettingsService {
    */
   async updateProfile(data: Partial<ProfileFormData>): Promise<UserProfile> {
     const payload: Record<string, unknown> = {};
-    
-    if (data.email) payload.email = data.email;
+    if (data.email !== undefined) payload.email = data.email;
 
-    const response = await apiClient.patch<UserProfileResponse>(this.userUrl, payload);
+    const response = await apiClient.put<UserProfileResponse>(this.userUrl, payload);
     return transformProfile(response.data);
   }
 
@@ -136,7 +135,8 @@ class SettingsService {
   async getBillingHistory(): Promise<PaymentTransaction[]> {
     try {
       const response = await apiClient.get<PaymentTransactionResponse[]>(this.billingUrl);
-      return response.data.map(transformTransaction);
+      const list = Array.isArray(response.data) ? response.data : [];
+      return list.map(transformTransaction);
     } catch {
       return [];
     }

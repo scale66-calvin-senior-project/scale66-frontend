@@ -4,14 +4,14 @@
  */
 
 /**
- * Subscription tier options matching database enum
+ * Subscription tier options matching backend/database enum
  */
-export type SubscriptionTier = 'free' | 'basic' | 'pro' | 'enterprise';
+export type SubscriptionTier = 'free' | 'starter' | 'growth' | 'agency';
 
 /**
  * Payment status matching database enum
  */
-export type PaymentStatus = 'pending' | 'succeeded' | 'failed';
+export type PaymentStatus = 'pending' | 'succeeded' | 'failed' | 'refunded';
 
 /**
  * User profile data from Users table
@@ -83,7 +83,7 @@ export interface SubscriptionTierInfo {
 }
 
 /**
- * Available subscription tiers
+ * Available subscription tiers (tier values match backend)
  */
 export const SUBSCRIPTION_TIERS: SubscriptionTierInfo[] = [
   {
@@ -94,24 +94,24 @@ export const SUBSCRIPTION_TIERS: SubscriptionTierInfo[] = [
     features: ['Limited carousel generation', 'Basic templates'],
   },
   {
-    tier: 'basic',
+    tier: 'starter',
     name: 'Starter',
     price: 19,
     interval: 'month',
     features: ['50 carousels/month', 'All templates', 'Direct posting'],
   },
   {
-    tier: 'pro',
+    tier: 'growth',
     name: 'Growth',
     price: 49,
     interval: 'month',
     features: ['Unlimited carousels', 'Priority support', 'Advanced analytics'],
   },
   {
-    tier: 'enterprise',
+    tier: 'agency',
     name: 'Agency',
     price: 99,
     interval: 'month',
-    features: ['Everything in Pro', 'Team collaboration', 'Custom branding'],
+    features: ['Everything in Growth', 'Team collaboration', 'Custom branding'],
   },
 ];
