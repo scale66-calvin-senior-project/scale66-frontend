@@ -88,25 +88,6 @@ export const CampaignList: React.FC = () => {
 
   return (
     <div className={styles.layout}>
-      <nav className={styles.navbar}>
-        <Link href="/dashboard" className={styles.brand}>
-          <Image src="/logo.png" alt="Scale66" width={32} height={32} className={styles.logo} />
-          Scale66
-        </Link>
-
-        <div className={styles.navLinks}>
-          <Link href="/campaigns" className={`${styles.navLink} ${styles.navLinkActive}`}>
-            Campaign
-          </Link>
-          <Link href="/brand-kit" className={styles.navLink}>
-            Brand Kit
-          </Link>
-          <Link href="/settings" className={styles.navLink}>
-            Premium
-          </Link>
-        </div>
-      </nav>
-
       <main className={styles.main}>
         <div className={styles.header}>
           <h1 className={styles.title}>Your Campaigns</h1>
@@ -120,12 +101,14 @@ export const CampaignList: React.FC = () => {
           <div className={styles.grid}>
             <CreateCampaignButton onClick={handleCreateCampaign} />
             {!isLoading && campaigns.length === 0 ? (
-              <div style={{ 
-                gridColumn: '1 / -1', 
-                textAlign: 'center', 
-                padding: '3rem 2rem',
-                color: 'rgba(81, 81, 81, 0.6)'
-              }}>
+              <div
+                style={{
+                  gridColumn: '1 / -1',
+                  textAlign: 'center',
+                  padding: '3rem 2rem',
+                  color: 'rgba(81, 81, 81, 0.6)',
+                }}
+              >
                 <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>
                   No campaigns yet. Create your first campaign to get started!
                 </p>
@@ -144,10 +127,6 @@ export const CampaignList: React.FC = () => {
           </div>
         )}
       </main>
-
-      <footer className={styles.footer}>
-        <span className={styles.footerBrand}>MyFix.co</span>
-      </footer>
     </div>
   );
 };
