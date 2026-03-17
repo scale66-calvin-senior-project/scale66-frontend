@@ -1,4 +1,5 @@
 {
-	"editor.fontSize": 14,
-	"sarif-viewer.connectToGithubCodeScanning": "off"
+	"editor.fontSize": 16,
+	"sarif-viewer.connectToGithubCodeScanning": "off",
+	"editor.fontFamily": "Cascadia Code"
 }
