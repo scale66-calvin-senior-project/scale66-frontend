@@ -1,4 +1,8 @@
+'use client';
+
 import React from 'react';
+import { MainNavbar } from '@/features/mainpage';
+import styles from './AppLayout.module.css';
 
 export interface AppLayoutProps {
   children: React.ReactNode;
@@ -6,12 +10,17 @@ export interface AppLayoutProps {
 
 /**
  * AppLayout Component
- * 
- * Layout wrapper for authenticated app pages
- * Currently minimal - pages handle their own layouts
+ *
+ * Shared layout for authenticated app pages (dashboard, brand-kit, settings, campaigns).
+ * Provides consistent navbar and background so routes look and navigate the same.
  */
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
-  return <>{children}</>;
+  return (
+    <div className={styles.wrapper}>
+      <MainNavbar />
+      <main className={styles.main}>{children}</main>
+    </div>
+  );
 };
 
 export default AppLayout;

@@ -5,9 +5,9 @@
   text-align: center;
   justify-content: center;
   gap: 24px;
-  min-height: 100vh;
-  padding-top: 120px;
-  margin-top: 0;
+  flex: 1;
+  min-height: 0;
+  padding: 24px;
 }
 
 .title {
@@ -152,17 +152,13 @@
 }
 
 @media (max-width: 900px) {
-  .title { 
-    font-size: 40px; 
-  }
-  .hero { 
-    padding-top: 100px;
+  .title {
+    font-size: 40px;
   }
 }
 
 @media (max-width: 768px) {
   .hero {
-    padding-top: 80px;
     gap: 20px;
   }
   

@@ -21,7 +21,7 @@ export default function MainNavbar() {
           Brand Kit
         </Link>
         <Link href="/settings" className={styles.navLink}>
-          Premium
+          Settings
         </Link>
       </div>
 

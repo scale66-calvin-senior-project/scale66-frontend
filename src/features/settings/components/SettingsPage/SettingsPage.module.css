@@ -1,0 +1,839 @@
+/**
+ * Settings Page Styles
+ * Matching Brand Kit glassmorphic design
+ */
+
+.container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 40px;
+}
+
+.pageTitle {
+  font-size: 36px;
+  font-weight: 700;
+  color: #515151;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.savingIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: rgba(81, 81, 81, 0.6);
+}
+
+.savingDot {
+  width: 8px;
+  height: 8px;
+  background: rgba(90, 121, 255, 0.8);
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+/* Loading State */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 16px;
+  color: rgba(81, 81, 81, 0.7);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(90, 121, 255, 0.2);
+  border-top-color: rgba(90, 121, 255, 0.8);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error Banner */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.dismissButton {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.dismissButton:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Sections */
+.section {
+  margin-bottom: 40px;
+}
+
+.sectionTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #515151;
+  letter-spacing: -0.01em;
+  margin: 0 0 20px 0;
+}
+
+.sectionTitleDanger {
+  font-size: 24px;
+  font-weight: 600;
+  color: #dc2626;
+  letter-spacing: -0.01em;
+  margin: 0 0 20px 0;
+}
+
+/* Profile Card */
+.profileCard {
+  padding: 28px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 4px 16px rgba(0, 0, 0, 0.05),
+    0 12px 40px rgba(194, 231, 255, 0.1);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+}
+
+.fieldGroup {
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.fieldGroup:first-child {
+  padding-top: 0;
+}
+
+.fieldGroup:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(81, 81, 81, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.valueRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fieldValue {
+  font-size: 16px;
+  color: #515151;
+}
+
+.editRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.editRow .input {
+  flex: 1;
+}
+
+.input {
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: #515151;
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.input:focus {
+  border-color: rgba(90, 121, 255, 0.4);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 1) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 4px 12px rgba(0, 0, 0, 0.05),
+    0 0 0 3px rgba(90, 121, 255, 0.1);
+}
+
+.input::placeholder {
+  color: rgba(81, 81, 81, 0.4);
+}
+
+.editButton {
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(90, 121, 255, 0.3);
+  background: rgba(90, 121, 255, 0.1);
+  color: rgba(90, 121, 255, 0.9);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.editButton:hover {
+  background: rgba(90, 121, 255, 0.2);
+  border-color: rgba(90, 121, 255, 0.5);
+}
+
+.saveButton {
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(90, 121, 255, 0.85);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 4px 12px rgba(90, 121, 255, 0.2);
+}
+
+.saveButton:hover:not(:disabled) {
+  background: rgba(90, 121, 255, 0.95);
+  transform: translateY(-1px);
+}
+
+.saveButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(81, 81, 81, 0.2);
+  background: rgba(255, 255, 255, 0.3);
+  color: rgba(81, 81, 81, 0.7);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.cancelButton:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Password Form */
+.passwordForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.passwordActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.fieldError {
+  font-size: 13px;
+  color: #dc2626;
+}
+
+.fieldSuccess {
+  font-size: 13px;
+  color: #16a34a;
+}
+
+/* Subscription Card */
+.subscriptionCard {
+  padding: 28px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 4px 16px rgba(0, 0, 0, 0.05),
+    0 12px 40px rgba(194, 231, 255, 0.1);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+}
+
+.planInfo {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.planHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.planName {
+  font-size: 24px;
+  font-weight: 700;
+  color: #515151;
+}
+
+.planBadge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+}
+
+.planPrice {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.priceAmount {
+  font-size: 32px;
+  font-weight: 700;
+  color: #515151;
+}
+
+.priceInterval {
+  font-size: 16px;
+  color: rgba(81, 81, 81, 0.6);
+}
+
+.planRenewal {
+  font-size: 14px;
+  color: rgba(81, 81, 81, 0.6);
+  margin: 0;
+}
+
+.planFeatures {
+  margin-bottom: 24px;
+}
+
+.featuresTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(81, 81, 81, 0.7);
+  margin: 0 0 12px 0;
+}
+
+.featuresList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.featureItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: #515151;
+}
+
+.checkIcon {
+  width: 18px;
+  height: 18px;
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.checkIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.subscriptionActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.portalButton {
+  padding: 12px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(90, 121, 255, 0.85);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 4px 12px rgba(90, 121, 255, 0.2);
+}
+
+.portalButton:hover {
+  background: rgba(90, 121, 255, 0.95);
+  transform: translateY(-1px);
+}
+
+.cancelSubButton {
+  padding: 12px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(81, 81, 81, 0.2);
+  background: rgba(255, 255, 255, 0.3);
+  color: rgba(81, 81, 81, 0.7);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.cancelSubButton:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+}
+
+.resumeButton {
+  padding: 12px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.resumeButton:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.25);
+}
+
+.resumeButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Account Card */
+.accountCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 4px 16px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+}
+
+.accountInfo h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #515151;
+  margin: 0 0 6px 0;
+}
+
+.accountInfo p {
+  font-size: 14px;
+  color: rgba(81, 81, 81, 0.7);
+  margin: 0;
+}
+
+.signOutButton {
+  padding: 12px 24px;
+  border-radius: 14px;
+  border: 1px solid rgba(81, 81, 81, 0.2);
+  background: rgba(255, 255, 255, 0.4);
+  color: #515151;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.signOutButton:hover {
+  background: rgba(81, 81, 81, 0.1);
+  border-color: rgba(81, 81, 81, 0.3);
+}
+
+.signOutConfirmButton {
+  padding: 10px 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(90, 121, 255, 0.3);
+  background: rgba(90, 121, 255, 0.85);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.signOutConfirmButton:hover {
+  background: rgba(90, 121, 255, 0.95);
+}
+
+/* Billing Table */
+.billingTable {
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 4px 16px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 0.8fr 0.8fr;
+  gap: 16px;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(81, 81, 81, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 0.8fr 0.8fr;
+  gap: 16px;
+  padding: 14px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  color: #515151;
+  align-items: center;
+}
+
+.tierLabel {
+  font-weight: 500;
+}
+
+.statusBadge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  text-align: center;
+}
+
+.statusBadge.succeeded {
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+}
+
+.statusBadge.pending {
+  background: rgba(234, 179, 8, 0.15);
+  color: #ca8a04;
+}
+
+.statusBadge.failed {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+}
+
+/* Danger Zone */
+.dangerCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  border-radius: 16px;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.dangerInfo h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #dc2626;
+  margin: 0 0 6px 0;
+}
+
+.dangerInfo p {
+  font-size: 14px;
+  color: rgba(81, 81, 81, 0.7);
+  margin: 0;
+}
+
+.deleteAccountButton {
+  padding: 12px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.deleteAccountButton:hover {
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.modal {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  padding: 32px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.15),
+    0 40px 120px rgba(194, 231, 255, 0.2);
+}
+
+.modalTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #515151;
+  margin: 0 0 12px 0;
+}
+
+.modalText {
+  font-size: 14px;
+  color: rgba(81, 81, 81, 0.7);
+  line-height: 1.6;
+  margin: 0 0 24px 0;
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.modalCancelButton {
+  padding: 10px 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(81, 81, 81, 0.2);
+  background: rgba(255, 255, 255, 0.3);
+  color: rgba(81, 81, 81, 0.8);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.modalCancelButton:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.modalConfirmButton {
+  padding: 10px 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  background: rgba(234, 179, 8, 0.9);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.modalConfirmButton:hover:not(:disabled) {
+  background: rgba(234, 179, 8, 1);
+}
+
+.modalConfirmButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modalDeleteButton {
+  padding: 10px 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.modalDeleteButton:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 1);
+}
+
+.modalDeleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 24px 16px;
+  }
+
+  .pageTitle {
+    font-size: 28px;
+  }
+
+  .sectionTitle,
+  .sectionTitleDanger {
+    font-size: 20px;
+  }
+
+  .planPrice {
+    flex-wrap: wrap;
+  }
+
+  .priceAmount {
+    font-size: 28px;
+  }
+
+  .tableHeader,
+  .tableRow {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .tableHeader span:nth-child(2),
+  .tableRow span:nth-child(2) {
+    display: none;
+  }
+
+  .dangerCard,
+  .accountCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .signOutButton {
+    width: 100%;
+    text-align: center;
+  }
+
+  .subscriptionActions {
+    flex-direction: column;
+  }
+
+  .portalButton,
+  .cancelSubButton,
+  .resumeButton {
+    width: 100%;
+    text-align: center;
+  }
+
+  .editRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .editRow .input {
+    width: 100%;
+  }
+
+  .passwordActions {
+    flex-direction: column;
+  }
+
+  .modalActions {
+    flex-direction: column;
+  }
+}
+

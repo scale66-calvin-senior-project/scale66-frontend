@@ -5,6 +5,7 @@
 export interface Campaign {
   id: string;
   name: string;
+  description?: string;
   slideCount: number;
   thumbnailUrl?: string;
   createdAt: string;

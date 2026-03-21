@@ -1,13 +1,14 @@
 .layout {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #ffffff 0%, #bae4ff 50%, #ffffff 100%);
-  background-attachment: fixed;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
 }
 
 .main {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }

@@ -1,3 +1,3 @@
-export { BrandKitPage } from './BrandKitPage';
 export { SocialAccountsSection } from './SocialAccountsSection';
 export type { SocialAccountsSectionProps } from './SocialAccountsSection';
+

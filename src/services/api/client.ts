@@ -34,13 +34,17 @@ export const apiClient = axios.create({
 // Request interceptor - Add JWT token to all requests
 apiClient.interceptors.request.use(
   async (config) => {
-    // Get JWT token from Supabase session
-    const token = await getAccessToken()
-    
+    // Race getAccessToken() against a 5-second timeout so a slow/hanging
+    // Supabase session check never blocks the request interceptor forever.
+    const token = await Promise.race([
+      getAccessToken(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+    ])
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
-    
+
     return config
   },
   (error) => {
