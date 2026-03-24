@@ -1,410 +1,113 @@
 # Scale66 Frontend
 
-AI-powered social media content generation platform built with Next.js 15 and TypeScript.
+Scale66 is an AI-powered social media content platform that generates branded carousel posts for Instagram, TikTok, LinkedIn, and Twitter. Users configure a brand kit, create campaigns, and generate complete carousel content — captions, images, and slide layouts — through an AI pipeline in the backend.
+
+## Features
+
+- **AI Carousel Generation** — Generate fully designed carousels from a text prompt, with captions and images produced by an AI pipeline
+- **Brand Kit** — Configure brand name, niche, style, and customer pain points to keep all content on-brand
+- **Campaigns** — Organise content into campaigns and manage posts across multiple social platforms
+- **Canvas** — Core content editor for reviewing, editing, and managing AI-generated carousel posts and variations
+- **Onboarding** — 7-step guided setup wizard to configure a brand kit and connect social accounts
+- **Authentication** — Supabase Auth with email/password, email verification, and OAuth social login
+- **Payments** — Stripe-powered subscription and transaction management
+- **Settings** — Account and profile management
 
 ## Tech Stack
 
-- **Framework:** Next.js 15 (App Router with Turbopack)
-- **Language:** TypeScript (Strict Mode)
-- **Styling:** CSS Modules
-- **Authentication:** Supabase Auth (JWT tokens)
-- **Backend API:** FastAPI (Python) via Axios
-- **Payment:** Stripe
-- **Email:** Resend
-- **Package Manager:** npm
+| Layer          | Technology                              |
+| -------------- | --------------------------------------- |
+| Framework      | Next.js 15 (App Router + Turbopack)     |
+| Language       | TypeScript (Strict Mode)                |
+| Styling        | CSS Modules                             |
+| Authentication | Supabase Auth (JWT)                     |
+| Backend API    | FastAPI (Python) via Axios              |
+| Payments       | Stripe                                  |
+| Package Manager | npm                                    |
 
-## Quick Start
+## Getting Started
 
 ```bash
-# Install dependencies
 npm install
-
-# Configure environment
 cp .env.example .env
 # Edit .env with your Supabase credentials and backend API URL
-
-# Run development server
 npm run dev
-# Server runs at http://localhost:3000
-
-# Build for production
-npm run build
-npm start
+# http://localhost:3000
 ```
 
-## File Structure
-
-```
-frontend/
-├── package.json              # Dependencies and scripts
-├── tsconfig.json            # TypeScript configuration
-├── next.config.ts           # Next.js configuration
-│
-├── public/                  # Static assets
-│   ├── favicon.ico
-│   └── logo.png
-│
-└── src/
-    ├── app/                 # Next.js App Router
-    │   ├── (landing)/           # Public marketing pages
-    │   │   ├── page.tsx             # Homepage
-    │   │   ├── blog/
-    │   │   ├── waitlist/
-    │   │   ├── support/
-    │   │   ├── privacy-policy/
-    │   │   └── terms-conditions/
-    │   │
-    │   ├── (auth)/              # Authentication pages
-    │   │   ├── login/
-    │   │   ├── signup/
-    │   │   ├── confirm-email/
-    │   │   └── verify-email/
-    │   │
-    │   └── (app)/               # Protected app pages
-    │       ├── dashboard/
-    │       ├── welcome/
-    │       ├── brand-kit/
-    │       ├── campaigns/
-    │       ├── canvas/
-    │       │   └── [id]/        # CORE FEATURE - AI canvas
-    │       ├── payment/
-    │       │   └── success/
-    │       └── settings/
-    │
-    ├── components/          # Reusable components
-    │   ├── ui/                  # UI primitives (Button, Input, Card, etc.)
-    │   ├── common/              # Shared components (LoadingSpinner, ErrorBoundary)
-    │   └── layouts/             # Layout components (Landing, Auth, App)
-    │
-    ├── features/            # Feature-based modules
-    │   ├── auth/                # Authentication
-    │   ├── brand-kit/           # Brand management
-    │   ├── campaigns/           # Campaign management
-    │   ├── canvas/              # AI content generation (CORE)
-    │   ├── dashboard/           # Dashboard
-    │   ├── landing/             # Landing pages
-    │   ├── mainpage/            # Main app page
-    │   ├── onboarding/          # User onboarding
-    │   ├── payment/             # Stripe integration
-    │   ├── posting/             # Social media posting
-    │   └── settings/            # User settings
-    │
-    ├── context/             # React Context providers
-    │   ├── AuthContext.tsx      # Authentication state
-    │   ├── AuthModalContext.tsx # Auth modal visibility state
-    │   ├── BrandContext.tsx     # Brand kit state
-    │   └── ThemeContext.tsx     # Theme state
-    │
-    ├── hooks/               # Shared custom hooks
-    │   ├── useAuth.ts
-    │   ├── useUser.ts
-    │   ├── useDebounce.ts
-    │   ├── useLocalStorage.ts
-    │   └── useMediaQuery.ts
-    │
-    ├── services/            # API service layer
-    │   └── api/
-    │       ├── client.ts            # Axios client with JWT
-    │       └── interceptors.ts      # Request/response interceptors
-    │
-    ├── lib/                 # Third-party integrations
-    │   ├── supabase.ts          # Supabase client (auth only)
-    │   └── stripe.ts            # Stripe client
-    │
-    ├── types/               # Shared TypeScript types
-    │   ├── api.types.ts
-    │   ├── user.types.ts
-    │   ├── brand.types.ts
-    │   ├── campaign.types.ts
-    │   └── post.types.ts
-    │
-    ├── utils/               # Utility functions
-    │   ├── auth-redirect.ts
-    │   ├── constants.ts
-    │   ├── formatters.ts
-    │   ├── validation.ts
-    │   ├── storage.ts
-    │   └── date.ts
-    │
-    ├── data/                # Static data
-    │   ├── brandStyles.ts
-    │   ├── pricingPlans.ts
-    │   └── socialPlatforms.ts
-    │
-    ├── config/              # App configuration
-    │   ├── app.config.ts
-    │   └── env.ts
-    │
-    ├── styles/              # Global styles
-    │   ├── variables.css
-    │   └── utilities.css
-    │
-    └── middleware.ts        # Route protection
+```bash
+npm run build && npm start  # Production
+npm run type-check          # Type checking
+npm run lint                # Linting
 ```
 
-## Architecture Overview
-
-### App Router Structure
-
-**Route Groups:**
-
-- `(landing)` - Public marketing pages
-- `(auth)` - Authentication pages
-- `(app)` - Protected application pages
-
-**Key Features:**
-
-- Server Components by default
-- Nested layouts for consistent structure
-  - Automatic code splitting per route
-- Built-in loading and error states
-
-### Feature-Based Architecture
-
-Each feature is self-contained with its own:
-
-- `components/` - Feature-specific UI components
-- `hooks/` - Feature-specific React hooks
-- `services/` - Backend API calls
-- `types/` - TypeScript type definitions
-- `index.ts` - Public exports
-
-**Benefits:**
-
-- Clear feature boundaries
-- Independent development
-- Minimal merge conflicts
-- Easy to locate code
-- Scalable structure
-
-### API Service Layer
-
-**Centralized HTTP communication:**
-
-- Axios client with automatic JWT injection
-- Request interceptor adds auth token from Supabase
-- Response interceptor handles errors globally
-- Auto-redirect to login on 401 errors
-- Type-safe requests and responses
-
-See: [API Documentation](README_API.md) for more details on backend API routes
-
-## Feature Status
-
-| Feature           | Dependencies                      |
-| ----------------- | --------------------------------- |
-| **Landing Pages** | None                              |
-| **Auth**          | Supabase Auth                     |
-| **Onboarding**    | `/api/v1/brand-kits`              |
-| **Brand Kit**     | `/api/v1/brand-kits`              |
-| **Campaigns**     | `/api/v1/campaigns/*`             |
-| **Canvas**        | `/api/v1/campaigns/{id}/carousel` |
-| **Settings**      | `/api/v1/users/me`                |
-| **Dashboard**     | `/api/v1/campaigns`               |
-| **Payment**       | `/api/v1/payments/*`              |
-| **Posting**       | `/api/v1/social-accounts/*`       |
-
-## Components
-
-### UI Components (Design System)
-
-Primitive, reusable components:
-
-- Button (primary, secondary, ghost variants)
-- Input, TextArea
-- Card, Modal
-- Dropdown, Checkbox
-- Spinner
-
-**Pattern:** Each component has `.tsx`, `.module.css`, and `index.ts`
-
-### Common Components
-
-Shared composite components:
-
-- LoadingSpinner - Full-page loading state
-- ErrorBoundary - Error handling wrapper
-- EmptyState - Empty state displays
-- SuccessMessage - Success notifications
-
-### Layouts
-
-- LandingLayout - Marketing pages with navbar/footer
-- AuthLayout - Centered authentication forms
-- AppLayout - App pages with sidebar/header
-
-## Context Providers
-
-**Global state management:**
-
-- **AuthContext** - User authentication state
-
-  - Current user and session
-  - Auth status (isAuthenticated)
-  - JWT token for API calls
-
-- **AuthModalContext** - Auth modal visibility state
-
-  - Controls open/close of the authentication modal
-
-- **BrandContext** - Active brand kit data
-
-  - Fetched from backend API
-  - Available across app
-
-- **ThemeContext** - Theme preferences
-  - Dark/light mode
-  - User preferences
-
-## Environment Variables
-
-Required environment variables:
+### Environment Variables
 
 ```env
-# Backend API
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
-
-# Supabase (Authentication only)
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-
-# Optional
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...  # Optional
 ```
 
-Copy `.env.example` and configure with your credentials.
+## Architecture
 
-## Development
-
-### Adding Dependencies
-
-```bash
-npm install package-name          # Production dependency
-npm install --save-dev package-name # Dev dependency
-```
-
-### Running the Server
-
-```bash
-# Development with hot reload
-npm run dev
-
-# Production build
-npm run build
-npm start
-
-# Type checking
-npm run type-check
-
-# Linting
-npm run lint
-```
-
-### Development Workflow
-
-1. **Define types first** - Create TypeScript interfaces in `types/`
-2. **Build service layer** - Create API service in feature's `services/`
-3. **Create components** - Build UI components with CSS Modules
-4. **Add hooks if needed** - Custom hooks for stateful logic
-5. **Export publicly** - Add to `index.ts` for clean imports
-
-### Component Hierarchy
-
-- **UI** - Primitives with no business logic
-- **Common** - Shared composites used across features
-- **Feature** - Feature-specific components
-
-### Key Development Rules
-
-- All API calls through service layer (never direct fetch in components)
-- TypeScript strict mode - no `any` types
-- Use path aliases (`@/components/ui`, `@/hooks`, etc.)
-- CSS Modules for component styling
-- Type all function parameters and return values
-
-## Path Aliases
-
-Configure in `tsconfig.json`:
+The frontend is organized into **feature modules** — each feature owns its components, hooks, services, and types. All backend communication goes through a centralized Axios service layer that automatically attaches Supabase JWT tokens to every request.
 
 ```
-@/components  → src/components
-@/features    → src/features
-@/hooks       → src/hooks
-@/lib         → src/lib
-@/types       → src/types
-@/utils       → src/utils
-@/data        → src/data
-@/config      → src/config
-@/services    → src/services
-@/context     → src/context
-@/styles      → src/styles
+src/
+├── app/                    # Next.js App Router (route groups)
+│   ├── (landing)/          # Public marketing pages
+│   ├── (auth)/             # Login, signup, email verification
+│   └── (app)/              # Protected app pages
+│       ├── dashboard/
+│       ├── welcome/        # Post-signup onboarding entry
+│       ├── brand-kit/
+│       ├── campaigns/
+│       ├── canvas/[id]/    # AI canvas — core feature
+│       ├── payment/
+│       └── settings/
+│
+├── features/               # Feature modules (co-located components, hooks, services, types)
+│   ├── auth/
+│   ├── brand-kit/
+│   ├── campaigns/
+│   ├── canvas/             # AI carousel generation
+│   ├── dashboard/
+│   ├── landing/
+│   ├── onboarding/
+│   ├── payment/
+│   ├── posting/
+│   └── settings/
+│
+├── components/             # Shared UI (Button, Input, Card, Modal, layouts)
+├── context/                # Auth, AuthModal, Brand, Theme providers
+├── services/api/           # Axios client + JWT interceptors
+├── hooks/                  # useAuth, useUser, useDebounce, useLocalStorage, useMediaQuery
+├── lib/                    # Supabase and Stripe clients
+├── types/                  # Shared TypeScript interfaces
+└── middleware.ts           # Route protection
 ```
 
-## Backend API Integration
+## Backend API
 
 Base URL: `http://localhost:8000/api/v1`
 
-**Available Endpoints:**
-
 ```
-Users:         GET,PUT /users/me
-Brand Kits:    POST /brand-kits, GET,PUT /brand-kits/me
-Campaigns:     POST,GET /campaigns, GET,PUT,DELETE /campaigns/{id}
-Carousel:      POST /campaigns/{id}/carousel                          (AI generation - CORE)
-Posts:         POST,GET /campaigns/{id}/posts, GET,PUT,DELETE /posts/{id}
-Variations:    POST,GET /posts/{id}/variations, GET,PUT,DELETE /posts/{id}/variations/{vid}
-Social:        POST,GET /social-accounts, GET,PUT,DELETE /social-accounts/{id}
-Payments:      POST,GET /payments/transactions, GET /payments/transactions/{id}, POST /payments/webhook
+Users:      GET, PUT  /users/me
+Brand Kits: POST      /brand-kits
+            GET, PUT  /brand-kits/me
+Campaigns:  POST, GET /campaigns
+            GET, PUT, DELETE /campaigns/{id}
+Carousel:   POST      /campaigns/{id}/carousel       ← AI generation
+Posts:      POST, GET /campaigns/{id}/posts
+            GET, PUT, DELETE /posts/{id}
+Variations: POST, GET /posts/{id}/variations
+            GET, PUT, DELETE /posts/{id}/variations/{vid}
+Social:     POST, GET /social-accounts
+            GET, PUT, DELETE /social-accounts/{id}
+Payments:   POST, GET /payments/transactions
+            POST      /payments/webhook
 ```
 
-**Authentication:** Frontend uses Supabase Auth directly. Backend validates JWT tokens in all requests.
-
-## Implementation Status
-
-**Complete:**
-
-- Project structure and configuration
-- Landing pages (Hero, Features, Pricing, FAQ, Blog, Support, Legal)
-- Component library (UI primitives and layouts)
-- API service layer with interceptors
-- TypeScript types and interfaces
-- Route groups and layouts
-- Authentication (LoginForm, SignupForm, AuthModal, SocialAuthButtons)
-- Onboarding wizard (7 steps)
-- Brand Kit page
-- Campaigns (full component set)
-- Canvas AI carousel generation and post management
-- Settings page
-- Context providers and custom hooks
-- Middleware for route protection
-
-**In Progress:**
-
-- Dashboard UI components
-- Payment checkout flow
-- Social media posting flow
-
-## Workflow
-
-**Branch Naming:** `frontend/{feature,fix,refactor}/[name]`
-
-**Code Review Checklist:**
-
-- TypeScript strict mode passing
-- No console.log statements
-- Path aliases used correctly
-- API calls through service layer
-- Proper error handling
-- Loading states implemented
-- Mobile responsive design
-- CSS Modules for styling
-
-## Architecture Principles
-
-1. **Feature Co-location** - Everything a feature needs lives together
-2. **Type Safety** - Comprehensive TypeScript coverage
-3. **Service Abstraction** - All API calls through dedicated layer
-4. **Component Reusability** - Build from primitives to composites
-5. **Separation of Concerns** - Clear boundaries between layers
-6. **Backend-First** - Database operations via backend API only
-7. **Auth Simplicity** - Supabase handles authentication, backend handles everything else
+See [README_API.md](README_API.md) for full API documentation.
