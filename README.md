@@ -1,6 +1,6 @@
 # Scale66 Frontend
 
-Scale66 is an AI-powered social media content platform that generates branded carousel posts for Instagram, TikTok, LinkedIn, and Twitter. Users configure a brand kit, create campaigns, and generate complete carousel content — captions, images, and slide layouts — through an AI pipeline in the backend.
+Scale66 is an AI-powered social media content platform that generates branded carousel posts for Instagram, TikTok, LinkedIn, and Twitter. Users configure a brand kit, create campaigns, and generate complete carousel content: captions, images, and slide layouts, through an AI pipeline in the backend.
 
 ## Features
 
@@ -93,21 +93,21 @@ src/
 
 Base URL: `http://localhost:8000/api/v1`
 
-```
-Users:      GET, PUT  /users/me
-Brand Kits: POST      /brand-kits
-            GET, PUT  /brand-kits/me
-Campaigns:  POST, GET /campaigns
-            GET, PUT, DELETE /campaigns/{id}
-Carousel:   POST      /campaigns/{id}/carousel       ← AI generation
-Posts:      POST, GET /campaigns/{id}/posts
-            GET, PUT, DELETE /posts/{id}
-Variations: POST, GET /posts/{id}/variations
-            GET, PUT, DELETE /posts/{id}/variations/{vid}
-Social:     POST, GET /social-accounts
-            GET, PUT, DELETE /social-accounts/{id}
-Payments:   POST, GET /payments/transactions
-            POST      /payments/webhook
-```
+| Resource   | Method            | Endpoint                               |
+| ---------- | ----------------- | -------------------------------------- |
+| Users      | `GET` `PUT`       | `/users/me`                            |
+| Brand Kits | `POST`            | `/brand-kits`                          |
+|            | `GET` `PUT`       | `/brand-kits/me`                       |
+| Campaigns  | `POST` `GET`      | `/campaigns`                           |
+|            | `GET` `PUT` `DELETE` | `/campaigns/{id}`                   |
+| Carousel   | `POST`            | `/campaigns/{id}/carousel` — AI generation |
+| Posts      | `POST` `GET`      | `/campaigns/{id}/posts`                |
+|            | `GET` `PUT` `DELETE` | `/posts/{id}`                       |
+| Variations | `POST` `GET`      | `/posts/{id}/variations`               |
+|            | `GET` `PUT` `DELETE` | `/posts/{id}/variations/{vid}`      |
+| Social     | `POST` `GET`      | `/social-accounts`                     |
+|            | `GET` `PUT` `DELETE` | `/social-accounts/{id}`             |
+| Payments   | `POST` `GET`      | `/payments/transactions`               |
+|            | `POST`            | `/payments/webhook`                    |
 
 See [README_API.md](README_API.md) for full API documentation.
