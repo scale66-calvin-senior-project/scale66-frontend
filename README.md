@@ -1,6 +1,6 @@
 # Scale66 Frontend
 
-AI-powered social media content generation platform built with Next.js 15 and TypeScript. Very cool app
+AI-powered social media content generation platform built with Next.js 15 and TypeScript.
 
 ## Tech Stack
 
@@ -187,50 +187,22 @@ Each feature is self-contained with its own:
 - Auto-redirect to login on 401 errors
 - Type-safe requests and responses
 
-**Critical:** All backend API calls go through the service layer. Supabase is used ONLY for authentication.
-
-### Authentication Flow
-
-1. User signs up/logs in via Supabase Auth
-2. Supabase returns JWT token
-3. Token stored in session (handled automatically)
-4. API client includes token in all backend requests
-5. Backend validates JWT and authorizes requests
-
-**Supabase Usage:**
-
-- Authentication only (signup, login, logout, OAuth)
-- Session management with automatic refresh
-- JWT token generation for backend API
-
-**Backend API:**
-
-- All database operations
-- AI content generation
-- File storage
-- Social media integration
-- Payment processing
+See: [API Documentation](README_API.md) for more details on backend API routes
 
 ## Feature Status
 
-| Feature           | Status          | Dependencies          | Notes                                          |
-| ----------------- | --------------- | --------------------- | ---------------------------------------------- |
-| **Landing Pages** | Complete        | None                  | Hero, Features, Pricing, FAQ fully implemented |
-| **Auth**          | Structure Ready | Supabase Auth         | Auth service and types defined, UI pending     |
-| **Dashboard**     | Planned         | `/api/v1/campaigns`   | Structure in place, implementation pending     |
-| **Onboarding**    | Planned         | `/api/v1/brand-kit`   | 6-step wizard structure defined                |
-| **Brand Kit**     | Planned         | `/api/v1/brand-kit`   | Service and types ready                        |
-| **Campaigns**     | Planned         | `/api/v1/campaigns/*` | Service layer defined                          |
-| **Canvas**        | Planned         | `/api/v1/content/*`   | CORE FEATURE - AI chat interface               |
-| **Posting**       | Planned         | `/api/v1/social/*`    | Social media posting                           |
-| **Payment**       | Planned         | `/api/v1/payment/*`   | Stripe integration structure ready             |
-| **Settings**      | Planned         | `/api/v1/posts/*`     | Account settings structure                     |
-
-**Status Legend:**
-
-- Complete: Fully functional
-- Structure Ready: Architecture defined, implementation pending
-- Planned: Not yet started
+| Feature           | Dependencies                          | Notes                                                                          |
+| ----------------- | ------------------------------------- | ------------------------------------------------------------------------------ |
+| **Landing Pages** | None                                  | Hero, Features, Pricing, FAQ, Blog, Support, Legal all implemented             |
+| **Auth**          | Supabase Auth                         | LoginForm, SignupForm, AuthModal, SocialAuthButtons, hooks, services all implemented |
+| **Onboarding**    | `/api/v1/brand-kits`                  | 7-step wizard fully implemented                                                |
+| **Brand Kit**     | `/api/v1/brand-kits`                  | BrandKitPage + SocialAccountsSection implemented                               |
+| **Campaigns**     | `/api/v1/campaigns/*`                 | CampaignCard, List, Detail, ActionModal, CreateButton all implemented          |
+| **Canvas**        | `/api/v1/campaigns/{id}/carousel`     | CORE FEATURE - AI carousel generation and post management implemented          |
+| **Settings**      | `/api/v1/users/me`                    | SettingsPage fully implemented                                                 |
+| **Dashboard**     | `/api/v1/campaigns`                   | Hooks/service/types defined, UI components pending                             |
+| **Payment**       | `/api/v1/payments/*`                  | PricingCards component + hooks + service ready, checkout flow pending          |
+| **Posting**       | `/api/v1/social-accounts/*`           | Service stub only, implementation pending                                      |
 
 ## Components
 
@@ -270,6 +242,10 @@ Shared composite components:
   - Current user and session
   - Auth status (isAuthenticated)
   - JWT token for API calls
+
+- **AuthModalContext** - Auth modal visibility state
+
+  - Controls open/close of the authentication modal
 
 - **BrandContext** - Active brand kit data
 
@@ -371,12 +347,14 @@ Base URL: `http://localhost:8000/api/v1`
 **Available Endpoints:**
 
 ```
-Brand Kit:   POST,GET,PUT,DELETE /brand-kit
-Campaigns:   GET,POST /campaigns, GET,PUT,DELETE /campaigns/{id}
-Content:     POST /content/generate, GET /content/status/{job_id}
-Posts:       GET,POST /posts, GET,PUT,DELETE /posts/{id}
-Social:      GET /social/connect/{platform}, GET /social/accounts
-Payment:     POST /payment/create-checkout-session, POST /payment/webhook
+Users:         GET,PUT /users/me
+Brand Kits:    POST /brand-kits, GET,PUT /brand-kits/me
+Campaigns:     POST,GET /campaigns, GET,PUT,DELETE /campaigns/{id}
+Carousel:      POST /campaigns/{id}/carousel                          (AI generation - CORE)
+Posts:         POST,GET /campaigns/{id}/posts, GET,PUT,DELETE /posts/{id}
+Variations:    POST,GET /posts/{id}/variations, GET,PUT,DELETE /posts/{id}/variations/{vid}
+Social:        POST,GET /social-accounts, GET,PUT,DELETE /social-accounts/{id}
+Payments:      POST,GET /payments/transactions, GET /payments/transactions/{id}, POST /payments/webhook
 ```
 
 **Authentication:** Frontend uses Supabase Auth directly. Backend validates JWT tokens in all requests.
@@ -386,34 +364,25 @@ Payment:     POST /payment/create-checkout-session, POST /payment/webhook
 **Complete:**
 
 - Project structure and configuration
-- Landing pages (Hero, Features, Pricing, FAQ)
+- Landing pages (Hero, Features, Pricing, FAQ, Blog, Support, Legal)
 - Component library (UI primitives and layouts)
 - API service layer with interceptors
 - TypeScript types and interfaces
 - Route groups and layouts
-
-**Structure Ready:**
-
-- Feature modules (auth, dashboard, canvas, etc.)
-- Supabase authentication integration
-- Context providers
-- Custom hooks
+- Authentication (LoginForm, SignupForm, AuthModal, SocialAuthButtons)
+- Onboarding wizard (7 steps)
+- Brand Kit page
+- Campaigns (full component set)
+- Canvas AI carousel generation and post management
+- Settings page
+- Context providers and custom hooks
 - Middleware for route protection
 
 **In Progress:**
 
-- Feature component implementation
-- Backend API integration
-- Form validation and error handling
-- Loading and empty states
-
-**Planned:**
-
-- Canvas AI chat interface (CORE)
-- Campaign management UI
-- Brand kit configuration
+- Dashboard UI components
+- Payment checkout flow
 - Social media posting flow
-- Stripe payment integration
 
 ## Workflow
 
