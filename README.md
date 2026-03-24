@@ -108,6 +108,7 @@ Base URL: `http://localhost:8000/api/v1`
 | Social     | `POST` `GET`      | `/social-accounts`                     |
 |            | `GET` `PUT` `DELETE` | `/social-accounts/{id}`             |
 | Payments   | `POST` `GET`      | `/payments/transactions`               |
+|            | `GET`             | `/payments/transactions/{id}`          |
 |            | `POST`            | `/payments/webhook`                    |
 
 See [README_API.md](README_API.md) for full API documentation.
