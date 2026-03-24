@@ -191,18 +191,18 @@ See: [API Documentation](README_API.md) for more details on backend API routes
 
 ## Feature Status
 
-| Feature           | Dependencies                          | Notes                                                                          |
-| ----------------- | ------------------------------------- | ------------------------------------------------------------------------------ |
-| **Landing Pages** | None                                  | Hero, Features, Pricing, FAQ, Blog, Support, Legal all implemented             |
-| **Auth**          | Supabase Auth                         | LoginForm, SignupForm, AuthModal, SocialAuthButtons, hooks, services all implemented |
-| **Onboarding**    | `/api/v1/brand-kits`                  | 7-step wizard fully implemented                                                |
-| **Brand Kit**     | `/api/v1/brand-kits`                  | BrandKitPage + SocialAccountsSection implemented                               |
-| **Campaigns**     | `/api/v1/campaigns/*`                 | CampaignCard, List, Detail, ActionModal, CreateButton all implemented          |
-| **Canvas**        | `/api/v1/campaigns/{id}/carousel`     | CORE FEATURE - AI carousel generation and post management implemented          |
-| **Settings**      | `/api/v1/users/me`                    | SettingsPage fully implemented                                                 |
-| **Dashboard**     | `/api/v1/campaigns`                   | Hooks/service/types defined, UI components pending                             |
-| **Payment**       | `/api/v1/payments/*`                  | PricingCards component + hooks + service ready, checkout flow pending          |
-| **Posting**       | `/api/v1/social-accounts/*`           | Service stub only, implementation pending                                      |
+| Feature           | Dependencies                      |
+| ----------------- | --------------------------------- |
+| **Landing Pages** | None                              |
+| **Auth**          | Supabase Auth                     |
+| **Onboarding**    | `/api/v1/brand-kits`              |
+| **Brand Kit**     | `/api/v1/brand-kits`              |
+| **Campaigns**     | `/api/v1/campaigns/*`             |
+| **Canvas**        | `/api/v1/campaigns/{id}/carousel` |
+| **Settings**      | `/api/v1/users/me`                |
+| **Dashboard**     | `/api/v1/campaigns`               |
+| **Payment**       | `/api/v1/payments/*`              |
+| **Posting**       | `/api/v1/social-accounts/*`       |
 
 ## Components
 
