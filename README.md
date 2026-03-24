@@ -27,9 +27,6 @@ cp .env.example .env
 npm run dev
 # Server runs at http://localhost:3000
 
-#cp the .env.example file
-cp .env.example .env
-
 # Build for production
 npm run build
 npm start
@@ -59,14 +56,19 @@ frontend/
     │   │
     │   ├── (auth)/              # Authentication pages
     │   │   ├── login/
-    │   │   └── signup/
+    │   │   ├── signup/
+    │   │   ├── confirm-email/
+    │   │   └── verify-email/
     │   │
     │   └── (app)/               # Protected app pages
     │       ├── dashboard/
-    │       ├── onboarding/
+    │       ├── welcome/
     │       ├── brand-kit/
     │       ├── campaigns/
-    │       ├── canvas/[id]/     # CORE FEATURE - AI canvas
+    │       ├── canvas/
+    │       │   └── [id]/        # CORE FEATURE - AI canvas
+    │       ├── payment/
+    │       │   └── success/
     │       └── settings/
     │
     ├── components/          # Reusable components
@@ -81,6 +83,7 @@ frontend/
     │   ├── canvas/              # AI content generation (CORE)
     │   ├── dashboard/           # Dashboard
     │   ├── landing/             # Landing pages
+    │   ├── mainpage/            # Main app page
     │   ├── onboarding/          # User onboarding
     │   ├── payment/             # Stripe integration
     │   ├── posting/             # Social media posting
@@ -88,6 +91,7 @@ frontend/
     │
     ├── context/             # React Context providers
     │   ├── AuthContext.tsx      # Authentication state
+    │   ├── AuthModalContext.tsx # Auth modal visibility state
     │   ├── BrandContext.tsx     # Brand kit state
     │   └── ThemeContext.tsx     # Theme state
     │
@@ -115,6 +119,7 @@ frontend/
     │   └── post.types.ts
     │
     ├── utils/               # Utility functions
+    │   ├── auth-redirect.ts
     │   ├── constants.ts
     │   ├── formatters.ts
     │   ├── validation.ts
