@@ -1,6 +1,6 @@
 # Scale66 Frontend
 
-AI-powered social media content generation platform built with Next.js 15 and TypeScript.
+AI-powered social media content generation platform built with Next.js 15 and TypeScript. Very cool app
 
 ## Tech Stack
 
