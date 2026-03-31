@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CampaignCard } from "../CampaignCard";
 import { campaignsService } from "../../services/campaigns.service";
+import { canvasService } from "@/features/canvas/services/canvas.service";
 import type { Campaign } from "../../types";
 import styles from "./CampaignList.module.css";
 
@@ -18,14 +19,30 @@ export const CampaignList: React.FC = () => {
       try {
         setIsLoading(true);
         const data = await campaignsService.getCampaigns();
-        const transformed: Campaign[] = data.map((c) => ({
-          id: c.id,
-          name: c.campaign_name,
-          description: c.description,
-          slideCount: 0,
-          createdAt: c.created_at,
-          updatedAt: c.updated_at,
-        }));
+
+        // Fetch posts for all campaigns in parallel to get hook image URLs
+        const postsResults = await Promise.allSettled(
+          data.map((c) => canvasService.getCampaignPosts(c.id, 1))
+        );
+
+        const transformed: Campaign[] = data.map((c, i) => {
+          const postsResult = postsResults[i];
+          let thumbnailUrl: string | undefined;
+          if (postsResult.status === 'fulfilled' && postsResult.value.length > 0) {
+            const slides = postsResult.value[0].carousel_slides ?? [];
+            const hook = slides.find((s) => s.slide_type === 'hook');
+            thumbnailUrl = hook?.image_url ?? undefined;
+          }
+          return {
+            id: c.id,
+            name: c.campaign_name,
+            description: c.description,
+            slideCount: 0,
+            thumbnailUrl,
+            createdAt: c.created_at,
+            updatedAt: c.updated_at,
+          };
+        });
         setCampaigns(transformed);
         setError(null);
       } catch (err) {
@@ -52,23 +69,8 @@ export const CampaignList: React.FC = () => {
     }
   };
 
-  const handleEdit = (campaign: Campaign) => {
+  const handleOpen = (campaign: Campaign) => {
     router.push(`/canvas?id=${campaign.id}`);
-  };
-
-  const handlePost = (campaign: Campaign) => {
-    console.log("Post campaign:", campaign);
-  };
-
-  const handleDelete = async (campaign: Campaign) => {
-    if (!confirm(`Delete "${campaign.name}"? This cannot be undone.`)) return;
-    try {
-      await campaignsService.deleteCampaign(campaign.id);
-      setCampaigns((prev) => prev.filter((c) => c.id !== campaign.id));
-    } catch (err) {
-      console.error('Error deleting campaign:', err);
-      alert('Failed to delete campaign. Please try again.');
-    }
   };
 
   return (
@@ -110,9 +112,7 @@ export const CampaignList: React.FC = () => {
               <CampaignCard
                 key={campaign.id}
                 campaign={campaign}
-                onEdit={handleEdit}
-                onPost={handlePost}
-                onDelete={handleDelete}
+                onClick={handleOpen}
               />
             ))
           )}

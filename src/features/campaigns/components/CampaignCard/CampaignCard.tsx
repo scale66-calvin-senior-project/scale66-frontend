@@ -13,14 +13,9 @@ function formatDate(dateStr: string): string {
   }
 }
 
-export const CampaignCard: React.FC<CampaignCardProps> = ({
-  campaign,
-  onEdit,
-  onPost,
-  onDelete,
-}) => {
+export const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
   return (
-    <div className={styles.card}>
+    <div className={styles.card} onClick={() => onClick(campaign)}>
       {/* Thumbnail */}
       <div className={styles.thumbnail}>
         {campaign.thumbnailUrl ? (
@@ -42,28 +37,6 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
       <div className={styles.body}>
         <p className={styles.name}>{campaign.name}</p>
         <p className={styles.meta}>Created {formatDate(campaign.createdAt)}</p>
-      </div>
-
-      {/* Actions */}
-      <div className={styles.actions}>
-        <button
-          className={`${styles.actionBtn} ${styles.editBtn}`}
-          onClick={() => onEdit?.(campaign)}
-        >
-          Open
-        </button>
-        <button
-          className={styles.actionBtn}
-          onClick={() => onPost?.(campaign)}
-        >
-          Post
-        </button>
-        <button
-          className={`${styles.actionBtn} ${styles.deleteBtn}`}
-          onClick={() => onDelete?.(campaign)}
-        >
-          Delete
-        </button>
       </div>
     </div>
   );

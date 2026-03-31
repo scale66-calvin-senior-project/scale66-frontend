@@ -14,10 +14,7 @@ export interface Campaign {
 
 export interface CampaignCardProps {
   campaign: Campaign;
-  onEdit?: (campaign: Campaign) => void;
-  onPost?: (campaign: Campaign) => void;
-  onDelete?: (campaign: Campaign) => void;
-  onClick?: (campaign: Campaign) => void;
+  onClick: (campaign: Campaign) => void;
 }
 
 export interface CreateCampaignButtonProps {

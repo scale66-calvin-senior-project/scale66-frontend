@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { MainNavbar } from '@/features/mainpage';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import styles from './AppLayout.module.css';
 
 export interface AppLayoutProps {
@@ -12,9 +14,23 @@ export interface AppLayoutProps {
  * AppLayout Component
  *
  * Shared layout for authenticated app pages (dashboard, brand-kit, settings, campaigns).
- * Provides consistent navbar and background so routes look and navigate the same.
+ * Blocks rendering until auth state is confirmed — prevents API calls going out
+ * before the session token is available (fixes 403 race condition on hard refresh).
  */
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+  const { isLoading, isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  if (isLoading || !isAuthenticated) {
+    return null;
+  }
+
   return (
     <div className={styles.wrapper}>
       <MainNavbar />
