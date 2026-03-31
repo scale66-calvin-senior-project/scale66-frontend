@@ -1,3 +1,8 @@
+// Middleware is disabled for static export (output: 'export')
+// Middleware cannot be used with static export in Next.js
+// Authentication is handled client-side in page components instead
+
+/*
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -12,6 +17,7 @@ import type { NextRequest } from 'next/server';
  * Note: Simplified to check for cookie presence only.
  * Full session validation happens client-side for better UX.
  */
+/*
 export async function middleware(request: NextRequest) {
   const cookies = request.cookies;
   
@@ -47,6 +53,7 @@ export async function middleware(request: NextRequest) {
  * Configure which routes require authentication and subscription
  * All routes under (app) route group require both
  */
+/*
 export const config = {
   matcher: [
     '/dashboard/:path*',
@@ -56,4 +63,5 @@ export const config = {
     '/settings/:path*',
   ],
 };
+*/
 

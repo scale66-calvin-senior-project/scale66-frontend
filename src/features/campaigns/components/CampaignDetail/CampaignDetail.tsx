@@ -36,7 +36,7 @@ export const CampaignDetail: React.FC<CampaignDetailProps> = ({ campaignId, camp
 
   const handleSlideClick = () => {
     // Navigate to canvas to edit
-    router.push(`/canvas/${campaignId}`);
+    router.push(`/canvas?id=${campaignId}`);
   };
 
   const handleSlideRightClick = (e: React.MouseEvent) => {
@@ -46,7 +46,7 @@ export const CampaignDetail: React.FC<CampaignDetailProps> = ({ campaignId, camp
   };
 
   const handleEdit = () => {
-    router.push(`/canvas/${campaignId}`);
+    router.push(`/canvas?id=${campaignId}`);
     setIsModalOpen(false);
   };
 

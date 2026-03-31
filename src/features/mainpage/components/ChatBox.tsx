@@ -2,17 +2,40 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { campaignsService } from "@/features/campaigns/services/campaigns.service";
 import styles from "./ChatBox.module.css";
 
-const ideaChips = ["Sales", "Ad", "Funny", "Story"];
+const ideaChips = [
+  "Announce our new product launch",
+  "Promote a limited-time seasonal sale",
+  "Share customer success stories",
+  "Behind the scenes at our business",
+  "Showcase our team and values",
+  "New menu item or service reveal",
+];
 
 export default function ChatBox() {
   const router = useRouter();
   const [inputValue, setInputValue] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
-  const handleSubmit = () => {
-    if (inputValue.trim()) {
-      router.push(`/canvas/new?prompt=${encodeURIComponent(inputValue)}`);
+  const handleSubmit = async () => {
+    if (!inputValue.trim() || isCreating) return;
+    
+    setIsCreating(true);
+    try {
+      // Create a new campaign with the prompt as description
+      const campaign = await campaignsService.createCampaign({
+        campaign_name: inputValue.trim().substring(0, 100) || "New Campaign",
+        description: inputValue.trim(),
+      });
+      
+      // Navigate to canvas with the new campaign ID (using query param)
+      router.push(`/canvas?id=${campaign.id}&prompt=${encodeURIComponent(inputValue)}`);
+    } catch (error) {
+      console.error('Error creating campaign:', error);
+      alert('Failed to create campaign. Please try again.');
+      setIsCreating(false);
     }
   };
 

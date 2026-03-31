@@ -18,9 +18,13 @@
  * ```
  */
 
-import axios, { AxiosError } from 'axios'
+import axios, { AxiosError, AxiosRequestConfig } from 'axios'
 import { env } from '@/config/env'
-import { getAccessToken } from '@/lib/supabase'
+import { getAccessToken, supabase } from '@/lib/supabase'
+
+interface RetryableRequestConfig extends AxiosRequestConfig {
+  _retry403?: boolean
+}
 
 // Create axios instance with base configuration
 export const apiClient = axios.create({
@@ -31,16 +35,21 @@ export const apiClient = axios.create({
   timeout: 30000, // 30 seconds
 })
 
+const timeout = <T>(ms: number, fallback: T) =>
+  new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
+
 // Request interceptor - Add JWT token to all requests
 apiClient.interceptors.request.use(
   async (config) => {
-    // Get JWT token from Supabase session
-    const token = await getAccessToken()
-    
+    // getAccessToken() blocks until auth is ready (up to 3s internally).
+    // The outer race is a hard ceiling so a hanging Supabase call never
+    // stalls the request interceptor beyond 4 seconds.
+    const token = await Promise.race([getAccessToken(), timeout(4000, null)])
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
-    
+
     return config
   },
   (error) => {
@@ -66,7 +75,23 @@ apiClient.interceptors.response.use(
           window.location.href = '/login'
         }
       } else if (status === 403) {
-        // Forbidden - user doesn't have permission
+        // Could be an auth race condition on first load (INITIAL_SESSION fires
+        // with null while Supabase is still refreshing the token). Retry once
+        // with a fresh token before giving up.
+        const config = error.config as RetryableRequestConfig
+        if (config && !config._retry403) {
+          config._retry403 = true
+          await new Promise((r) => setTimeout(r, 300))
+          const sessionResult = await Promise.race([
+            supabase.auth.getSession(),
+            timeout(2000, null as null),
+          ])
+          const session = sessionResult?.data?.session
+          if (session?.access_token) {
+            config.headers = { ...(config.headers ?? {}), Authorization: `Bearer ${session.access_token}` }
+            return apiClient(config)
+          }
+        }
         console.error('Access forbidden:', error.response.data)
       } else if (status === 404) {
         // Not found

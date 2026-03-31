@@ -100,74 +100,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
-    let hasChecked = false;
 
-    // First, do a quick session check (fast - from localStorage/cookies)
-    const quickSessionCheck = async () => {
-      if (hasChecked) return;
-      hasChecked = true;
-      
-      try {
-        // Check for session immediately (this is fast - reads from localStorage)
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user && mounted) {
-          // We have a session! Set a basic user immediately so UI doesn't block
-          const basicUser: User = {
-            id: session.user.id,
-            email: session.user.email || '',
-            subscription_tier: 'free', // Will be updated when full data loads
-          };
-          setUser(basicUser);
-          setIsLoading(false); // Stop showing loading immediately
-          
-          // Now load full user data in the background (non-blocking)
-          loadUser(true).catch(err => {
-            console.error('Background user load failed:', err);
-            // Keep the basic user we set above
-          });
-        } else if (mounted) {
-          // No session found
-          setUser(null);
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error('Quick session check failed:', error);
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
+    const setBasicUser = (sessionUser: { id: string; email?: string }) => {
+      const basicUser: User = {
+        id: sessionUser.id,
+        email: sessionUser.email || '',
+        subscription_tier: 'free',
+      };
+      setUser(basicUser);
+      setIsLoading(false);
+      loadUser(true).catch(console.error);
     };
 
-    // Set a timeout to prevent infinite loading (max 3 seconds)
-    const timeoutId = setTimeout(() => {
-      if (mounted) {
-        console.warn('Auth check timeout - stopping loading state');
-        setIsLoading(false);
-      }
-    }, 3000);
-
-    // Do quick session check first
-    quickSessionCheck();
-
-    // Listen for auth state changes
+    // onAuthStateChange is the single source of truth for auth state.
+    // INITIAL_SESSION fires once Supabase has fully initialized — including
+    // completing any background token refresh. This is the right place to
+    // gate rendering, unlike getSession() which can return null mid-refresh.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        await loadUser();
+
+      if (event === 'INITIAL_SESSION') {
+        if (session?.user) {
+          setBasicUser(session.user);
+        } else {
+          // No session — user is not logged in (Supabase completes any token
+          // refresh before firing INITIAL_SESSION, so null here is definitive).
+          setUser(null);
+          setIsLoading(false);
+        }
+      } else if (event === 'TOKEN_REFRESHED') {
+        // Proactive refresh mid-session — update user silently.
+        if (session?.user) {
+          setBasicUser(session.user);
+        } else {
+          setUser(null);
+          setIsLoading(false);
+        }
+      } else if (event === 'SIGNED_IN') {
+        // Set a basic user immediately so AppLayout unblocks at once,
+        // then load full user data (subscription tier etc.) in the background.
+        if (session?.user) {
+          setBasicUser(session.user);
+        }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setIsLoading(false);
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        // Session refreshed - reload user data in background
-        loadUser(true).catch(err => {
-          console.error('Token refresh user load failed:', err);
-        });
       }
     });
+
+    // Safety timeout: unblock if INITIAL_SESSION never fires (e.g. Supabase
+    // client fails to initialize entirely).
+    const timeoutId = setTimeout(() => {
+      if (mounted) {
+        setIsLoading(false);
+      }
+    }, 5000);
 
     return () => {
       mounted = false;

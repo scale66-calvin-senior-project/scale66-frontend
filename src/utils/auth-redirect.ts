@@ -16,20 +16,8 @@ export function getPostLoginRedirectPath(user: User | null): string {
     return '/login';
   }
 
-  // If onboarding not completed, send to onboarding
-  if (!user.onboarding_completed) {
-    return '/welcome';
-  }
-
-  // If onboarding completed but not paid (free tier), send to paywall
-  if (user.onboarding_completed && (!user.subscription_tier || user.subscription_tier === 'free')) {
-    return '/welcome?step=7';
-  }
-
-  // If onboarding completed and paid (starter, growth, or agency), send to dashboard
-  if (user.onboarding_completed && (user.subscription_tier === 'starter' || user.subscription_tier === 'growth' || user.subscription_tier === 'agency')) {
-    return '/dashboard';
-  }
+  // Send all authenticated users to dashboard
+  return '/dashboard';
 
   // Default fallback
   return '/dashboard';

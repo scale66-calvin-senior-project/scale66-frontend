@@ -8,8 +8,8 @@
  */
 
 import { useState } from 'react';
-import { paymentService } from '../services';
-import { redirectToCheckout } from '@/lib/stripe';
+// import { paymentService } from '../services'; // Commented out — service methods not yet implemented
+// import { redirectToCheckout } from '@/lib/stripe'; // Unused until checkout sessions are implemented
 import { env } from '@/config/env';
 import type { PlanId } from '../types';
 
@@ -45,13 +45,11 @@ export const usePayment = () => {
         return;
       }
 
-      // Otherwise, use backend checkout session creation
-      const session = await paymentService.createCheckoutSession({
-        planId,
-      });
-
-      // Redirect to Stripe Checkout
-      await redirectToCheckout(session.sessionId);
+      // TODO: Backend needs POST /api/v1/payments/checkout to support checkout sessions.
+      //       Until then, configure Stripe Payment Links in env for all plans.
+      // const session = await paymentService.createCheckoutSession({ planId });
+      // await redirectToCheckout(session.sessionId);
+      throw new Error('Checkout session creation is not yet available. Please use a configured payment link.');
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to process payment');
       setError(error);
